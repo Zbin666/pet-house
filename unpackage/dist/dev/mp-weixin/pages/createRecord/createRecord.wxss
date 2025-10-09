@@ -1,0 +1,112 @@
+
+.page.data-v-c6b119df {
+    min-height: 100vh;
+    padding: 24rpx;
+    background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%);
+}
+.card.data-v-c6b119df {
+    background: #fff;
+    border-radius: 24rpx;
+    border: 4rpx solid #2c2c2c;
+    margin-bottom: 20rpx;
+}
+.textarea-card.data-v-c6b119df {
+    padding: 28rpx 28rpx 28rpx 16rpx;
+    font-size: 32rpx;
+}
+.textarea.data-v-c6b119df {
+    width: 100%;
+    min-height: 420rpx;
+    font-size: 28rpx;
+    color: #1a1a1a;
+}
+.ph.data-v-c6b119df {
+    color: #bdbdbd;
+}
+.row.data-v-c6b119df {
+    height: 112rpx;
+    display: flex;
+    align-items: center;
+    padding: 0 24rpx;
+    position: relative;
+}
+.row-label.data-v-c6b119df {
+    font-size: 28rpx;
+    color: #1a1a1a;
+}
+.row-right.data-v-c6b119df {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+}
+.row-value.data-v-c6b119df {
+    color: #3b3b3b;
+    font-size: 28rpx;
+}
+.row-arrow.data-v-c6b119df {
+    font-weight: 700;
+    color: #2c2c2c;
+}
+.save-btn.data-v-c6b119df {
+    margin-top: 30rpx;
+    background: #ffe046;
+    color: #1a1a1a;
+    border: 4rpx solid #2c2c2c;
+    border-radius: 999rpx;
+    height: 100rpx;
+    line-height: 100rpx;
+    font-weight: 700;
+}
+
+/* full-row transparent pickers to capture taps */
+.tap-picker.data-v-c6b119df {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    z-index: 10;
+}
+.tap-picker.half.left.data-v-c6b119df {
+    right: 50%;
+}
+.tap-picker.half.right.data-v-c6b119df {
+    left: 50%;
+}
+
+/* modal */
+.modal-mask.data-v-c6b119df {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 999;
+}
+.modal-sheet.data-v-c6b119df {
+    width: 92%;
+    margin-bottom: 32rpx;
+    background: transparent;
+}
+.modal-center.data-v-c6b119df {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 92%;
+}
+.modal-actions.data-v-c6b119df {
+    margin-top: 16rpx;
+    display: flex;
+    gap: 16rpx;
+    justify-content: flex-end;
+}
+.btn.ghost.data-v-c6b119df {
+    background: #fff;
+}

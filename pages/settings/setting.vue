@@ -1,0 +1,420 @@
+<template>
+	<view class="page">
+		<!-- 叠纸卡片背景 -->
+		<view class="sheet">
+			<view class="sheet-bg bg1"></view>
+			<view class="sheet-body">
+				<!-- 用户头像和基本信息 -->
+				<view class="header">
+					<view class="avatar-wrap" @tap="pickAvatar">
+						<image class="avatar" :src="userInfo.avatar" mode="aspectFill" />
+						<view class="avatar-edit">编辑</view>
+					</view>
+					<view class="user-info">
+						<text class="username">{{ userInfo.name }}</text>
+						<text class="user-desc">{{ userInfo.desc }}</text>
+					</view>
+				</view>
+
+				<!-- 编辑按钮 -->
+				<view class="edit-row">
+					<button v-if="!editMode" class="btn ghost with-icon" @tap="startEdit">
+						<image class="btn-icon" src="/static/tarBar/index-active.png" mode="widthFix" />
+						<text>编辑资料</text>
+					</button>
+					<view v-else class="edit-actions">
+						<button class="btn ghost" @tap="cancelEdit">取消</button>
+						<button class="btn" @tap="saveEdit">保存</button>
+					</view>
+				</view>
+
+				<view class="divider-h"></view>
+
+				<!-- 用户信息表单 -->
+				<view class="form-section">
+					<view class="form-row">
+						<text class="label">昵称：</text>
+						<template v-if="!editMode">
+							<text class="value">{{ userInfo.name }}</text>
+						</template>
+						<input v-else class="input" v-model="form.name" placeholder="请输入昵称" />
+					</view>
+
+					<view class="form-row">
+						<text class="label">个人简介：</text>
+						<template v-if="!editMode">
+							<text class="value">{{ userInfo.desc || '暂无简介' }}</text>
+						</template>
+						<textarea v-else class="textarea" v-model="form.desc" placeholder="介绍一下自己吧～" />
+					</view>
+
+					<view class="form-row">
+						<text class="label">手机号：</text>
+						<template v-if="!editMode">
+							<text class="value">{{ userInfo.phone || '未绑定' }}</text>
+						</template>
+						<input v-else class="input" v-model="form.phone" placeholder="请输入手机号" />
+					</view>
+
+					<view class="form-row">
+						<text class="label">邮箱：</text>
+						<template v-if="!editMode">
+							<text class="value">{{ userInfo.email || '未绑定' }}</text>
+						</template>
+						<input v-else class="input" v-model="form.email" placeholder="请输入邮箱" />
+					</view>
+
+					<view class="form-row">
+						<text class="label">注册时间：</text>
+						<text class="value">{{ userInfo.registerTime }}</text>
+					</view>
+				</view>
+
+				<view class="divider-h"></view>
+
+				<!-- 其他设置 -->
+				<view class="settings-section">
+					<view class="setting-item">
+						<text class="setting-label">消息通知</text>
+						<switch :checked="settings.notifications" @change="e => settings.notifications = e.detail.value" />
+					</view>
+					<view class="setting-item">
+						<text class="setting-label">隐私模式</text>
+						<switch :checked="settings.privacy" @change="e => settings.privacy = e.detail.value" />
+					</view>
+					<view class="setting-item" @tap="clearCache">
+						<text class="setting-label">清除缓存</text>
+						<text class="setting-value">{{ cacheSize }}</text>
+					</view>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script setup>
+import { ref, reactive } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+
+defineOptions({ name: 'SettingsIndex' })
+
+// 用户信息
+const userInfo = ref({
+	name: '宠物爱好者',
+	desc: '热爱小动物的铲屎官',
+	phone: '138****8888',
+	email: 'user@example.com',
+	avatar: '/static/user/user.png',
+	registerTime: '2024年1月1日'
+})
+
+// 编辑模式
+const editMode = ref(false)
+const form = reactive({
+	name: '',
+	desc: '',
+	phone: '',
+	email: '',
+	avatar: ''
+})
+
+// 设置项
+const settings = reactive({
+	notifications: true,
+	privacy: false
+})
+
+const cacheSize = ref('—')
+
+onLoad(() => {
+	uni.setNavigationBarTitle({ title: '个人设置' })
+	uni.setNavigationBarColor({ frontColor: '#000000', backgroundColor: '#fff1a8' })
+	// 估算缓存体积（简化示例）
+	try {
+		const keys = uni.getStorageInfoSync().keys || []
+		cacheSize.value = `${keys.length} 项`
+	} catch (e) { cacheSize.value = '—' }
+})
+
+// 编辑功能
+function startEdit() {
+	editMode.value = true
+	Object.assign(form, {
+		name: userInfo.value.name,
+		desc: userInfo.value.desc,
+		phone: userInfo.value.phone,
+		email: userInfo.value.email,
+		avatar: userInfo.value.avatar
+	})
+}
+
+function cancelEdit() {
+	editMode.value = false
+}
+
+function saveEdit() {
+	userInfo.value = {
+		...userInfo.value,
+		name: form.name,
+		desc: form.desc,
+		phone: form.phone,
+		email: form.email,
+		avatar: form.avatar || userInfo.value.avatar
+	}
+	editMode.value = false
+	uni.showToast({
+		title: '保存成功',
+		icon: 'success'
+	})
+}
+
+function pickAvatar() {
+	uni.chooseImage({
+		count: 1,
+		sizeType: ['compressed'],
+		success: res => {
+			if (editMode.value) {
+				form.avatar = res.tempFilePaths[0]
+			} else {
+				userInfo.value.avatar = res.tempFilePaths[0]
+			}
+		}
+	})
+}
+
+function clearCache() {
+	uni.showModal({
+		title: '确认清除',
+		content: '确定要清除所有缓存吗？',
+		success: (res) => {
+			if (res.confirm) {
+				try {
+					uni.clearStorageSync()
+					cacheSize.value = '0 项'
+					uni.showToast({ title: '已清除', icon: 'success' })
+				} catch (e) {}
+			}
+		}
+	})
+}
+</script>
+
+<style scoped>
+.page {
+    min-height: 100vh;
+    padding: 24rpx 40rpx; /* 增大左右留白 */
+    padding-top: calc(110rpx + env(safe-area-inset-top)); /* 与宠物详情一致的顶部距离 */
+    padding-top: calc(110rpx + constant(safe-area-inset-top));
+    background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%);
+}
+
+.sheet {
+    position: relative;
+    padding-top: 30rpx; /* 下移卡片 */
+    padding-bottom: 45rpx; /* 底部留白 */
+}
+
+.sheet-bg {
+	position: absolute;
+	left: 12rpx;
+	right: 12rpx;
+	height: 96%;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 32rpx;
+	background: #fff;
+	z-index: 0;
+	pointer-events: none;
+}
+
+.sheet-bg.bg1 {
+	top: 24rpx;
+    bottom: 0; /* 跟随主卡片内容高度变化 */
+    height: 90%; /* 动态高度由 top/bottom 约束 */
+    width: 658rpx; /* 略小于主体宽度 600rpx，形成叠纸边缘 */
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) rotate(-3deg);
+}
+
+.sheet-body {
+	width: 625rpx;
+	margin: 0 auto;
+	position: relative;
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 32rpx;
+	padding: 32rpx 28rpx 120rpx 28rpx;
+	z-index: 1;
+}
+
+.header {
+	margin-top: 15rpx;
+	display: flex;
+	gap: 24rpx;
+	align-items: center;
+}
+
+.avatar-wrap {
+	position: relative;
+	width: 120rpx;
+	height: 120rpx;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 16rpx;
+	background: #f5f5f5;
+	overflow: hidden;
+}
+
+.avatar {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 16rpx;
+	background: #f5f5f5;
+}
+
+.avatar-edit {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	text-align: center;
+	font-size: 24rpx;
+	padding: 8rpx;
+}
+
+.user-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 8rpx;
+}
+
+.username {
+	font-size: 36rpx;
+	font-weight: 700;
+	color: #2c2c2c;
+}
+
+.user-desc {
+	font-size: 28rpx;
+	color: #666;
+}
+
+.edit-row {
+	position: absolute;
+	left: 28rpx;
+	right: 28rpx;
+	bottom: 28rpx;
+	display: flex;
+	justify-content: center;
+	z-index: 2;
+}
+
+.edit-actions {
+	display: flex;
+	gap: 28rpx;
+}
+
+.btn {
+	background: #ffe046;
+	color: #1a1a1a;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 999rpx;
+	height: 72rpx;
+	line-height: 72rpx;
+	padding: 0 24rpx;
+	font-weight: 700;
+}
+
+.btn.ghost {
+	background: #fff;
+}
+
+.btn.with-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12rpx;
+	padding: 0 28rpx;
+}
+
+.btn-icon {
+	width: 38rpx;
+	height: 38rpx;
+}
+
+.divider-h {
+	height: 2rpx;
+	background: #e9e9e9;
+	margin: 28rpx 0;
+}
+
+.form-section {
+	display: flex;
+	flex-direction: column;
+	gap: 24rpx;
+}
+
+.form-row {
+	display: grid;
+	grid-template-columns: 160rpx 1fr;
+	align-items: center;
+	column-gap: 12rpx;
+}
+
+.label {
+	font-weight: 700;
+	font-size: 30rpx;
+	color: #2c2c2c;
+}
+
+.value {
+	font-size: 30rpx;
+	color: #666;
+}
+
+.input {
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 12rpx;
+	padding: 10rpx 14rpx;
+	font-size: 30rpx;
+}
+
+.textarea {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	min-height: 120rpx;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 12rpx;
+	padding: 12rpx 16rpx;
+	background: #fff;
+	font-size: 30rpx;
+}
+
+.settings-section {
+	display: flex;
+	flex-direction: column;
+	gap: 24rpx;
+}
+
+.setting-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 20rpx 0;
+}
+
+.setting-label {
+	font-size: 30rpx;
+	font-weight: 700;
+	color: #2c2c2c;
+}
+
+.setting-value {
+	font-size: 28rpx;
+	color: #666;
+}
+</style>

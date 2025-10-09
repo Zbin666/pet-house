@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sources":["../../HBuilderX.4.57/HBuilderX/plugins/uniapp-cli-vite/uniPage:/cGFnZXMvc2V0dGluZ3MvaW5kZXgudnVl"],"sourcesContent":["import MiniProgramPage from 'E:/Uni-App-file/pet-house/pages/settings/index.vue'\nwx.createPage(MiniProgramPage)"],"names":[],"mappings":";;;;;;;;;;;AACA,GAAG,WAAW,eAAe;"}

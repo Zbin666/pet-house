@@ -1,0 +1,535 @@
+
+.page.data-v-7889064e {
+	min-height: 100vh;
+	padding: 24rpx;
+	padding-top: calc(40rpx + env(safe-area-inset-top));
+	padding-top: calc(40rpx + constant(safe-area-inset-top));
+	background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%);
+	position: relative;
+    overflow: hidden; /* 整页不滚动 */
+}
+
+/* 装饰图标 */
+.decor.data-v-7889064e {
+	width: 200rpx;
+	height: 200rpx;
+	z-index: 10;
+}
+.decor--dog-ccw.data-v-7889064e {
+	top: -5rpx;
+	left: 8nrpx;
+	transform: rotate(-5deg);
+	transform-origin: center center;
+}
+
+/* 轮播图容器 */
+.carousel-container.data-v-7889064e {
+	width: 100%;
+	height: calc(100vh - 120rpx);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	padding: 20rpx 30rpx 0 30rpx;
+	box-sizing: border-box;
+}
+.record-swiper.data-v-7889064e {
+	width: 100%;
+	height: calc(100% - 80rpx);
+}
+.swiper-item.data-v-7889064e {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 10rpx;
+    box-sizing: border-box;
+    overflow: visible; /* 外层不滚动不裁切 */
+    position: relative;
+}
+.sheet.data-v-7889064e {
+	position: relative;
+	width: 100%;
+	max-width: 700rpx;
+}
+
+/* 编辑模式下限制卡片最大宽度，避免视觉跳变过宽 */
+.sheet--edit.data-v-7889064e {
+    max-width: 590rpx; /* 可按需微调 580~620rpx */
+}
+.sheet-bg.data-v-7889064e {
+	position: absolute;
+	left: 12rpx;
+	right: 12rpx;
+	height: 96%;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 32rpx;
+	background: #fff;
+	z-index: 0;
+	pointer-events: none;
+}
+.sheet-bg.bg1.data-v-7889064e {
+	top: -4rpx;
+	transform: rotate(-4.5deg);
+}
+.sheet-body.data-v-7889064e {
+	width: 100%;
+	position: relative;
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 32rpx;
+	padding: 32rpx 28rpx 120rpx 28rpx;
+	z-index: 1;
+	min-height: 600rpx;
+	box-sizing: border-box;
+    overflow: visible; /* 内容不滚动 */
+}
+
+/* 轮播指示器 */
+.carousel-indicators.data-v-7889064e {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 16rpx;
+	margin-top: 40rpx;
+}
+.indicator.data-v-7889064e {
+	width: 16rpx;
+	height: 16rpx;
+	border-radius: 50%;
+	background: #ccc;
+	transition: all 0.3s ease;
+}
+.indicator.active.data-v-7889064e {
+	background: #2c2c2c;
+	transform: scale(1.2);
+}
+.header.data-v-7889064e {
+	margin-top: 15rpx;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.type-info.data-v-7889064e {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
+}
+.type-icon.data-v-7889064e {
+	width: 60rpx;
+	height: 60rpx;
+}
+.type-details.data-v-7889064e {
+	display: flex;
+	flex-direction: column;
+	gap: 4rpx;
+}
+.type-title.data-v-7889064e {
+	font-size: 32rpx;
+	font-weight: 700;
+	color: #2c2c2c;
+}
+.record-time.data-v-7889064e {
+	font-size: 24rpx;
+	color: #666;
+}
+.pet-info.data-v-7889064e {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+.pet-avatar.data-v-7889064e {
+	width: 40rpx;
+	height: 40rpx;
+	border-radius: 50%;
+	border: 2rpx solid #2c2c2c;
+}
+.pet-name.data-v-7889064e {
+	font-size: 28rpx;
+	color: #2c2c2c;
+}
+.action-row.data-v-7889064e {
+	position: absolute;
+	left: 28rpx;
+	right: 28rpx;
+	bottom: 28rpx;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	z-index: 2;
+}
+.edit-actions.data-v-7889064e {
+	display: flex;
+	justify-content: center;
+	gap: 12rpx;
+	width: 100%;
+}
+
+/* 宠物选择器 */
+.pet-selector.data-v-7889064e {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16rpx;
+}
+
+/* 横向滚动容器：编辑状态使用 */
+.pet-scroll.data-v-7889064e {
+	width: 100%;
+	max-width: 400rpx;
+	white-space: nowrap;
+	overflow: hidden;
+	padding-bottom: 4rpx;
+}
+.pet-scroll .pet-option.data-v-7889064e {
+	display: inline-flex !important;
+	margin-right: 12rpx;
+	width: 150rpx !important;
+	min-width: 150rpx;
+	flex-shrink: 0;
+	padding: 8rpx 6rpx;
+}
+.pet-option.data-v-7889064e {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 12rpx 8rpx;
+	border: 2rpx solid #ddd;
+	border-radius: 12rpx;
+	background: #f8f8f8;
+	transition: all 0.3s ease;
+	width: 100%;
+	box-sizing: border-box;
+}
+.pet-option.active.data-v-7889064e {
+	border-color: #ffe046;
+	background: #fff9e6;
+}
+.pet-option .pet-avatar.data-v-7889064e {
+	width: 40rpx;
+	height: 40rpx;
+	border-radius: 50%;
+	margin-bottom: 8rpx;
+}
+.pet-option .pet-name.data-v-7889064e {
+	font-size: 24rpx;
+	color: #333;
+}
+.btn.data-v-7889064e {
+	background: #ffe046;
+	color: #1a1a1a;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 999rpx;
+	height: 72rpx;
+	line-height: 72rpx;
+	padding: 0 24rpx;
+	font-weight: 700;
+}
+.btn.ghost.data-v-7889064e {
+	background: #fff;
+}
+.btn.with-icon.data-v-7889064e {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12rpx;
+	padding: 0 28rpx;
+}
+.btn-icon.data-v-7889064e {
+	width: 38rpx;
+	height: 38rpx;
+}
+.btn.delete-btn.data-v-7889064e {
+	background: #fff;
+	color: #ff4757;
+	border: 4rpx solid #ff4757;
+	border-radius: 999rpx;
+	height: 72rpx;
+	line-height: 72rpx;
+	padding: 0 24rpx;
+	font-weight: 700;
+}
+.divider-h.data-v-7889064e {
+	height: 2rpx;
+	background: #e9e9e9;
+	margin: 28rpx 0;
+}
+.content-section.data-v-7889064e {
+	margin-bottom: 40rpx;
+}
+.form-section.data-v-7889064e {
+	display: flex;
+	flex-direction: column;
+	gap: 24rpx;
+}
+
+/* 所有记录类型表单间距 */
+.form-section.data-v-7889064e {
+	margin-top: 40rpx;
+}
+.form-row.data-v-7889064e {
+	display: grid;
+	grid-template-columns: 160rpx 1fr;
+	align-items: start;
+	column-gap: 12rpx;
+}
+.label.data-v-7889064e {
+	font-weight: 700;
+	font-size: 30rpx;
+	color: #2c2c2c;
+}
+.value.data-v-7889064e {
+	font-size: 30rpx;
+	color: #666;
+	word-break: break-all;
+}
+.input.data-v-7889064e {
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 12rpx;
+	padding: 10rpx 14rpx;
+	font-size: 30rpx;
+}
+.input-group.data-v-7889064e {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+}
+.unit.data-v-7889064e {
+	font-size: 28rpx;
+	color: #666;
+}
+.textarea.data-v-7889064e {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+	min-height: 120rpx;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 12rpx;
+	padding: 12rpx 16rpx;
+	background: #fff;
+	font-size: 30rpx;
+}
+.photo-gallery.data-v-7889064e {
+	display: flex;
+	gap: 12rpx;
+	flex-wrap: wrap;
+}
+.photo.data-v-7889064e {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 12rpx;
+	border: 4rpx solid #2c2c2c;
+}
+
+/* 浮动添加按钮 */
+.fab.data-v-7889064e {
+	position: fixed;
+	right: -2rpx;
+	bottom: 120rpx;
+	width: 120rpx;
+	height: 60rpx;
+	z-index: 10;
+}
+.fab-icon.data-v-7889064e {
+	width: 80%;
+	height: 80%;
+	transform: rotate(-30deg);
+	transform-origin: center center;
+}
+
+/* 底部灰猫装饰图 */
+.bottom-cat.data-v-7889064e {
+    position: fixed;
+    left: 50%;
+    bottom: 16rpx;
+    transform: translateX(-50%);
+    width: 300rpx;
+    z-index: 5;
+    opacity: 0.9;
+    pointer-events: none; /* 不阻挡点击 */
+}
+.bottom-cat.bottom-cat--dog.data-v-7889064e {
+    width: 220rpx;
+}
+
+/* 弹窗样式 */
+.modal-overlay.data-v-7889064e {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+.modal-content.data-v-7889064e {
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 24rpx;
+	width: 600rpx;
+	max-height: 80vh;
+	overflow: hidden;
+}
+.modal-header.data-v-7889064e {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 32rpx 28rpx;
+	border-bottom: 4rpx solid #2c2c2c;
+	background: #fff1a8;
+}
+.modal-title.data-v-7889064e {
+	font-size: 36rpx;
+	font-weight: 700;
+	color: #2c2c2c;
+}
+.modal-close.data-v-7889064e {
+	width: 60rpx;
+	height: 60rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 40rpx;
+	color: #666;
+	font-weight: 700;
+}
+.modal-body.data-v-7889064e {
+	padding: 28rpx;
+}
+.record-type-list.data-v-7889064e {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 20rpx;
+}
+.record-type-item.data-v-7889064e {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12rpx;
+	padding: 24rpx;
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 20rpx;
+	transition: all 0.2s ease;
+}
+.record-type-item.data-v-7889064e:active {
+	background: #f5f5f5;
+	transform: scale(0.95);
+}
+.record-type-item .type-icon.data-v-7889064e {
+	width: 60rpx;
+	height: 60rpx;
+}
+.record-type-item .type-title.data-v-7889064e {
+	font-size: 28rpx;
+	font-weight: 600;
+	color: #2c2c2c;
+}
+
+/* 宠物选择器包装器 */
+.pet-selector-wrapper.data-v-7889064e {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+/* 宠物选择器 */
+.pet-selector.data-v-7889064e {
+	display: flex;
+	gap: 16rpx;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+.pet-option.data-v-7889064e {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8rpx;
+	padding: 16rpx;
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 16rpx;
+	transition: all 0.2s ease;
+	min-width: 100rpx;
+}
+.pet-option.selected.data-v-7889064e {
+	background: #fff1a8;
+	border-color: #ffd54f;
+}
+.pet-option.data-v-7889064e:active {
+	transform: scale(0.95);
+}
+.pet-avatar.data-v-7889064e {
+	width: 60rpx;
+	height: 60rpx;
+	border-radius: 50%;
+	border: 2rpx solid #2c2c2c;
+}
+.pet-name.data-v-7889064e {
+	font-size: 24rpx;
+	color: #2c2c2c;
+	font-weight: 600;
+}
+.check-mark.data-v-7889064e {
+	position: absolute;
+	top: 8rpx;
+	right: 8rpx;
+	width: 24rpx;
+	height: 24rpx;
+	background: #ff4757;
+	color: #fff;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16rpx;
+	font-weight: bold;
+}
+
+/* 展开按钮容器 */
+.expand-btn-container.data-v-7889064e {
+	display: flex;
+	justify-content: center;
+	margin-top: 12rpx;
+}
+
+/* 展开按钮 */
+.expand-btn.data-v-7889064e {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40rpx;
+	height: 40rpx;
+	background: #f8f9fa;
+	border: 2rpx solid #2c2c2c;
+	border-radius: 50%;
+	transition: all 0.2s ease;
+}
+.expand-btn.data-v-7889064e:active {
+	transform: scale(0.95);
+	background: #e9ecef;
+}
+.expand-arrow.data-v-7889064e {
+	font-size: 20rpx;
+	color: #666;
+	transition: transform 0.2s ease;
+}
+.expand-arrow.expanded.data-v-7889064e {
+	transform: rotate(180deg);
+}
+
+/* 弹窗按钮 */
+.modal-actions.data-v-7889064e {
+	display: flex;
+	gap: 28rpx;
+	justify-content: center;
+	margin-top: 32rpx;
+	padding-top: 24rpx;
+	border-top: 2rpx solid #e9e9e9;
+}
+	       

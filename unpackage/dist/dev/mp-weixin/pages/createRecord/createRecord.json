@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "新增记录",
+  "usingComponents": {
+    "calendar-selector": "../../components/CalendarSelector"
+  }
+}

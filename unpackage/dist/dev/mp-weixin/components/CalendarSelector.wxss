@@ -1,0 +1,77 @@
+
+.card.data-v-68668279 {
+    background: #fff;
+    border-radius: 24rpx;
+    border: 4rpx solid #2c2c2c;
+    padding: 16rpx;
+}
+.cal-header.data-v-68668279 {
+    font-size: 34rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16rpx;
+}
+.cal-nav.data-v-68668279 {
+    color: #555;
+    font-weight: 700;
+    padding: 0 8rpx;
+}
+.cal-month.data-v-68668279 {
+    font-weight: 700;
+}
+.cal-week.data-v-68668279 {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    color: #b0b0b0;
+    margin-bottom: 8rpx;
+}
+.w.data-v-68668279 {
+    padding: 8rpx 0;
+}
+.cal-grid.data-v-68668279 {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 88rpx;
+    gap: 6rpx;
+}
+.cell.data-v-68668279 {
+    position: relative;
+    background: #fff;
+    border-radius: 12rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cell.out.data-v-68668279 {
+    background: #fff;
+    color: #bbb;
+    opacity: .6;
+}
+.cell.today .num.data-v-68668279 {
+    font-weight: 700;
+}
+.cell.selected.data-v-68668279 {
+    background: transparent;
+    color: #1a1a1a;
+    border: 4rpx solid #ffe68c;
+    border-radius: 18rpx;
+}
+.num.data-v-68668279 {
+    font-size: 28rpx;
+    color: inherit;
+}
+
+/* selected icon */
+.sel-icon.data-v-68668279 {
+    position: absolute;
+    top: 0rpx;
+    width: 92rpx;
+    height: 92rpx;
+    z-index: 2;
+}
+.cell.selected .num.data-v-68668279 {
+    opacity: 0;
+}
+

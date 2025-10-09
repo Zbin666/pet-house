@@ -1,0 +1,65 @@
+
+.page.data-v-5fde78b4 { 
+	padding: 24rpx 60rpx; 
+	/* 动态计算顶部间距，避免真机调试时env不生效 */
+	min-height: 100vh; 
+	background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%); 
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	box-sizing: border-box;
+}
+
+/* 标题区域 */
+.title-section.data-v-5fde78b4 {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 24rpx;
+}
+.title-tag.data-v-5fde78b4 {
+	background: #2c2c2c;
+	border-radius: 999rpx;
+	padding: 12rpx 24rpx;
+}
+.title-text.data-v-5fde78b4 {
+	color: #fff;
+	font-size: 32rpx;
+	font-weight: 700;
+}
+.read-count.data-v-5fde78b4 {
+	color: #999;
+	font-size: 24rpx;
+}
+
+/* 内容卡片 */
+.content-card.data-v-5fde78b4 {
+	font-size: 28rpx;
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 24rpx;
+	padding: 24rpx;
+	box-shadow: 0 8rpx 0 #2c2c2c;
+	margin-bottom: 24rpx;
+	width: 100%;
+	max-width: 704rpx;
+}
+
+/* 富文本内容 */
+.rich-content.data-v-5fde78b4 {
+	line-height: 1.8;
+}
+
+/* 图片网格 */
+.image-grid.data-v-5fde78b4 {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 16rpx;
+	margin-top: 24rpx;
+}
+.content-image.data-v-5fde78b4 {
+	width: 100%;
+	height: 200rpx;
+	border-radius: 12rpx;
+	background: #f0f0f0;
+}
