@@ -115,7 +115,7 @@ const _sfc_main = {
         j: common_vendor.t(post.shares),
         k: common_assets._imports_1$2,
         l: common_vendor.t(comments.length),
-        m: common_assets._imports_2$4,
+        m: common_assets._imports_2$2,
         n: common_vendor.t(post.likes),
         o: common_vendor.t(comments.length),
         p: common_vendor.f(comments, (c, k0, i0) => {

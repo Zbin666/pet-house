@@ -70,6 +70,13 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
       common_vendor.index.setStorageSync("recordTab", tab);
       common_vendor.index.switchTab({ url: "/pages/record/record" });
     }
+    function goPetDetail() {
+      const pet = currentPet.value;
+      if (!pet || !pet.id)
+        return;
+      const q = encodeURIComponent(JSON.stringify(pet));
+      common_vendor.index.navigateTo({ url: `/pages/petDetail/petDetail?pet=${q}` });
+    }
     return (_ctx, _cache) => {
       var _a, _b, _c, _d;
       return common_vendor.e({
@@ -92,16 +99,18 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
             b: i
           };
         })
-      } : {}) : {
-        k: common_assets._imports_0$1,
-        l: common_vendor.o(goAddPet)
+      } : {}, {
+        k: common_vendor.o(goPetDetail)
+      }) : {
+        l: common_assets._imports_0$1,
+        m: common_vendor.o(goAddPet)
       }, {
-        m: common_assets._imports_2$1,
-        n: common_vendor.o(($event) => goToRecord("calendar")),
-        o: common_assets._imports_3,
-        p: common_vendor.o(($event) => goToRecord("stats")),
-        q: common_assets._imports_4,
-        r: common_assets._imports_5
+        n: common_assets._imports_2$1,
+        o: common_vendor.o(($event) => goToRecord("calendar")),
+        p: common_assets._imports_3,
+        q: common_vendor.o(($event) => goToRecord("stats")),
+        r: common_assets._imports_4,
+        s: common_assets._imports_5
       });
     };
   }

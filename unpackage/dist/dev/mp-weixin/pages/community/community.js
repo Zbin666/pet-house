@@ -173,7 +173,7 @@ const _sfc_main = {
         }),
         r: common_assets._imports_0$5,
         s: common_assets._imports_1$2,
-        t: common_assets._imports_2$4
+        t: common_assets._imports_2$2
       } : {}, {
         v: topTab.value === "science"
       }, topTab.value === "science" ? {
@@ -210,7 +210,7 @@ const _sfc_main = {
       } : {}, {
         z: topTab.value !== "science"
       }, topTab.value !== "science" ? {
-        A: common_assets._imports_2$2,
+        A: common_assets._imports_3$1,
         B: common_vendor.o(goToCreate)
       } : {}, {
         C: common_vendor.s(dynamicTopPadding.value)

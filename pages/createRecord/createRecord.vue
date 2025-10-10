@@ -58,6 +58,7 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import CalendarSelector from '@/components/CalendarSelector.vue'
+import { api } from '@/utils/api.js'
 
 const now = new Date()
 const yyyy = now.getFullYear()
@@ -67,16 +68,24 @@ const hh = String(now.getHours()).padStart(2, '0')
 const mi = String(now.getMinutes()).padStart(2, '0')
 
 const content = ref('')
-const types = ref(['日常提醒', '洗护提醒', '清洁提醒', '用药提醒'])
+const types = ref(['日常提醒', '洗护提醒',  '疫苗提醒' , '用药提醒'])
 const typeIndex = ref(0)
 const time = ref(`${hh}:${mi}`)
 const selectedDates = ref([`${yyyy}-${mm}-${dd}`])
 const showCal = ref(false)
 const tempDates = ref([])
+const pets = ref([])
+const selectedPetId = ref('')
 
-onLoad(() => {
+onLoad(async () => {
     uni.setNavigationBarTitle({ title: '添加提醒' })
     uni.setNavigationBarColor({ frontColor: '#000000', backgroundColor: '#fff1a8' })
+    try {
+        const res = await api.getPets()
+        const list = Array.isArray(res) ? res : (res.data || [])
+        pets.value = list
+        if (pets.value.length > 0) selectedPetId.value = pets.value[0].id
+    } catch (e) { pets.value = [] }
 })
 
 const currentType = computed(() => types.value[typeIndex.value])
@@ -92,17 +101,50 @@ function onTimeChange(e) { time.value = e.detail.value }
 function openCalendar() { tempDates.value = [...selectedDates.value]; showCal.value = true }
 function closeCalendar() { showCal.value = false }
 function confirmCalendar() { selectedDates.value = [...tempDates.value]; showCal.value = false }
-function submit() {
+async function submit() {
+    if (!selectedDates.value || selectedDates.value.length === 0) {
+        uni.showToast({ title: '请选择日期', icon: 'none' })
+        return
+    }
+    if (!selectedPetId.value) {
+        uni.showToast({ title: '请先创建宠物', icon: 'none' })
+        return
+    }
+    const uiType = currentType.value
+    const subType = uiType === '用药提醒' ? 'medicine' : (uiType === '疫苗提醒' ? 'vaccine' : (uiType === '洗护提醒' ? 'wash' : 'custom'))
     try {
-        uni.setStorageSync('lastReminderDraft', {
-            content: content.value,
-            type: currentType.value,
-            time: time.value,
-            dates: selectedDates.value
+        uni.showLoading({ title: '保存中...' })
+        const tasks = selectedDates.value.map(d => {
+            const [hh, mm] = (time.value || '08:00').split(':').map(n => parseInt(n, 10))
+            const [y, m, day] = d.split('-').map(n => parseInt(n, 10))
+            const fire = new Date(y, (m - 1), day, hh || 0, mm || 0, 0, 0)
+            return api.createSubscription({
+                petId: selectedPetId.value,
+                type: subType,
+                fireAt: fire.toISOString(),
+                title: content.value?.trim() ? content.value.trim().slice(0, 40) : undefined,
+                content: content.value?.trim() || undefined
+            })
         })
-    } catch (e) { }
-    uni.showToast({ title: '已保存', icon: 'success' })
-    setTimeout(() => { uni.navigateBack() }, 300)
+        await Promise.all(tasks)
+        try {
+            uni.setStorageSync('lastReminderDraft', {
+                content: content.value,
+                type: currentType.value,
+                time: time.value,
+                dates: selectedDates.value
+            })
+        } catch (e) { }
+        uni.hideLoading()
+        uni.showToast({ title: '提醒已创建', icon: 'success' })
+        setTimeout(() => { 
+            uni.setStorageSync('recordTab', 'stats')
+            uni.navigateBack() 
+        }, 500)
+    } catch (e) {
+        uni.hideLoading()
+        uni.showToast({ title: '创建失败', icon: 'none' })
+    }
 }
 </script>
 

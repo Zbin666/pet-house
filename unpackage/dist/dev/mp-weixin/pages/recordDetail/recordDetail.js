@@ -1,6 +1,8 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const common_assets = require("../../common/assets.js");
+const utils_upload = require("../../utils/upload.js");
+const utils_api = require("../../utils/api.js");
 const _sfc_main = {
   __name: "recordDetail",
   setup(__props) {
@@ -15,16 +17,13 @@ const _sfc_main = {
       medicine: { key: "medicine", title: "用药", icon: "/static/record/medicine.png" }
     };
     const currentRecord = common_vendor.ref({});
+    const currentFrontType = common_vendor.ref("eating");
     const recordData = common_vendor.ref({});
     const editMode = common_vendor.ref(false);
     const form = common_vendor.reactive({});
     const showModal = common_vendor.ref(false);
     const newRecord = common_vendor.reactive({});
-    const petList = common_vendor.ref([
-      { id: 1, name: "火火", avatar: "/static/logo.png" },
-      { id: 2, name: "水水", avatar: "/static/logo.png" },
-      { id: 3, name: "土土", avatar: "/static/logo.png" }
-    ]);
+    const petList = common_vendor.ref([]);
     const selectedPets = common_vendor.ref([]);
     const showAllPets = common_vendor.ref(false);
     const currentIndex = common_vendor.ref(0);
@@ -50,177 +49,111 @@ const _sfc_main = {
       const configIndex = index % imageConfig.length;
       return imageConfig[configIndex].top === "/static/record/up-dog_1.png";
     }
-    common_vendor.onLoad((query) => {
+    common_vendor.onLoad(async (query) => {
       common_vendor.index.setNavigationBarTitle({ title: "记录详情" });
       common_vendor.index.setNavigationBarColor({ frontColor: "#000000", backgroundColor: "#fff1a8" });
-      initRecordList(query);
+      await loadPets();
+      await initRecordList(query);
     });
-    function initRecordList(query) {
+    common_vendor.onShow(async () => {
+      await initRecordList({ type: currentFrontType.value });
+    });
+    const onRecordsChanged = async () => {
+      await initRecordList({ type: currentFrontType.value });
+    };
+    common_vendor.index.$on && common_vendor.index.$on("records:changed", onRecordsChanged);
+    common_vendor.onUnmounted(() => {
+      common_vendor.index.$off && common_vendor.index.$off("records:changed", onRecordsChanged);
+    });
+    async function initRecordList(query) {
       const targetType = query.type || "eating";
-      const getRecordsByType = (type) => {
-        const baseTime = /* @__PURE__ */ new Date();
-        const records = [];
-        switch (type) {
-          case "eating":
-            records.push(
-              {
-                type: recordTypes.eating,
-                data: {
-                  time: baseTime,
-                  petName: "火火",
-                  petAvatar: "/static/logo.png",
-                  foodType: "猫粮",
-                  weight: 50,
-                  note: "今天食欲很好"
-                }
-              },
-              {
-                type: recordTypes.eating,
-                data: {
-                  time: new Date(baseTime.getTime() - 24 * 60 * 60 * 1e3),
-                  petName: "火火",
-                  petAvatar: "/static/logo.png",
-                  foodType: "罐头",
-                  weight: 80,
-                  note: "特别爱吃这个口味"
-                }
-              },
-              {
-                type: recordTypes.eating,
-                data: {
-                  time: new Date(baseTime.getTime() - 2 * 24 * 60 * 60 * 1e3),
-                  petName: "水水",
-                  petAvatar: "/static/logo.png",
-                  foodType: "湿粮",
-                  weight: 60,
-                  note: "新尝试的湿粮"
-                }
-              }
-            );
-            break;
-          case "drinking":
-            records.push(
-              {
-                type: recordTypes.drinking,
-                data: {
-                  time: baseTime,
-                  petName: "水水",
-                  petAvatar: "/static/logo.png",
-                  amount: 200,
-                  method: "水碗",
-                  note: "正常饮水"
-                }
-              },
-              {
-                type: recordTypes.drinking,
-                data: {
-                  time: new Date(baseTime.getTime() - 24 * 60 * 60 * 1e3),
-                  petName: "火火",
-                  petAvatar: "/static/logo.png",
-                  amount: 150,
-                  method: "自动饮水机",
-                  note: "喜欢流动的水"
-                }
-              }
-            );
-            break;
-          case "weight":
-            records.push(
-              {
-                type: recordTypes.weight,
-                data: {
-                  time: baseTime,
-                  petName: "土土",
-                  petAvatar: "/static/logo.png",
-                  weight: 4.2,
-                  method: "电子秤",
-                  note: "体重稳定"
-                }
-              },
-              {
-                type: recordTypes.weight,
-                data: {
-                  time: new Date(baseTime.getTime() - 7 * 24 * 60 * 60 * 1e3),
-                  petName: "土土",
-                  petAvatar: "/static/logo.png",
-                  weight: 4.1,
-                  method: "电子秤",
-                  note: "略有增长"
-                }
-              }
-            );
-            break;
-          case "washing":
-            records.push(
-              {
-                type: recordTypes.washing,
-                data: {
-                  time: baseTime,
-                  petName: "火火",
-                  petAvatar: "/static/logo.png",
-                  washType: "洗澡",
-                  product: "宠物专用洗发水",
-                  note: "洗得很干净"
-                }
-              },
-              {
-                type: recordTypes.washing,
-                data: {
-                  time: new Date(baseTime.getTime() - 14 * 24 * 60 * 60 * 1e3),
-                  petName: "水水",
-                  petAvatar: "/static/logo.png",
-                  washType: "梳毛",
-                  product: "宠物梳子",
-                  note: "梳理得很顺滑"
-                }
-              }
-            );
-            break;
-          case "noting":
-            records.push(
-              {
-                type: recordTypes.noting,
-                data: {
-                  time: baseTime,
-                  petName: "水水",
-                  petAvatar: "/static/logo.png",
-                  content: "今天火火特别活泼，在客厅里跑来跑去，还学会了新的小把戏！",
-                  photos: ["/static/logo.png", "/static/logo.png"]
-                }
-              },
-              {
-                type: recordTypes.noting,
-                data: {
-                  time: new Date(baseTime.getTime() - 24 * 60 * 60 * 1e3),
-                  petName: "土土",
-                  petAvatar: "/static/logo.png",
-                  content: "土土今天很安静，一直在窗边晒太阳，看起来很享受。",
-                  photos: ["/static/logo.png"]
-                }
-              }
-            );
-            break;
-          default:
-            records.push({
-              type: recordTypes.eating,
-              data: {
-                time: baseTime,
-                petName: "火火",
-                petAvatar: "/static/logo.png",
-                foodType: "猫粮",
-                weight: 50,
-                note: "今天食欲很好"
-              }
-            });
+      currentFrontType.value = targetType;
+      const typeMap = { eating: "feed", drinking: "water", weight: "weight", washing: "clean", noting: "diary", shit: "diary", abnormal: "diary", medicine: "medicine" };
+      const backendType = typeMap[targetType] || "diary";
+      try {
+        const params = { type: backendType, page: 1, limit: 20 };
+        if (query.startDate && query.endDate) {
+          params.startDate = query.startDate;
+          params.endDate = query.endDate;
         }
-        return records;
+        const res = await utils_api.api.getRecords(params);
+        const list = Array.isArray(res) ? res : res.records || res.data || res.list || [];
+        let mapped = list.map((r) => {
+          const pet = petList.value.find((p) => p.id === r.petId);
+          const rawPayload = r == null ? void 0 : r.payload;
+          let payloadObj = {};
+          if (rawPayload && typeof rawPayload === "string") {
+            try {
+              payloadObj = JSON.parse(rawPayload);
+            } catch (err) {
+              common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:622", "记录 payload 解析失败(字符串非 JSON):", r == null ? void 0 : r.id, rawPayload);
+              payloadObj = {};
+            }
+          } else if (rawPayload && typeof rawPayload === "object") {
+            payloadObj = rawPayload;
+          }
+          const frontType = determineFrontType({ ...r, payload: payloadObj }, targetType);
+          const typeConf = recordTypes[frontType] || recordTypes.noting;
+          return {
+            id: r.id,
+            type: typeConf,
+            data: {
+              time: r.time,
+              petName: (pet == null ? void 0 : pet.name) || "",
+              petAvatar: (pet == null ? void 0 : pet.avatarUrl) || "/static/logo.png",
+              // 透传后端 payload（已保证为对象）
+              ...payloadObj
+            }
+          };
+        });
+        if (backendType === "diary") {
+          mapped = mapped.filter((item) => {
+            var _a;
+            return ((_a = item.type) == null ? void 0 : _a.key) === targetType;
+          });
+        }
+        recordList.value = mapped;
+        currentIndex.value = 0;
+        if (recordList.value.length > 0) {
+          const currentRecordData = recordList.value[currentIndex.value];
+          currentRecord.value = currentRecordData.type;
+          recordData.value = currentRecordData.data;
+        } else {
+          currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating;
+          recordData.value = {};
+        }
+      } catch (e) {
+        common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:658", "加载记录失败:", e);
+        recordList.value = [];
+        currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating;
+        recordData.value = {};
+      }
+    }
+    function determineFrontType(r, fallbackFrontType) {
+      if ((r == null ? void 0 : r.type) === "diary") {
+        const p = (r == null ? void 0 : r.payload) || {};
+        if (p.status || p.color)
+          return "shit";
+        if (p.abnormalType || p.severity)
+          return "abnormal";
+        return "noting";
+      }
+      const reverse = {
+        feed: "eating",
+        water: "drinking",
+        weight: "weight",
+        clean: "washing",
+        medicine: "medicine"
       };
-      recordList.value = getRecordsByType(targetType);
-      currentIndex.value = 0;
-      if (recordList.value.length > 0) {
-        const currentRecordData = recordList.value[currentIndex.value];
-        currentRecord.value = currentRecordData.type;
-        recordData.value = currentRecordData.data;
+      return reverse[r == null ? void 0 : r.type] || fallbackFrontType || "noting";
+    }
+    async function loadPets() {
+      try {
+        const res = await utils_api.api.getPets();
+        const list = Array.isArray(res) ? res : res.data || [];
+        petList.value = list.map((p) => ({ id: p.id, name: p.name, avatar: p.avatarUrl || "/static/logo.png", avatarUrl: p.avatarUrl }));
+      } catch (e) {
+        petList.value = [];
       }
     }
     function formatTime(time) {
@@ -250,6 +183,9 @@ const _sfc_main = {
       if (currentPet) {
         form.petId = currentPet.id;
       }
+      if (!Array.isArray(form.photos)) {
+        form.photos = Array.isArray(recordData.value.photos) ? [...recordData.value.photos] : [];
+      }
     }
     function cancelEdit() {
       editMode.value = false;
@@ -259,16 +195,70 @@ const _sfc_main = {
       form.petName = pet.name;
       form.petAvatar = pet.avatar;
     }
+    async function selectEditNotePhotos() {
+      try {
+        const chosen = await new Promise((resolve, reject) => {
+          common_vendor.index.chooseImage({ count: 9, sizeType: ["compressed"], success: resolve, fail: reject });
+        });
+        const tempPaths = (chosen == null ? void 0 : chosen.tempFilePaths) || [];
+        const urls = await utils_upload.uploadImages(tempPaths);
+        if (!form.photos)
+          form.photos = [];
+        form.photos = [...form.photos, ...urls].slice(0, 9);
+      } catch (e) {
+        common_vendor.index.showToast({ title: "选择图片失败", icon: "none" });
+      }
+    }
+    function removeEditNotePhoto(index) {
+      if (!form.photos)
+        return;
+      common_vendor.index.showModal({
+        title: "删除照片",
+        content: "确定要删除这张照片吗？",
+        confirmText: "删除",
+        cancelText: "取消",
+        confirmColor: "#ff4757",
+        success: (res) => {
+          if (res.confirm) {
+            form.photos.splice(index, 1);
+          }
+        }
+      });
+    }
     function saveEdit() {
       if (recordList.value.length > 0) {
         Object.assign(recordList.value[currentIndex.value].data, form);
         recordData.value = recordList.value[currentIndex.value].data;
+        const current = recordList.value[currentIndex.value];
+        if (current.id) {
+          try {
+            const key = current.type.key;
+            const payload = (() => {
+              if (key === "noting")
+                return { content: recordData.value.content, photos: recordData.value.photos || [] };
+              if (key === "eating")
+                return { foodType: recordData.value.foodType, weight: recordData.value.weight, note: recordData.value.note };
+              if (key === "drinking")
+                return { amount: recordData.value.amount, method: recordData.value.method, note: recordData.value.note };
+              if (key === "weight")
+                return { weight: recordData.value.weight, method: recordData.value.method, note: recordData.value.note };
+              if (key === "washing")
+                return { washType: recordData.value.washType, product: recordData.value.product, note: recordData.value.note };
+              if (key === "shit")
+                return { status: recordData.value.status, color: recordData.value.color, note: recordData.value.note };
+              if (key === "abnormal")
+                return { abnormalType: recordData.value.abnormalType, severity: recordData.value.severity, description: recordData.value.description };
+              if (key === "medicine")
+                return { medicineName: recordData.value.medicineName, dosage: recordData.value.dosage, medicineTime: recordData.value.medicineTime, note: recordData.value.note };
+              return {};
+            })();
+            utils_api.api.updateRecord(current.id, { payload });
+          } catch (e) {
+          }
+        }
       }
       editMode.value = false;
-      common_vendor.index.showToast({
-        title: "保存成功",
-        icon: "success"
-      });
+      common_vendor.index.showToast({ title: "保存成功", icon: "success" });
     }
     function deleteRecord() {
       common_vendor.index.showModal({
@@ -313,28 +303,115 @@ const _sfc_main = {
       }
       newRecord.selectedPets = selectedPets.value.map((index2) => petList.value[index2]);
     }
-    function toggleExpand() {
-      showAllPets.value = !showAllPets.value;
-    }
     function showAddModal() {
+      var _a, _b;
       Object.keys(newRecord).forEach((key) => delete newRecord[key]);
       selectedPets.value = [];
       showAllPets.value = false;
+      if (!currentRecord.value || !currentRecord.value.key) {
+        const slideType = (_b = (_a = recordList.value[currentIndex.value]) == null ? void 0 : _a.type) == null ? void 0 : _b.key;
+        currentRecord.value = recordTypes[slideType] || recordTypes[currentFrontType.value] || recordTypes.eating;
+      }
       showModal.value = true;
     }
     function hideAddModal() {
       showModal.value = false;
     }
-    function saveNewRecord() {
-      common_vendor.index.showToast({
-        title: "记录已保存",
-        icon: "success"
+    async function selectNotePhotos() {
+      try {
+        const chosen = await new Promise((resolve, reject) => {
+          common_vendor.index.chooseImage({
+            count: 9,
+            sizeType: ["compressed"],
+            success: resolve,
+            fail: reject
+          });
+        });
+        const tempPaths = (chosen == null ? void 0 : chosen.tempFilePaths) || [];
+        const urls = await utils_upload.uploadImages(tempPaths);
+        if (!newRecord.photos)
+          newRecord.photos = [];
+        newRecord.photos = [...newRecord.photos, ...urls].slice(0, 9);
+      } catch (e) {
+        common_vendor.index.showToast({ title: "选择图片失败", icon: "none" });
+      }
+    }
+    function removeNotePhoto(index) {
+      if (!newRecord.photos)
+        return;
+      common_vendor.index.showModal({
+        title: "删除照片",
+        content: "确定要删除这张照片吗？",
+        confirmText: "删除",
+        cancelText: "取消",
+        confirmColor: "#ff4757",
+        success: (res) => {
+          if (res.confirm) {
+            newRecord.photos.splice(index, 1);
+          }
+        }
       });
-      hideAddModal();
+    }
+    function previewPhoto(list, index) {
+      if (!Array.isArray(list) || list.length === 0)
+        return;
+      common_vendor.index.previewImage({
+        current: index,
+        urls: list
+      });
+    }
+    async function saveNewRecord() {
+      if (selectedPets.value.length === 0) {
+        common_vendor.index.showToast({ title: "请选择宠物", icon: "none" });
+        return;
+      }
+      const typeMap = { eating: "feed", drinking: "water", weight: "weight", washing: "clean", noting: "diary", shit: "diary", abnormal: "diary", medicine: "medicine" };
+      const payloadBuilder = {
+        eating: () => ({ foodType: newRecord.foodType, weight: newRecord.weight, note: newRecord.note }),
+        drinking: () => ({ amount: newRecord.amount, method: newRecord.method, note: newRecord.note }),
+        weight: () => ({ weight: newRecord.weight, method: newRecord.method, note: newRecord.note }),
+        washing: () => ({ washType: newRecord.washType, product: newRecord.product, note: newRecord.note }),
+        noting: () => ({ content: newRecord.content, photos: newRecord.photos || [] }),
+        shit: () => ({ status: newRecord.status, color: newRecord.color, note: newRecord.note }),
+        abnormal: () => ({ abnormalType: newRecord.abnormalType, severity: newRecord.severity, description: newRecord.description }),
+        medicine: () => ({ medicineName: newRecord.medicineName, dosage: newRecord.dosage, medicineTime: newRecord.medicineTime, note: newRecord.note })
+      };
+      const frontKey = currentRecord.value.key;
+      const backendType = typeMap[frontKey] || "diary";
+      const payload = payloadBuilder[frontKey] ? payloadBuilder[frontKey]() : payloadBuilder["noting"]();
+      try {
+        const createdDisplayItems = [];
+        for (const idx of selectedPets.value) {
+          const pet = petList.value[idx];
+          const created = await utils_api.api.createRecord({ petId: pet.id, type: backendType, payload, time: (/* @__PURE__ */ new Date()).toISOString() });
+          createdDisplayItems.push({
+            type: recordTypes[frontKey] || recordTypes.noting,
+            data: {
+              time: (created == null ? void 0 : created.time) || (/* @__PURE__ */ new Date()).toISOString(),
+              petName: pet.name,
+              petAvatar: pet.avatarUrl || pet.avatar || "/static/logo.png",
+              ...payload || {}
+            }
+          });
+        }
+        if (createdDisplayItems.length > 0) {
+          recordList.value = [...createdDisplayItems, ...recordList.value];
+          currentIndex.value = 0;
+          currentRecord.value = createdDisplayItems[0].type;
+          recordData.value = createdDisplayItems[0].data;
+        }
+        common_vendor.index.showToast({ title: "记录已保存", icon: "success" });
+        hideAddModal();
+        await initRecordList({ type: frontKey });
+      } catch (e) {
+        common_vendor.index.showToast({ title: "保存失败", icon: "none" });
+      }
     }
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: common_vendor.f(recordList.value, (record, index, i0) => {
+        a: recordList.value.length > 0
+      }, recordList.value.length > 0 ? {
+        b: common_vendor.f(recordList.value, (record, index, i0) => {
           return common_vendor.e({
             a: isDogTop(index) ? 1 : "",
             b: getTopImage(index),
@@ -475,91 +552,107 @@ const _sfc_main = {
             aA: form.content,
             aB: common_vendor.o(($event) => form.content = $event.detail.value, index)
           }, {
-            aC: record.data.photos && record.data.photos.length
-          }, record.data.photos && record.data.photos.length ? {
-            aD: common_vendor.f(record.data.photos, (photo, i, i1) => {
+            aC: editMode.value || record.data.photos && record.data.photos.length
+          }, editMode.value || record.data.photos && record.data.photos.length ? common_vendor.e({
+            aD: !editMode.value
+          }, !editMode.value ? {
+            aE: common_vendor.f(record.data.photos, (photo, i, i1) => {
               return {
                 a: i,
-                b: photo
+                b: photo,
+                c: common_vendor.o(($event) => previewPhoto(record.data.photos, i), i)
               };
             })
-          } : {}) : record.type.key === "abnormal" ? common_vendor.e({
-            aF: !editMode.value
-          }, !editMode.value ? {
-            aG: common_vendor.t(record.data.abnormalType || "未填写")
           } : {
-            aH: form.abnormalType,
-            aI: common_vendor.o(($event) => form.abnormalType = $event.detail.value, index)
+            aF: common_vendor.f(form.photos || [], (p, i, i1) => {
+              return {
+                a: p,
+                b: common_vendor.o(($event) => removeEditNotePhoto(i), i),
+                c: i,
+                d: common_vendor.o(($event) => previewPhoto(form.photos || [], i), i)
+              };
+            }),
+            aG: common_vendor.o(selectEditNotePhotos, index)
+          }) : {}) : record.type.key === "abnormal" ? common_vendor.e({
+            aI: !editMode.value
+          }, !editMode.value ? {
+            aJ: common_vendor.t(record.data.abnormalType || "未填写")
+          } : {
+            aK: form.abnormalType,
+            aL: common_vendor.o(($event) => form.abnormalType = $event.detail.value, index)
           }, {
-            aJ: !editMode.value
+            aM: !editMode.value
           }, !editMode.value ? {
-            aK: common_vendor.t(record.data.severity || "未填写")
+            aN: common_vendor.t(record.data.severity || "未填写")
           } : {
-            aL: form.severity,
-            aM: common_vendor.o(($event) => form.severity = $event.detail.value, index)
+            aO: form.severity,
+            aP: common_vendor.o(($event) => form.severity = $event.detail.value, index)
           }, {
-            aN: !editMode.value
+            aQ: !editMode.value
           }, !editMode.value ? {
-            aO: common_vendor.t(record.data.description || "无")
+            aR: common_vendor.t(record.data.description || "无")
           } : {
-            aP: form.description,
-            aQ: common_vendor.o(($event) => form.description = $event.detail.value, index)
+            aS: form.description,
+            aT: common_vendor.o(($event) => form.description = $event.detail.value, index)
           }) : record.type.key === "medicine" ? common_vendor.e({
-            aS: !editMode.value
+            aV: !editMode.value
           }, !editMode.value ? {
-            aT: common_vendor.t(record.data.medicineName || "未填写")
+            aW: common_vendor.t(record.data.medicineName || "未填写")
           } : {
-            aU: form.medicineName,
-            aV: common_vendor.o(($event) => form.medicineName = $event.detail.value, index)
+            aX: form.medicineName,
+            aY: common_vendor.o(($event) => form.medicineName = $event.detail.value, index)
           }, {
-            aW: !editMode.value
+            aZ: !editMode.value
           }, !editMode.value ? {
-            aX: common_vendor.t(record.data.dosage || "未填写")
+            ba: common_vendor.t(record.data.dosage || "未填写")
           } : {
-            aY: form.dosage,
-            aZ: common_vendor.o(($event) => form.dosage = $event.detail.value, index)
+            bb: form.dosage,
+            bc: common_vendor.o(($event) => form.dosage = $event.detail.value, index)
           }, {
-            ba: !editMode.value
+            bd: !editMode.value
           }, !editMode.value ? {
-            bb: common_vendor.t(record.data.medicineTime || "未填写")
+            be: common_vendor.t(record.data.medicineTime || "未填写")
           } : {
-            bc: form.medicineTime,
-            bd: common_vendor.o(($event) => form.medicineTime = $event.detail.value, index)
+            bf: form.medicineTime,
+            bg: common_vendor.o(($event) => form.medicineTime = $event.detail.value, index)
           }, {
-            be: !editMode.value
+            bh: !editMode.value
           }, !editMode.value ? {
-            bf: common_vendor.t(record.data.note || "无")
+            bi: common_vendor.t(record.data.note || "无")
           } : {
-            bg: form.note,
-            bh: common_vendor.o(($event) => form.note = $event.detail.value, index)
+            bj: form.note,
+            bk: common_vendor.o(($event) => form.note = $event.detail.value, index)
           }) : {}, {
             w: record.type.key === "drinking",
             J: record.type.key === "weight",
             W: record.type.key === "washing",
             aj: record.type.key === "shit",
             ax: record.type.key === "noting",
-            aE: record.type.key === "abnormal",
-            aR: record.type.key === "medicine"
+            aH: record.type.key === "abnormal",
+            aU: record.type.key === "medicine"
           }, !editMode.value ? {
-            bi: common_assets._imports_0$8,
-            bj: common_vendor.o(startEdit, index)
+            bl: common_assets._imports_0$8,
+            bm: common_vendor.o(startEdit, index)
           } : {
-            bk: common_vendor.o(cancelEdit, index),
-            bl: common_vendor.o(saveEdit, index)
+            bn: common_vendor.o(cancelEdit, index),
+            bo: common_vendor.o(saveEdit, index)
           }, !editMode.value ? {
-            bm: common_assets._imports_1$1,
-            bn: common_vendor.o(deleteRecord, index)
+            bp: common_assets._imports_1$1,
+            bq: common_vendor.o(deleteRecord, index)
           } : {}, {
-            bo: index
+            br: index
           });
         }),
-        b: !editMode.value,
         c: !editMode.value,
         d: !editMode.value,
-        e: editMode.value ? 1 : "",
-        f: currentIndex.value,
-        g: common_vendor.o(onSwiperChange),
-        h: common_vendor.f(recordList.value, (record, index, i0) => {
+        e: !editMode.value,
+        f: editMode.value ? 1 : "",
+        g: currentIndex.value,
+        h: common_vendor.o(onSwiperChange)
+      } : {}, {
+        i: recordList.value.length > 0
+      }, recordList.value.length > 0 ? {
+        j: common_vendor.f(recordList.value, (record, index, i0) => {
           return {
             a: index,
             b: common_vendor.n({
@@ -567,107 +660,115 @@ const _sfc_main = {
             }),
             c: common_vendor.o(($event) => goToSlide(index), index)
           };
-        }),
-        i: common_assets._imports_2$2,
-        j: common_vendor.o(showAddModal),
-        k: isDogBottom(currentIndex.value) ? 1 : "",
-        l: getBottomImage(currentIndex.value),
-        m: showModal.value
+        })
+      } : {
+        k: common_assets._imports_2$4
+      }, {
+        l: common_assets._imports_3$1,
+        m: common_vendor.o(showAddModal),
+        n: recordList.value.length > 0
+      }, recordList.value.length > 0 ? {
+        o: isDogBottom(currentIndex.value) ? 1 : "",
+        p: getBottomImage(currentIndex.value)
+      } : {}, {
+        q: showModal.value
       }, showModal.value ? common_vendor.e({
-        n: common_vendor.t(currentRecord.value.title),
-        o: common_vendor.o(hideAddModal),
-        p: common_vendor.f(showAllPets.value ? petList.value : petList.value.slice(0, 2), (pet, index, i0) => {
+        r: common_vendor.t(currentRecord.value.title),
+        s: common_vendor.o(hideAddModal),
+        t: common_vendor.f(petList.value, (pet, index, i0) => {
           return common_vendor.e({
             a: pet.avatar,
             b: common_vendor.t(pet.name),
             c: selectedPets.value.includes(index)
           }, selectedPets.value.includes(index) ? {} : {}, {
             d: index,
-            e: common_vendor.n({
-              selected: selectedPets.value.includes(index)
-            }),
+            e: selectedPets.value.includes(index) ? 1 : "",
             f: common_vendor.o(($event) => togglePet(index), index)
           });
         }),
-        q: petList.value.length > 2
-      }, petList.value.length > 2 ? {
-        r: showAllPets.value ? 1 : "",
-        s: common_vendor.o(toggleExpand)
-      } : {}, {
-        t: currentRecord.value.key === "eating"
+        v: currentRecord.value.key === "eating"
       }, currentRecord.value.key === "eating" ? {
-        v: newRecord.foodType,
-        w: common_vendor.o(($event) => newRecord.foodType = $event.detail.value),
-        x: newRecord.weight,
-        y: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
+        w: newRecord.foodType,
+        x: common_vendor.o(($event) => newRecord.foodType = $event.detail.value),
+        y: newRecord.weight,
+        z: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
           number: true
         })),
-        z: newRecord.note,
-        A: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        A: newRecord.note,
+        B: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "drinking" ? {
-        C: newRecord.amount,
-        D: common_vendor.o(common_vendor.m(($event) => newRecord.amount = $event.detail.value, {
+        D: newRecord.amount,
+        E: common_vendor.o(common_vendor.m(($event) => newRecord.amount = $event.detail.value, {
           number: true
         })),
-        E: newRecord.method,
-        F: common_vendor.o(($event) => newRecord.method = $event.detail.value),
-        G: newRecord.note,
-        H: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        F: newRecord.method,
+        G: common_vendor.o(($event) => newRecord.method = $event.detail.value),
+        H: newRecord.note,
+        I: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "weight" ? {
-        J: newRecord.weight,
-        K: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
+        K: newRecord.weight,
+        L: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
           number: true
         })),
-        L: newRecord.method,
-        M: common_vendor.o(($event) => newRecord.method = $event.detail.value),
-        N: newRecord.note,
-        O: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        M: newRecord.method,
+        N: common_vendor.o(($event) => newRecord.method = $event.detail.value),
+        O: newRecord.note,
+        P: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "washing" ? {
-        Q: newRecord.washType,
-        R: common_vendor.o(($event) => newRecord.washType = $event.detail.value),
-        S: newRecord.product,
-        T: common_vendor.o(($event) => newRecord.product = $event.detail.value),
-        U: newRecord.note,
-        V: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        R: newRecord.washType,
+        S: common_vendor.o(($event) => newRecord.washType = $event.detail.value),
+        T: newRecord.product,
+        U: common_vendor.o(($event) => newRecord.product = $event.detail.value),
+        V: newRecord.note,
+        W: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "shit" ? {
-        X: newRecord.status,
-        Y: common_vendor.o(($event) => newRecord.status = $event.detail.value),
-        Z: newRecord.color,
-        aa: common_vendor.o(($event) => newRecord.color = $event.detail.value),
-        ab: newRecord.note,
-        ac: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        Y: newRecord.status,
+        Z: common_vendor.o(($event) => newRecord.status = $event.detail.value),
+        aa: newRecord.color,
+        ab: common_vendor.o(($event) => newRecord.color = $event.detail.value),
+        ac: newRecord.note,
+        ad: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "noting" ? {
-        ae: newRecord.content,
-        af: common_vendor.o(($event) => newRecord.content = $event.detail.value)
-      } : currentRecord.value.key === "abnormal" ? {
-        ah: newRecord.abnormalType,
-        ai: common_vendor.o(($event) => newRecord.abnormalType = $event.detail.value),
-        aj: newRecord.severity,
-        ak: common_vendor.o(($event) => newRecord.severity = $event.detail.value),
-        al: newRecord.description,
-        am: common_vendor.o(($event) => newRecord.description = $event.detail.value)
-      } : currentRecord.value.key === "medicine" ? {
-        ao: newRecord.medicineName,
-        ap: common_vendor.o(($event) => newRecord.medicineName = $event.detail.value),
-        aq: newRecord.dosage,
-        ar: common_vendor.o(($event) => newRecord.dosage = $event.detail.value),
-        as: newRecord.medicineTime,
-        at: common_vendor.o(($event) => newRecord.medicineTime = $event.detail.value),
-        av: newRecord.note,
-        aw: common_vendor.o(($event) => newRecord.note = $event.detail.value)
-      } : {}, {
-        B: currentRecord.value.key === "drinking",
-        I: currentRecord.value.key === "weight",
-        P: currentRecord.value.key === "washing",
-        W: currentRecord.value.key === "shit",
-        ad: currentRecord.value.key === "noting",
-        ag: currentRecord.value.key === "abnormal",
-        an: currentRecord.value.key === "medicine",
-        ax: common_vendor.o(hideAddModal),
-        ay: common_vendor.o(saveNewRecord),
-        az: common_vendor.o(() => {
+        af: newRecord.content,
+        ag: common_vendor.o(($event) => newRecord.content = $event.detail.value),
+        ah: common_vendor.f(newRecord.photos || [], (p, i, i0) => {
+          return {
+            a: p,
+            b: common_vendor.o(($event) => removeNotePhoto(i), i),
+            c: i,
+            d: common_vendor.o(($event) => previewPhoto(newRecord.photos || [], i), i)
+          };
         }),
-        aA: common_vendor.o(hideAddModal)
+        ai: common_vendor.o(selectNotePhotos)
+      } : currentRecord.value.key === "abnormal" ? {
+        ak: newRecord.abnormalType,
+        al: common_vendor.o(($event) => newRecord.abnormalType = $event.detail.value),
+        am: newRecord.severity,
+        an: common_vendor.o(($event) => newRecord.severity = $event.detail.value),
+        ao: newRecord.description,
+        ap: common_vendor.o(($event) => newRecord.description = $event.detail.value)
+      } : currentRecord.value.key === "medicine" ? {
+        ar: newRecord.medicineName,
+        as: common_vendor.o(($event) => newRecord.medicineName = $event.detail.value),
+        at: newRecord.dosage,
+        av: common_vendor.o(($event) => newRecord.dosage = $event.detail.value),
+        aw: newRecord.medicineTime,
+        ax: common_vendor.o(($event) => newRecord.medicineTime = $event.detail.value),
+        ay: newRecord.note,
+        az: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+      } : {}, {
+        C: currentRecord.value.key === "drinking",
+        J: currentRecord.value.key === "weight",
+        Q: currentRecord.value.key === "washing",
+        X: currentRecord.value.key === "shit",
+        ae: currentRecord.value.key === "noting",
+        aj: currentRecord.value.key === "abnormal",
+        aq: currentRecord.value.key === "medicine",
+        aA: common_vendor.o(hideAddModal),
+        aB: common_vendor.o(saveNewRecord),
+        aC: common_vendor.o(() => {
+        }),
+        aD: common_vendor.o(hideAddModal)
       }) : {});
     };
   }

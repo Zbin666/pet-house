@@ -6,7 +6,8 @@
 	padding-top: calc(40rpx + constant(safe-area-inset-top));
 	background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%);
 	position: relative;
-    overflow: hidden; /* 整页不滚动 */
+	overflow: hidden;
+	/* 整页不滚动 */
 }
 
 /* 装饰图标 */
@@ -44,7 +45,8 @@
     justify-content: flex-start;
     padding: 0 10rpx;
     box-sizing: border-box;
-    overflow: visible; /* 外层不滚动不裁切 */
+	overflow: visible;
+	/* 外层不滚动不裁切 */
     position: relative;
 }
 .sheet.data-v-7889064e {
@@ -55,7 +57,8 @@
 
 /* 编辑模式下限制卡片最大宽度，避免视觉跳变过宽 */
 .sheet--edit.data-v-7889064e {
-    max-width: 590rpx; /* 可按需微调 580~620rpx */
+	max-width: 590rpx;
+	/* 可按需微调 580~620rpx */
 }
 .sheet-bg.data-v-7889064e {
 	position: absolute;
@@ -82,7 +85,8 @@
 	z-index: 1;
 	min-height: 600rpx;
 	box-sizing: border-box;
-    overflow: visible; /* 内容不滚动 */
+	overflow: visible;
+	/* 内容不滚动 */
 }
 
 /* 轮播指示器 */
@@ -92,6 +96,24 @@
 	align-items: center;
 	gap: 16rpx;
 	margin-top: 40rpx;
+}
+
+/* 空状态 */
+.empty.data-v-7889064e {
+	width: 100%;
+	min-height: 60vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 20rpx;
+}
+.empty-img.data-v-7889064e {
+	width: 380rpx;
+}
+.empty-text.data-v-7889064e {
+	color: #666;
+	font-size: 28rpx;
 }
 .indicator.data-v-7889064e {
 	width: 16rpx;
@@ -310,6 +332,58 @@
 	background: #fff;
 	font-size: 30rpx;
 }
+
+/* 记事-图片上传样式 */
+.photo-uploader.data-v-7889064e {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12rpx;
+}
+.photo-thumb.data-v-7889064e {
+	position: relative;
+	width: 140rpx;
+	height: 140rpx;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 12rpx;
+	overflow: hidden;
+	background: #f6f6f6;
+}
+.photo-thumb-img.data-v-7889064e {
+	width: 100%;
+	height: 100%;
+}
+.photo-remove.data-v-7889064e {
+	position: absolute;
+	top: 4rpx;
+	right: 4rpx;
+	width: 36rpx;
+	height: 36rpx;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 28rpx;
+}
+.photo-add.data-v-7889064e {
+	width: 140rpx;
+	height: 140rpx;
+	border: 4rpx dashed #2c2c2c;
+	border-radius: 12rpx;
+	color: #666;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 48rpx;
+	background: #fff;
+}
+.uploader-hint.data-v-7889064e {
+	display: block;
+	margin-top: 8rpx;
+	color: #999;
+	font-size: 22rpx;
+}
 .photo-gallery.data-v-7889064e {
 	display: flex;
 	gap: 12rpx;
@@ -347,7 +421,8 @@
     width: 300rpx;
     z-index: 5;
     opacity: 0.9;
-    pointer-events: none; /* 不阻挡点击 */
+	pointer-events: none;
+	/* 不阻挡点击 */
 }
 .bottom-cat.bottom-cat--dog.data-v-7889064e {
     width: 220rpx;
@@ -399,6 +474,8 @@
 }
 .modal-body.data-v-7889064e {
 	padding: 28rpx;
+	max-height: 60vh;
+	overflow-y: auto;
 }
 .record-type-list.data-v-7889064e {
 	display: grid;
@@ -532,4 +609,3 @@
 	padding-top: 24rpx;
 	border-top: 2rpx solid #e9e9e9;
 }
-	       

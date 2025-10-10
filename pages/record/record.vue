@@ -81,8 +81,6 @@
 								:value="opt.value" @input="setValue(opt.key, $event.detail.value)" />
 							<text class="unit">{{ opt.unit }}</text>
 						</view>
-						<image v-else-if="opt.key === 'noting'" class="camera-icon" src="/static/record/takePhoto.png"
-							mode="aspectFit" />
 						<text v-else class="arrow">›</text>
 					</view>
 				</view>
@@ -90,7 +88,7 @@
 		</view>
 
 		<!-- legend (only for 提醒 tab) -->
-		<view v-if="activeTab === 'stats'" class="legend">
+        <view v-if="activeTab === 'stats'" class="legend">
 			<view class="lg-item">
 				<view class="lg-dot d1"></view><text>日常提醒</text>
 			</view>
@@ -98,7 +96,7 @@
 				<view class="lg-dot d2"></view><text>洗护提醒</text>
 			</view>
 			<view class="lg-item">
-				<view class="lg-dot d3"></view><text>清洁提醒</text>
+                <view class="lg-dot d3"></view><text>疫苗提醒</text>
 			</view>
 			<view class="lg-item">
 				<view class="lg-dot d4"></view><text>用药提醒</text>
@@ -108,9 +106,9 @@
 		<!-- stats list -->
 		<view v-if="activeTab === 'stats' && reminders.length" class="section">
 			<view class="rem-list">
-				<view v-for="r in reminders" :key="r.id" :class="['rem-item', { done: r.done, deleting: r.deleting }]"
+                <view v-for="r in reminders" :key="r.id" :class="['rem-item', { done: r.done, deleting: r.deleting }]"
 					@longpress="startDelete(r.id)" @tap="handleItemTap(r.id)">
-					<view :class="['rem-color', r.type]"></view>
+                    <view :class="['rem-color', r.typeClass]"></view>
 					<view class="rem-content">
 						<text class="rem-title">{{ r.title }}</text>
 						<text class="rem-time">{{ r.time }}</text>
@@ -131,16 +129,17 @@
 		</view>
 
 		<!-- stats empty -->
-		<view v-else-if="activeTab === 'stats'" class="section empty">
-			<image class="add-icon" src="/static/record/add.png" mode="widthFix" />
-			<text class="empty-text">还没有提醒哦～</text>
-		</view>
+        <view v-else-if="activeTab === 'stats'" class="section empty" @tap="goCreate()">
+            <image class="add-icon" src="/static/record/add.png" mode="widthFix" />
+            <text class="empty-text">还没有提醒哦～ 点我去创建</text>
+        </view>
 	</view>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { api } from '@/utils/api.js'
+import { onShow } from '@dcloudio/uni-app'
 
 const activeTab = ref('calendar')
 const weeks = ref(['M', 'T', 'W', 'T', 'F', 'S', 'S'])
@@ -158,6 +157,17 @@ onMounted(() => {
         // 清除存储的参数，避免下次进入时重复使用
         uni.removeStorageSync('recordTab')
     }
+    fetchRemindersForSelectedDay()
+})
+
+// 返回本页时刷新（从新增提醒返回后会触发）
+onShow(() => {
+    const storedTab = uni.getStorageSync('recordTab')
+    if (storedTab === 'calendar' || storedTab === 'stats') {
+        activeTab.value = storedTab
+        uni.removeStorageSync('recordTab')
+    }
+    fetchRemindersForSelectedDay()
 })
 
 const mockList = ref([
@@ -166,13 +176,8 @@ const mockList = ref([
 ])
 const stats = ref({ feed: 9, clean: 3, weight: 4.2 })
 
-// mock reminders for UI
-const reminders = ref([
-	{ id: 'r1', type: 't1', title: '给火火称体重', time: '08:00', done: true, deleting: false },
-	{ id: 'r2', type: 't2', title: '铲屎', time: '08:20', done: false, deleting: false },
-	{ id: 'r3', type: 't3', title: '更换新的猫砂', time: '11:00', done: false, deleting: false },
-	{ id: 'r4', type: 't4', title: '出门带火火去医院体检', time: '16:30', done: false, deleting: false },
-])
+// reminders from backend
+const reminders = ref([])
 
 const currentYear = computed(() => current.value.getFullYear())
 const currentMonth = computed(() => current.value.getMonth())
@@ -213,7 +218,14 @@ const weekDays = computed(() => {
 function goCreate() { uni.navigateTo({ url: '/pages/createRecord/createRecord' }) }
 
 function goRecordDetail(type) {
-	uni.navigateTo({ url: `/pages/recordDetail/recordDetail?type=${type}` })
+	const y = selected.value.y
+	const m = selected.value.m
+	const d = selected.value.d
+	const dayStart = new Date(y, m, d, 0, 0, 0)
+	const dayEnd = new Date(y, m, d, 23, 59, 59, 999)
+	const startDate = dayStart.toISOString()
+	const endDate = dayEnd.toISOString()
+	uni.navigateTo({ url: `/pages/recordDetail/recordDetail?type=${type}&startDate=${startDate}&endDate=${endDate}` })
 }
 
 const recordOptions = ref([
@@ -238,6 +250,8 @@ function changeMonth(delta) {
 function selectDay(d) {
 	if (!d.inMonth) return
 	selected.value = { y: currentYear.value, m: currentMonth.value, d: d.day }
+    // refresh reminders for selected day
+    fetchRemindersForSelectedDay()
 }
 
 function isSelected(d) {
@@ -247,6 +261,38 @@ function isSelected(d) {
 function toggleCollapse() {
 collapsed.value = !collapsed.value
 }
+
+// Fetch reminders for selected day
+async function fetchRemindersForSelectedDay() {
+    try {
+        const y = selected.value.y
+        const m = selected.value.m
+        const d = selected.value.d
+        const dayStart = new Date(y, m, d, 0, 0, 0).toISOString()
+        const dayEnd = new Date(y, m, d, 23, 59, 59, 999).toISOString()
+        const res = await api.getSubscriptions({ startDate: dayStart, endDate: dayEnd })
+        const list = Array.isArray(res) ? res : (res.subscriptions || res.data || [])
+        reminders.value = list.map(s => {
+            // 优先使用数据库中的 content，如果没有则使用默认分类
+            const title = s.content || (s.type === 'medicine' ? '用药提醒' : (s.type === 'vaccine' ? '疫苗提醒' : (s.type === 'wash' ? '洗护提醒' : '日常提醒')))
+            // 映射颜色条样式类（与 legend 一致：d2=洗护, d3=疫苗）
+            const typeClass = s.type === 'medicine' ? 't4' : (s.type === 'vaccine' ? 't3' : (s.type === 'wash' ? 't2' : 't1'))
+            return {
+                id: s.id,
+                type: s.type,
+                typeClass,
+                title,
+                time: (new Date(s.fireAt)).toTimeString().slice(0,5),
+                done: s.state === 'done',
+                deleting: false
+            }
+        })
+    } catch (e) {
+        reminders.value = []
+    }
+}
+
+
 
 
 function toggleReminder(id) {
@@ -289,32 +335,37 @@ function handleIconTap(id) {
 }
 
 // 删除提醒
-function deleteReminder(id) {
-	const reminder = reminders.value.find(r => r.id === id)
-	if (!reminder) return
-	
-	uni.showModal({
-		title: '确认删除',
-		content: `确定要删除提醒"${reminder.title}"吗？`,
-		confirmText: '删除',
-		cancelText: '取消',
-		confirmColor: '#ff4757',
-		success: (res) => {
-			if (res.confirm) {
-				const idx = reminders.value.findIndex(r => r.id === id)
-				if (idx !== -1) {
-					reminders.value.splice(idx, 1)
-					uni.showToast({
-						title: '删除成功',
-						icon: 'success'
-					})
-				}
-			} else {
-				// 取消删除，重置所有删除状态
-				reminders.value.forEach(r => r.deleting = false)
-			}
-		}
-	})
+async function deleteReminder(id) {
+    const reminder = reminders.value.find(r => r.id === id)
+    if (!reminder) return
+    
+    uni.showModal({
+        title: '确认删除',
+        content: `确定要删除提醒"${reminder.title}"吗？`,
+        confirmText: '删除',
+        cancelText: '取消',
+        confirmColor: '#ff4757',
+        success: async (res) => {
+            if (!res.confirm) {
+                // 取消删除，重置所有删除状态
+                reminders.value.forEach(r => r.deleting = false)
+                return
+            }
+            try {
+                await api.deleteSubscription(id)
+                // 删除成功后刷新当日提醒列表
+                await fetchRemindersForSelectedDay()
+                // 通知其它页面刷新
+                uni.$emit && uni.$emit('reminders:changed')
+                uni.showToast({ title: '删除成功', icon: 'success' })
+            } catch (e) {
+                uni.showToast({ title: '删除失败', icon: 'none' })
+            } finally {
+                // 无论成功失败都退出删除模式
+                reminders.value.forEach(r => r.deleting = false)
+            }
+        }
+    })
 }
 
 function setValue(key, value) {

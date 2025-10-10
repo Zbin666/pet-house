@@ -23,7 +23,7 @@
 		<!-- 在一起天数条幅 -->
 		<view class="ribbon">
 			<image class="ribbon-left" src="/static/user/dog.jpg"></image>
-			<text class="ribbon-text">在一起已经 90 天了</text>
+			<text class="ribbon-text">在一起已经 {{ maxTogetherDays }} 天了</text>
 		</view>
 
 		<!-- 我的宠物 -->
@@ -118,10 +118,8 @@ onShow(async () => {
 // 用户信息
 const userInfo = ref(null)
 const pets = ref([])
-const stats = ref({
-	feeds: 0,
-	likes: 0
-})
+const stats = ref({ feeds: 0, likes: 0 })
+const maxTogetherDays = ref(0)
 
 // 页面用户性别：'male' | 'female'
 const gender = ref('female')
@@ -138,15 +136,13 @@ async function loadData() {
 		const feedsResult = await api.getFeeds({ page: 1, limit: 1 })
 		stats.value.feeds = feedsResult.pagination?.total || 0
 		
-		// 计算在一起天数（优先 startTogether，其次 createdAt）
-		if (pets.value.length > 0) {
-			const firstPet = pets.value[0]
-			const start = firstPet.startTogether || firstPet.createdAt
-			if (start) {
-				const days = Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24))
-				stats.value.days = days
-			}
-		}
+		// 计算最长在一起天数：对所有宠物取 max(days)
+		maxTogetherDays.value = pets.value.reduce((max, p) => {
+			const start = p.startTogether || p.createdAt
+			if (!start) return max
+			const days = Math.max(1, Math.floor((Date.now() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)))
+			return Math.max(max, days)
+		}, 0)
 	} catch (error) {
 		console.error('加载数据失败:', error)
 	}

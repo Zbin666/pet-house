@@ -1,6 +1,7 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const common_assets = require("../../common/assets.js");
+const utils_api = require("../../utils/api.js");
 const _sfc_main = {
   __name: "record",
   setup(__props) {
@@ -15,18 +16,22 @@ const _sfc_main = {
         activeTab.value = storedTab;
         common_vendor.index.removeStorageSync("recordTab");
       }
+      fetchRemindersForSelectedDay();
+    });
+    common_vendor.onShow(() => {
+      const storedTab = common_vendor.index.getStorageSync("recordTab");
+      if (storedTab === "calendar" || storedTab === "stats") {
+        activeTab.value = storedTab;
+        common_vendor.index.removeStorageSync("recordTab");
+      }
+      fetchRemindersForSelectedDay();
     });
     common_vendor.ref([
       { id: "1", type: "喂食", time: "今天 08:00", desc: "鸡胸+猫粮 50g" },
       { id: "2", type: "饮水", time: "今天 10:30", desc: "自动饮水机补水" }
     ]);
     common_vendor.ref({ feed: 9, clean: 3, weight: 4.2 });
-    const reminders = common_vendor.ref([
-      { id: "r1", type: "t1", title: "给火火称体重", time: "08:00", done: true, deleting: false },
-      { id: "r2", type: "t2", title: "铲屎", time: "08:20", done: false, deleting: false },
-      { id: "r3", type: "t3", title: "更换新的猫砂", time: "11:00", done: false, deleting: false },
-      { id: "r4", type: "t4", title: "出门带火火去医院体检", time: "16:30", done: false, deleting: false }
-    ]);
+    const reminders = common_vendor.ref([]);
     const currentYear = common_vendor.computed(() => current.value.getFullYear());
     const currentMonth = common_vendor.computed(() => current.value.getMonth());
     const calendarDays = common_vendor.computed(() => {
@@ -66,7 +71,14 @@ const _sfc_main = {
       common_vendor.index.navigateTo({ url: "/pages/createRecord/createRecord" });
     }
     function goRecordDetail(type) {
-      common_vendor.index.navigateTo({ url: `/pages/recordDetail/recordDetail?type=${type}` });
+      const y = selected.value.y;
+      const m = selected.value.m;
+      const d = selected.value.d;
+      const dayStart = new Date(y, m, d, 0, 0, 0);
+      const dayEnd = new Date(y, m, d, 23, 59, 59, 999);
+      const startDate = dayStart.toISOString();
+      const endDate = dayEnd.toISOString();
+      common_vendor.index.navigateTo({ url: `/pages/recordDetail/recordDetail?type=${type}&startDate=${startDate}&endDate=${endDate}` });
     }
     const recordOptions = common_vendor.ref([
       { key: "eating", title: "饮食", icon: "/static/record/eating.png" },
@@ -88,12 +100,39 @@ const _sfc_main = {
       if (!d.inMonth)
         return;
       selected.value = { y: currentYear.value, m: currentMonth.value, d: d.day };
+      fetchRemindersForSelectedDay();
     }
     function isSelected(d) {
       return d.inMonth && d.day === selected.value.d && d.m === selected.value.m && d.y === selected.value.y;
     }
     function toggleCollapse() {
       collapsed.value = !collapsed.value;
+    }
+    async function fetchRemindersForSelectedDay() {
+      try {
+        const y = selected.value.y;
+        const m = selected.value.m;
+        const d = selected.value.d;
+        const dayStart = new Date(y, m, d, 0, 0, 0).toISOString();
+        const dayEnd = new Date(y, m, d, 23, 59, 59, 999).toISOString();
+        const res = await utils_api.api.getSubscriptions({ startDate: dayStart, endDate: dayEnd });
+        const list = Array.isArray(res) ? res : res.subscriptions || res.data || [];
+        reminders.value = list.map((s) => {
+          const title = s.content || (s.type === "medicine" ? "用药提醒" : s.type === "vaccine" ? "疫苗提醒" : s.type === "wash" ? "洗护提醒" : "日常提醒");
+          const typeClass = s.type === "medicine" ? "t4" : s.type === "vaccine" ? "t3" : s.type === "wash" ? "t2" : "t1";
+          return {
+            id: s.id,
+            type: s.type,
+            typeClass,
+            title,
+            time: new Date(s.fireAt).toTimeString().slice(0, 5),
+            done: s.state === "done",
+            deleting: false
+          };
+        });
+      } catch (e) {
+        reminders.value = [];
+      }
     }
     function toggleReminder(id) {
       const idx = reminders.value.findIndex((r) => r.id === id);
@@ -120,7 +159,7 @@ const _sfc_main = {
         toggleReminder(id);
       }
     }
-    function deleteReminder(id) {
+    async function deleteReminder(id) {
       const reminder = reminders.value.find((r) => r.id === id);
       if (!reminder)
         return;
@@ -130,17 +169,19 @@ const _sfc_main = {
         confirmText: "删除",
         cancelText: "取消",
         confirmColor: "#ff4757",
-        success: (res) => {
-          if (res.confirm) {
-            const idx = reminders.value.findIndex((r) => r.id === id);
-            if (idx !== -1) {
-              reminders.value.splice(idx, 1);
-              common_vendor.index.showToast({
-                title: "删除成功",
-                icon: "success"
-              });
-            }
-          } else {
+        success: async (res) => {
+          if (!res.confirm) {
+            reminders.value.forEach((r) => r.deleting = false);
+            return;
+          }
+          try {
+            await utils_api.api.deleteSubscription(id);
+            await fetchRemindersForSelectedDay();
+            common_vendor.index.$emit && common_vendor.index.$emit("reminders:changed");
+            common_vendor.index.showToast({ title: "删除成功", icon: "success" });
+          } catch (e) {
+            common_vendor.index.showToast({ title: "删除失败", icon: "none" });
+          } finally {
             reminders.value.forEach((r) => r.deleting = false);
           }
         }
@@ -227,12 +268,9 @@ const _sfc_main = {
           } : {}, {
             g: opt.key === "weight",
             j: common_vendor.t(opt.unit)
-          }) : opt.key === "noting" ? {
-            l: common_assets._imports_2$3
-          } : {}, {
-            k: opt.key === "noting",
-            m: opt.key,
-            n: common_vendor.o(($event) => opt.hasValue ? null : goRecordDetail(opt.key), opt.key)
+          }) : {}, {
+            k: opt.key,
+            l: common_vendor.o(($event) => opt.hasValue ? null : goRecordDetail(opt.key), opt.key)
           });
         })
       } : {}, {
@@ -242,14 +280,14 @@ const _sfc_main = {
       }, activeTab.value === "stats" && reminders.value.length ? {
         x: common_vendor.f(reminders.value, (r, k0, i0) => {
           return common_vendor.e({
-            a: common_vendor.n(r.type),
+            a: common_vendor.n(r.typeClass),
             b: common_vendor.t(r.title),
             c: common_vendor.t(r.time),
             d: r.deleting
           }, r.deleting ? {
             e: common_assets._imports_1$1
           } : r.done ? {
-            g: common_assets._imports_4$1
+            g: common_assets._imports_3$2
           } : {}, {
             f: r.done,
             h: r.done ? 1 : "",
@@ -266,10 +304,11 @@ const _sfc_main = {
       } : {}, {
         y: activeTab.value === "stats" && reminders.value.length
       }, activeTab.value === "stats" && reminders.value.length ? {
-        z: common_assets._imports_2$2,
+        z: common_assets._imports_3$1,
         A: common_vendor.o(($event) => goCreate())
       } : activeTab.value === "stats" ? {
-        C: common_assets._imports_2$2
+        C: common_assets._imports_3$1,
+        D: common_vendor.o(($event) => goCreate())
       } : {}, {
         B: activeTab.value === "stats"
       });

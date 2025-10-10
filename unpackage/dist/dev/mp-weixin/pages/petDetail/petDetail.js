@@ -89,6 +89,15 @@ const _sfc_main = {
         });
       }
     }
+    function preview(index) {
+      const list = editMode.value ? form.gallery : gallery.value;
+      if (!Array.isArray(list) || list.length === 0)
+        return;
+      common_vendor.index.previewImage({
+        current: index,
+        urls: list
+      });
+    }
     async function deletePet() {
       common_vendor.index.showModal({
         title: "确认删除",
@@ -209,11 +218,12 @@ const _sfc_main = {
         V: common_assets._imports_1$5,
         W: common_vendor.f(editMode.value ? form.gallery : gallery.value, (g, i, i0) => {
           return common_vendor.e({
-            a: g
+            a: g,
+            b: common_vendor.o(($event) => preview(i), "g" + i)
           }, editMode.value ? {
-            b: common_vendor.o(($event) => deletePhoto(i), "g" + i)
+            c: common_vendor.o(($event) => deletePhoto(i), "g" + i)
           } : {}, {
-            c: "g" + i
+            d: "g" + i
           });
         }),
         X: editMode.value,

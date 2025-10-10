@@ -1,6 +1,6 @@
 "use strict";
 const common_vendor = require("../common/vendor.js");
-const BASE_URL = "http://10.161.43.37:3000/api";
+const BASE_URL = "http://10.161.196.67:3000/api";
 const request = (options) => {
   return new Promise((resolve, reject) => {
     const token = common_vendor.index.getStorageSync("token");
@@ -110,6 +110,21 @@ const api = {
   }),
   deleteRecord: (id) => request({
     url: `/records/${id}`,
+    method: "DELETE"
+  }),
+  // 提醒（订阅）管理
+  getSubscriptions: (params) => request({
+    url: "/subscriptions",
+    method: "GET",
+    data: params
+  }),
+  createSubscription: (data) => request({
+    url: "/subscriptions",
+    method: "POST",
+    data
+  }),
+  deleteSubscription: (id) => request({
+    url: `/subscriptions/${id}`,
     method: "DELETE"
   }),
   // 媒体管理

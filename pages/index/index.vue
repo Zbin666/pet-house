@@ -13,7 +13,7 @@
 			<view class="pet-top-decoration">
 				<image class="decoration-img" src="/static/index/longCircle.svg" mode="widthFix" />
 			</view>
-			<view v-if="hasPet" class="pet-content">
+			<view v-if="hasPet" class="pet-content" @tap="goPetDetail">
 				<view class="pet-left">
 					<view class="pet-avatar">
 						<image v-if="currentPet?.avatarUrl" :src="currentPet.avatarUrl" class="pet-avatar-inner" mode="aspectFill" />
@@ -176,6 +176,13 @@ function goToRecord(tab) {
 	uni.setStorageSync('recordTab', tab)
 	// 跳转到 tabBar 页面
 	uni.switchTab({ url: '/pages/record/record' })
+}
+
+function goPetDetail() {
+  const pet = currentPet.value
+  if (!pet || !pet.id) return
+  const q = encodeURIComponent(JSON.stringify(pet))
+  uni.navigateTo({ url: `/pages/petDetail/petDetail?pet=${q}` })
 }
 </script>
 

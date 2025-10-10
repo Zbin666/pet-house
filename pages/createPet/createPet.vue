@@ -342,16 +342,7 @@ async function savePet() {
 		
 		uni.hideLoading()
 		
-		// 检查是否有图片上传
-		const hasUploadedImages = form.gallery && form.gallery.length > 0
-		const hasUploadedAvatar = !!form.avatar
-		
-		let message = '宠物创建成功'
-		if (hasUploadedAvatar || hasUploadedImages) {
-			message += '，图片已上传'
-		}
-		
-		uni.showToast({ title: message, icon: 'success' })
+		uni.showToast({ title: '宠物创建成功', icon: 'success' })
 		
 		setTimeout(() => {
 			uni.navigateBack()

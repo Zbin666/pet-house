@@ -166,19 +166,13 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
         common_vendor.index.hideLoading();
-        const hasUploadedImages = form.gallery && form.gallery.length > 0;
-        const hasUploadedAvatar = !!form.avatar;
-        let message = "宠物创建成功";
-        if (hasUploadedAvatar || hasUploadedImages) {
-          message += "，图片已上传";
-        }
-        common_vendor.index.showToast({ title: message, icon: "success" });
+        common_vendor.index.showToast({ title: "宠物创建成功", icon: "success" });
         setTimeout(() => {
           common_vendor.index.navigateBack();
         }, 800);
       } catch (e) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:361", "创建宠物失败:", e);
+        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:352", "创建宠物失败:", e);
         let errorMessage = "创建失败";
         if (e.message) {
           if (e.message.includes("Unauthorized")) {

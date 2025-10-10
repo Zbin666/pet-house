@@ -1,5 +1,5 @@
 // API 基础配置（真机调试使用本机 WLAN IP）
-const BASE_URL = 'http://10.161.43.37:3000/api'
+const BASE_URL = 'http://10.161.196.67:3000/api'
 
 // 请求拦截器
 const request = (options) => {
@@ -22,7 +22,6 @@ const request = (options) => {
       data: options.data || {},
       header,
       success: (res) => {
-        // 接受所有 2xx 为成功（如 200 OK、201 Created 等）
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data)
         } else {
@@ -138,6 +137,24 @@ export const api = {
     method: 'DELETE'
   }),
   
+  // 提醒（订阅）管理
+  getSubscriptions: (params) => request({
+    url: '/subscriptions',
+    method: 'GET',
+    data: params
+  }),
+
+  createSubscription: (data) => request({
+    url: '/subscriptions',
+    method: 'POST',
+    data
+  }),
+
+  deleteSubscription: (id) => request({
+    url: `/subscriptions/${id}`,
+    method: 'DELETE'
+  }),
+
   // 媒体管理
   getUploadPolicy: (data) => request({
     url: '/media/policy',

@@ -32,10 +32,8 @@ const _sfc_main = {
     });
     const userInfo = common_vendor.ref(null);
     const pets = common_vendor.ref([]);
-    const stats = common_vendor.ref({
-      feeds: 0,
-      likes: 0
-    });
+    const stats = common_vendor.ref({ feeds: 0, likes: 0 });
+    const maxTogetherDays = common_vendor.ref(0);
     const gender = common_vendor.ref("female");
     const genderIcon = common_vendor.computed(() => gender.value === "male" ? "/static/user/male.png" : "/static/user/female.png");
     async function loadData() {
@@ -45,16 +43,15 @@ const _sfc_main = {
         pets.value = Array.isArray(petsResult) ? petsResult : petsResult.data || [];
         const feedsResult = await utils_api.api.getFeeds({ page: 1, limit: 1 });
         stats.value.feeds = ((_a = feedsResult.pagination) == null ? void 0 : _a.total) || 0;
-        if (pets.value.length > 0) {
-          const firstPet = pets.value[0];
-          const start = firstPet.startTogether || firstPet.createdAt;
-          if (start) {
-            const days = Math.floor((Date.now() - new Date(start).getTime()) / (1e3 * 60 * 60 * 24));
-            stats.value.days = days;
-          }
-        }
+        maxTogetherDays.value = pets.value.reduce((max, p) => {
+          const start = p.startTogether || p.createdAt;
+          if (!start)
+            return max;
+          const days = Math.max(1, Math.floor((Date.now() - new Date(start).getTime()) / (1e3 * 60 * 60 * 24)));
+          return Math.max(max, days);
+        }, 0);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/user/user.vue:151", "加载数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/user/user.vue:147", "加载数据失败:", error);
       }
     }
     function goEdit() {
@@ -100,7 +97,8 @@ const _sfc_main = {
         f: common_vendor.t(stats.value.likes || 0),
         g: common_vendor.o(openSetting),
         h: common_assets._imports_1$4,
-        i: common_vendor.f(pets.value, (p, k0, i0) => {
+        i: common_vendor.t(maxTogetherDays.value),
+        j: common_vendor.f(pets.value, (p, k0, i0) => {
           return {
             a: p.avatarUrl || "/static/logo.png",
             b: common_vendor.t(p.name),
@@ -110,17 +108,17 @@ const _sfc_main = {
             f: common_vendor.o(($event) => goPetDetail(p), p.id)
           };
         }),
-        j: common_assets._imports_2$5,
-        k: common_vendor.o(goEdit),
-        l: common_assets._imports_3$1,
-        m: common_vendor.o(openSetting),
-        n: common_assets._imports_4$2,
-        o: common_vendor.o(openPrivacy),
-        p: common_assets._imports_5$1,
-        q: common_vendor.o(openFeedback),
-        r: common_assets._imports_3$1,
-        s: common_vendor.o(logoutAction),
-        t: common_vendor.s(dynamicTopPadding.value)
+        k: common_assets._imports_2$3,
+        l: common_vendor.o(goEdit),
+        m: common_assets._imports_3$3,
+        n: common_vendor.o(openSetting),
+        o: common_assets._imports_4$1,
+        p: common_vendor.o(openPrivacy),
+        q: common_assets._imports_5$1,
+        r: common_vendor.o(openFeedback),
+        s: common_assets._imports_3$3,
+        t: common_vendor.o(logoutAction),
+        v: common_vendor.s(dynamicTopPadding.value)
       };
     };
   }

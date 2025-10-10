@@ -2,18 +2,13 @@
 	<view class="page">
 		<!-- 轮播图容器 -->
 		<view class="carousel-container">
-			<swiper 
-				class="record-swiper" 
-				:current="currentIndex" 
-				@change="onSwiperChange"
-				:indicator-dots="false"
-				:autoplay="false"
-				:circular="true"
-				:duration="300"
-			>
+			<!-- 有记录时显示轮播 -->
+			<swiper v-if="recordList.length > 0" class="record-swiper" :current="currentIndex" @change="onSwiperChange"
+				:indicator-dots="false" :autoplay="false" :circular="true" :duration="300">
 				<swiper-item v-for="(record, index) in recordList" :key="index" class="swiper-item">
 					<!-- 装饰图标 -->
-					<image class="decor" :class="{ 'decor--dog-ccw': isDogTop(index) }" :src="getTopImage(index)"></image>
+					<image class="decor" :class="{ 'decor--dog-ccw': isDogTop(index) }" :src="getTopImage(index)">
+					</image>
 					
 					<view class="sheet" :class="{ 'sheet--edit': editMode }">
 						<view class="sheet-bg bg1"></view>
@@ -34,12 +29,8 @@
 									</template>
 									<view v-else class="pet-selector">
 							<scroll-view class="pet-scroll" scroll-x="true" show-scrollbar="false">
-								<view class="pet-option" 
-									v-for="pet in petList" 
-									:key="pet.id"
-									:class="{ active: form.petId === pet.id }"
-									@tap="selectPet(pet)"
-								>
+											<view class="pet-option" v-for="pet in petList" :key="pet.id"
+												:class="{ active: form.petId === pet.id }" @tap="selectPet(pet)">
 									<image class="pet-avatar" :src="pet.avatar" mode="aspectFill" />
 									<text class="pet-name">{{ pet.name }}</text>
 								</view>
@@ -64,10 +55,12 @@
 									<view class="form-row">
 										<text class="label">食物重量：</text>
 										<template v-if="!editMode">
-											<text class="value">{{ record.data.weight ? record.data.weight + 'g' : '未填写' }}</text>
+											<text class="value">{{ record.data.weight ? record.data.weight + 'g' : '未填写'
+												}}</text>
 										</template>
 										<view v-else class="input-group">
-											<input class="input" type="number" v-model.number="form.weight" placeholder="重量" />
+											<input class="input" type="number" v-model.number="form.weight"
+												placeholder="重量" />
 											<text class="unit">g</text>
 										</view>
 									</view>
@@ -85,10 +78,12 @@
 									<view class="form-row">
 										<text class="label">饮水量：</text>
 										<template v-if="!editMode">
-											<text class="value">{{ record.data.amount ? record.data.amount + 'ml' : '未填写' }}</text>
+											<text class="value">{{ record.data.amount ? record.data.amount + 'ml' :
+												'未填写' }}</text>
 										</template>
 										<view v-else class="input-group">
-											<input class="input" type="number" v-model.number="form.amount" placeholder="饮水量" />
+											<input class="input" type="number" v-model.number="form.amount"
+												placeholder="饮水量" />
 											<text class="unit">ml</text>
 										</view>
 									</view>
@@ -113,10 +108,12 @@
 									<view class="form-row">
 										<text class="label">体重：</text>
 										<template v-if="!editMode">
-											<text class="value">{{ record.data.weight ? record.data.weight + 'kg' : '未填写' }}</text>
+											<text class="value">{{ record.data.weight ? record.data.weight + 'kg' :
+												'未填写' }}</text>
 										</template>
 										<view v-else class="input-group">
-											<input class="input" type="number" step="0.1" v-model.number="form.weight" placeholder="体重" />
+											<input class="input" type="number" step="0.1" v-model.number="form.weight"
+												placeholder="体重" />
 											<text class="unit">kg</text>
 										</view>
 									</view>
@@ -193,13 +190,28 @@
 										<template v-if="!editMode">
 											<text class="value">{{ record.data.content || '无内容' }}</text>
 										</template>
-										<textarea v-else class="textarea" v-model="form.content" placeholder="记录今天发生的有趣事情..." />
+										<textarea v-else class="textarea" v-model="form.content"
+											placeholder="记录今天发生的有趣事情..." />
 									</view>
-									<view class="form-row" v-if="record.data.photos && record.data.photos.length">
+                                    <view class="form-row" v-if="editMode || (record.data.photos && record.data.photos.length)">
 										<text class="label">相关照片：</text>
-										<view class="photo-gallery">
-											<image v-for="(photo, i) in record.data.photos" :key="i" class="photo" :src="photo" mode="aspectFill" />
+								<view v-if="!editMode" class="photo-gallery">
+									<image v-for="(photo, i) in record.data.photos" :key="i" class="photo"
+										:src="photo" mode="aspectFill" @tap="previewPhoto(record.data.photos, i)" />
 										</view>
+								<!-- 编辑模式：可删除/新增 -->
+								<view v-else>
+									<view class="photo-uploader">
+										<view class="photo-thumb" v-for="(p, i) in (form.photos || [])" :key="i" @tap="previewPhoto((form.photos||[]), i)">
+											<image class="photo-thumb-img" :src="p" mode="aspectFill" />
+											<view class="photo-remove" @tap.stop="removeEditNotePhoto(i)">×</view>
+										</view>
+										<view class="photo-add" @tap="selectEditNotePhotos">
+											<text>＋</text>
+										</view>
+									</view>
+									<text class="uploader-hint">最多选择9张，开发环境会直接使用本地路径</text>
+								</view>
 									</view>
 								</view>
 
@@ -210,7 +222,8 @@
 										<template v-if="!editMode">
 											<text class="value">{{ record.data.abnormalType || '未填写' }}</text>
 										</template>
-										<input v-else class="input" v-model="form.abnormalType" placeholder="如：食欲不振、呕吐、腹泻" />
+										<input v-else class="input" v-model="form.abnormalType"
+											placeholder="如：食欲不振、呕吐、腹泻" />
 									</view>
 									<view class="form-row">
 										<text class="label">严重程度：</text>
@@ -224,7 +237,8 @@
 										<template v-if="!editMode">
 											<text class="value">{{ record.data.description || '无' }}</text>
 										</template>
-										<textarea v-else class="textarea" v-model="form.description" placeholder="详细描述异常情况..." />
+										<textarea v-else class="textarea" v-model="form.description"
+											placeholder="详细描述异常情况..." />
 									</view>
 								</view>
 
@@ -235,7 +249,8 @@
 										<template v-if="!editMode">
 											<text class="value">{{ record.data.medicineName || '未填写' }}</text>
 										</template>
-										<input v-else class="input" v-model="form.medicineName" placeholder="如：驱虫药、维生素" />
+										<input v-else class="input" v-model="form.medicineName"
+											placeholder="如：驱虫药、维生素" />
 									</view>
 									<view class="form-row">
 										<text class="label">用药剂量：</text>
@@ -249,7 +264,8 @@
 										<template v-if="!editMode">
 											<text class="value">{{ record.data.medicineTime || '未填写' }}</text>
 										</template>
-										<input v-else class="input" v-model="form.medicineTime" placeholder="如：饭后30分钟" />
+										<input v-else class="input" v-model="form.medicineTime"
+											placeholder="如：饭后30分钟" />
 									</view>
 									<view class="form-row">
 										<text class="label">备注：</text>
@@ -282,13 +298,15 @@
 			</swiper>
 			
 			<!-- 轮播指示器 -->
-			<view class="carousel-indicators">
-				<view 
-					v-for="(record, index) in recordList" 
-					:key="index" 
-					:class="['indicator', { active: index === currentIndex }]"
-					@tap="goToSlide(index)"
-				></view>
+			<view v-if="recordList.length > 0" class="carousel-indicators">
+				<view v-for="(record, index) in recordList" :key="index"
+					:class="['indicator', { active: index === currentIndex }]" @tap="goToSlide(index)"></view>
+			</view>
+
+			<!-- 空状态 -->
+			<view v-else class="empty">
+				<image class="empty-img" src="/static/record/nothing-cat.png" mode="widthFix" />
+				<text class="empty-text">这个类型还没有记录哦～</text>
 			</view>
 		</view>
 
@@ -297,8 +315,9 @@
 			<image class="fab-icon" src="/static/record/add.png" mode="widthFix" />
 		</view>
 
-		<!-- 底部装饰 -->
-		<image class="bottom-cat" :class="{ 'bottom-cat--dog': isDogBottom(currentIndex) }" :src="getBottomImage(currentIndex)" mode="widthFix" />
+		<!-- 底部装饰：仅在有记录时显示 -->
+		<image v-if="recordList.length > 0" class="bottom-cat" :class="{ 'bottom-cat--dog': isDogBottom(currentIndex) }"
+			:src="getBottomImage(currentIndex)" mode="widthFix" />
 
 		<!-- 添加记录弹窗 -->
 		<view v-if="showModal" class="modal-overlay" @tap="hideAddModal">
@@ -308,27 +327,17 @@
 					<view class="modal-close" @tap="hideAddModal">×</view>
 				</view>
 				<view class="modal-body">
-					<!-- 宠物选择 -->
+					<!-- 宠物选择（横向滚动，与编辑模式一致） -->
 					<view class="form-row">
 						<text class="label">选择宠物：</text>
-						<view class="pet-selector-wrapper">
-							<view class="pet-selector">
-								<!-- 默认显示前两个宠物 -->
-								<view v-for="(pet, index) in (showAllPets ? petList : petList.slice(0, 2))" :key="index" 
-									:class="['pet-option', { selected: selectedPets.includes(index) }]"
-									@tap="togglePet(index)">
+						<scroll-view class="pet-scroll" scroll-x="true" show-scrollbar="false">
+							<view class="pet-option" v-for="(pet, index) in petList" :key="index"
+								:class="{ selected: selectedPets.includes(index) }" @tap="togglePet(index)">
 									<image class="pet-avatar" :src="pet.avatar" mode="aspectFill" />
 									<text class="pet-name">{{ pet.name }}</text>
 									<view v-if="selectedPets.includes(index)" class="check-mark">✓</view>
 								</view>
-							</view>
-							<!-- 展开/收起按钮 - 在宠物列表中间下方 -->
-							<view v-if="petList.length > 2" class="expand-btn-container">
-								<view class="expand-btn" @tap="toggleExpand">
-									<text class="expand-arrow" :class="{ expanded: showAllPets }">▼</text>
-								</view>
-							</view>
-						</view>
+						</scroll-view>
 					</view>
 
 					<!-- 饮食记录表单 -->
@@ -355,7 +364,8 @@
 						<view class="form-row">
 							<text class="label">饮水量：</text>
 							<view class="input-group">
-								<input class="input" type="number" v-model.number="newRecord.amount" placeholder="饮水量" />
+								<input class="input" type="number" v-model.number="newRecord.amount"
+									placeholder="饮水量" />
 								<text class="unit">ml</text>
 							</view>
 						</view>
@@ -374,7 +384,8 @@
 						<view class="form-row">
 							<text class="label">体重：</text>
 							<view class="input-group">
-								<input class="input" type="number" step="0.1" v-model.number="newRecord.weight" placeholder="体重" />
+								<input class="input" type="number" step="0.1" v-model.number="newRecord.weight"
+									placeholder="体重" />
 								<text class="unit">kg</text>
 							</view>
 						</view>
@@ -426,6 +437,22 @@
 							<text class="label">记事内容：</text>
 							<textarea class="textarea" v-model="newRecord.content" placeholder="记录今天发生的有趣事情..." />
 						</view>
+						<view class="form-row">
+							<text class="label">添加图片：</text>
+							<view>
+								<view class="photo-uploader">
+									<view class="photo-thumb" v-for="(p, i) in (newRecord.photos || [])" :key="i"
+										@tap="previewPhoto((newRecord.photos || []), i)">
+										<image class="photo-thumb-img" :src="p" mode="aspectFill" />
+										<view class="photo-remove" @tap.stop="removeNotePhoto(i)">×</view>
+									</view>
+									<view class="photo-add" @tap="selectNotePhotos">
+										<text>＋</text>
+									</view>
+								</view>
+								<text class="uploader-hint">最多选择9张，开发环境会直接使用本地路径</text>
+							</view>
+						</view>
 					</view>
 
 					<!-- 异常记录表单 -->
@@ -476,8 +503,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { ref, reactive, computed, onUnmounted } from 'vue'
+import { uploadImages } from '@/utils/upload.js'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import { api } from '@/utils/api.js'
 
 // 记录类型配置
 const recordTypes = {
@@ -493,6 +522,8 @@ const recordTypes = {
 
 // 当前记录类型
 const currentRecord = ref({})
+// 进入页面的前端类型（eating/drinking/...），用于弹窗默认表单
+const currentFrontType = ref('eating')
 // 记录数据
 const recordData = ref({})
 // 编辑模式
@@ -503,12 +534,8 @@ const form = reactive({})
 const showModal = ref(false)
 // 新记录数据
 const newRecord = reactive({})
-// 宠物列表
-const petList = ref([
-	{ id: 1, name: '火火', avatar: '/static/logo.png' },
-	{ id: 2, name: '水水', avatar: '/static/logo.png' },
-	{ id: 3, name: '土土', avatar: '/static/logo.png' }
-])
+// 宠物列表（从后端加载）
+const petList = ref([])
 const selectedPets = ref([])
 // 展开状态
 const showAllPets = ref(false)
@@ -546,190 +573,123 @@ function isDogTop(index) {
 	return imageConfig[configIndex].top === '/static/record/up-dog_1.png'
 }
 
-onLoad((query) => {
+onLoad(async (query) => {
 	uni.setNavigationBarTitle({ title: '记录详情' })
 	uni.setNavigationBarColor({ frontColor: '#000000', backgroundColor: '#fff1a8' })
-	
-	// 初始化轮播图数据
-	initRecordList(query)
+	// 加载宠物，再加载记录
+	await loadPets()
+	await initRecordList(query)
+})
+
+// 返回本页或从其他页面回到当前页时，自动刷新记录
+onShow(async () => {
+	await initRecordList({ type: currentFrontType.value })
+})
+
+// 监听全局事件，兼容从其它页面新建记录的情况
+const onRecordsChanged = async () => {
+	await initRecordList({ type: currentFrontType.value })
+}
+uni.$on && uni.$on('records:changed', onRecordsChanged)
+onUnmounted(() => {
+	uni.$off && uni.$off('records:changed', onRecordsChanged)
 })
 
 // 初始化记录列表
-function initRecordList(query) {
-	// 根据传入的分类参数获取对应分类的记录
+async function initRecordList(query) {
 	const targetType = query.type || 'eating'
-	
-	// 模拟该分类的多条记录数据
-	const getRecordsByType = (type) => {
-		const baseTime = new Date()
-		const records = []
-		
-		switch (type) {
-			case 'eating':
-				records.push(
-					{
-						type: recordTypes.eating,
-						data: {
-							time: baseTime,
-							petName: '火火',
-							petAvatar: '/static/logo.png',
-							foodType: '猫粮',
-							weight: 50,
-							note: '今天食欲很好'
-						}
-					},
-					{
-						type: recordTypes.eating,
-						data: {
-							time: new Date(baseTime.getTime() - 24 * 60 * 60 * 1000),
-							petName: '火火',
-							petAvatar: '/static/logo.png',
-							foodType: '罐头',
-							weight: 80,
-							note: '特别爱吃这个口味'
-						}
-					},
-					{
-						type: recordTypes.eating,
-						data: {
-							time: new Date(baseTime.getTime() - 2 * 24 * 60 * 60 * 1000),
-							petName: '水水',
-							petAvatar: '/static/logo.png',
-							foodType: '湿粮',
-							weight: 60,
-							note: '新尝试的湿粮'
-						}
-					}
-				)
-				break
-			case 'drinking':
-				records.push(
-					{
-						type: recordTypes.drinking,
-						data: {
-							time: baseTime,
-							petName: '水水',
-							petAvatar: '/static/logo.png',
-							amount: 200,
-							method: '水碗',
-							note: '正常饮水'
-						}
-					},
-					{
-						type: recordTypes.drinking,
-						data: {
-							time: new Date(baseTime.getTime() - 24 * 60 * 60 * 1000),
-							petName: '火火',
-							petAvatar: '/static/logo.png',
-							amount: 150,
-							method: '自动饮水机',
-							note: '喜欢流动的水'
-						}
-					}
-				)
-				break
-			case 'weight':
-				records.push(
-					{
-						type: recordTypes.weight,
-						data: {
-							time: baseTime,
-							petName: '土土',
-							petAvatar: '/static/logo.png',
-							weight: 4.2,
-							method: '电子秤',
-							note: '体重稳定'
-						}
-					},
-					{
-						type: recordTypes.weight,
-						data: {
-							time: new Date(baseTime.getTime() - 7 * 24 * 60 * 60 * 1000),
-							petName: '土土',
-							petAvatar: '/static/logo.png',
-							weight: 4.1,
-							method: '电子秤',
-							note: '略有增长'
-						}
-					}
-				)
-				break
-			case 'washing':
-				records.push(
-					{
-						type: recordTypes.washing,
-						data: {
-							time: baseTime,
-							petName: '火火',
-							petAvatar: '/static/logo.png',
-							washType: '洗澡',
-							product: '宠物专用洗发水',
-							note: '洗得很干净'
-						}
-					},
-					{
-						type: recordTypes.washing,
-						data: {
-							time: new Date(baseTime.getTime() - 14 * 24 * 60 * 60 * 1000),
-							petName: '水水',
-							petAvatar: '/static/logo.png',
-							washType: '梳毛',
-							product: '宠物梳子',
-							note: '梳理得很顺滑'
-						}
-					}
-				)
-				break
-			case 'noting':
-				records.push(
-					{
-						type: recordTypes.noting,
-						data: {
-							time: baseTime,
-							petName: '水水',
-							petAvatar: '/static/logo.png',
-							content: '今天火火特别活泼，在客厅里跑来跑去，还学会了新的小把戏！',
-							photos: ['/static/logo.png', '/static/logo.png']
-						}
-					},
-					{
-						type: recordTypes.noting,
-						data: {
-							time: new Date(baseTime.getTime() - 24 * 60 * 60 * 1000),
-							petName: '土土',
-							petAvatar: '/static/logo.png',
-							content: '土土今天很安静，一直在窗边晒太阳，看起来很享受。',
-							photos: ['/static/logo.png']
-						}
-					}
-				)
-				break
-			default:
-				// 默认显示饮食记录
-				records.push({
-					type: recordTypes.eating,
-					data: {
-						time: baseTime,
-						petName: '火火',
-						petAvatar: '/static/logo.png',
-						foodType: '猫粮',
-						weight: 50,
-						note: '今天食欲很好'
-					}
-				})
+	currentFrontType.value = targetType
+	const typeMap = { eating: 'feed', drinking: 'water', weight: 'weight', washing: 'clean', noting: 'diary', shit: 'diary', abnormal: 'diary', medicine: 'medicine' }
+	const backendType = typeMap[targetType] || 'diary'
+	try {
+		const params = { type: backendType, page: 1, limit: 20 }
+		if (query.startDate && query.endDate) {
+			params.startDate = query.startDate
+			params.endDate = query.endDate
 		}
-		
-		return records
+		const res = await api.getRecords(params)
+		const list = Array.isArray(res) ? res : (res.records || res.data || res.list || [])
+		// 将后端数据映射为前端展示结构
+		let mapped = list.map(r => {
+			const pet = petList.value.find(p => p.id === r.petId)
+			// 解析 payload：后端可能返回对象或字符串
+			const rawPayload = r?.payload
+			let payloadObj = {}
+			if (rawPayload && typeof rawPayload === 'string') {
+				try {
+					payloadObj = JSON.parse(rawPayload)
+				} catch (err) {
+					console.warn('记录 payload 解析失败(字符串非 JSON):', r?.id, rawPayload)
+					payloadObj = {}
+				}
+			} else if (rawPayload && typeof rawPayload === 'object') {
+				payloadObj = rawPayload
+			}
+			const frontType = determineFrontType({ ...r, payload: payloadObj }, targetType)
+			const typeConf = recordTypes[frontType] || recordTypes.noting
+			return {
+				id: r.id,
+				type: typeConf,
+				data: {
+					time: r.time,
+					petName: pet?.name || '',
+					petAvatar: pet?.avatarUrl || '/static/logo.png',
+					// 透传后端 payload（已保证为对象）
+					...payloadObj
+				}
+			}
+		})
+		// 当请求的是 diary（便便/异常/记事混合）时，仅保留当前前端类型的记录
+		if (backendType === 'diary') {
+			mapped = mapped.filter(item => item.type?.key === targetType)
+		}
+		recordList.value = mapped
+		currentIndex.value = 0
+		if (recordList.value.length > 0) {
+			const currentRecordData = recordList.value[currentIndex.value]
+			currentRecord.value = currentRecordData.type
+			recordData.value = currentRecordData.data
+		} else {
+			// 无记录时，默认使用“饮食”类型，确保弹窗内有可填写表单
+			currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating
+			recordData.value = {}
+		}
+	} catch (e) {
+		console.warn('加载记录失败:', e)
+		recordList.value = []
+		// 出错也给一个默认类型，避免弹窗没有可选内容
+		currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating
+		recordData.value = {}
 	}
-	
-	recordList.value = getRecordsByType(targetType)
-	currentIndex.value = 0
-	
-	// 设置当前记录数据
-	if (recordList.value.length > 0) {
-		const currentRecordData = recordList.value[currentIndex.value]
-		currentRecord.value = currentRecordData.type
-		recordData.value = currentRecordData.data
+}
+
+// 根据后端记录推断前端展示类型
+function determineFrontType(r, fallbackFrontType) {
+    // 后端使用统一的 diary 类型承载多个前端子类型
+    if (r?.type === 'diary') {
+        const p = r?.payload || {}
+        if (p.status || p.color) return 'shit'
+        if (p.abnormalType || p.severity) return 'abnormal'
+        return 'noting'
+    }
+    // 其它类型做反向映射
+    const reverse = {
+        feed: 'eating',
+        water: 'drinking',
+        weight: 'weight',
+        clean: 'washing',
+        medicine: 'medicine'
+    }
+    return reverse[r?.type] || fallbackFrontType || 'noting'
+}
+
+async function loadPets() {
+	try {
+		const res = await api.getPets()
+		const list = Array.isArray(res) ? res : (res.data || [])
+		petList.value = list.map(p => ({ id: p.id, name: p.name, avatar: p.avatarUrl || '/static/logo.png', avatarUrl: p.avatarUrl }))
+	} catch (e) {
+		petList.value = []
 	}
 }
 
@@ -770,6 +730,10 @@ function startEdit() {
 	if (currentPet) {
 		form.petId = currentPet.id
 	}
+    // 初始化记事图片数组，确保编辑态可显示“添加图片”
+    if (!Array.isArray(form.photos)) {
+        form.photos = Array.isArray(recordData.value.photos) ? [...recordData.value.photos] : []
+	}
 }
 
 function cancelEdit() {
@@ -782,21 +746,71 @@ function selectPet(pet) {
 	form.petAvatar = pet.avatar
 }
 
+// 编辑模式：选择/删除记事图片
+async function selectEditNotePhotos() {
+    try {
+        const chosen = await new Promise((resolve, reject) => {
+            uni.chooseImage({ count: 9, sizeType: ['compressed'], success: resolve, fail: reject })
+        })
+        const tempPaths = chosen?.tempFilePaths || []
+        const urls = await uploadImages(tempPaths)
+        if (!form.photos) form.photos = []
+        form.photos = [...form.photos, ...urls].slice(0, 9)
+    } catch (e) {
+        uni.showToast({ title: '选择图片失败', icon: 'none' })
+    }
+}
+
+function removeEditNotePhoto(index) {
+    if (!form.photos) return
+    uni.showModal({
+        title: '删除照片',
+        content: '确定要删除这张照片吗？',
+        confirmText: '删除',
+        cancelText: '取消',
+        confirmColor: '#ff4757',
+        success: (res) => {
+            if (res.confirm) {
+                form.photos.splice(index, 1)
+            }
+        }
+    })
+}
+
 function togglePetList() {
 	showAllPets.value = !showAllPets.value
 }
 
 function saveEdit() {
-	// 更新当前轮播项的数据
+	// 更新当前轮播项的数据并同步到后端
 	if (recordList.value.length > 0) {
 		Object.assign(recordList.value[currentIndex.value].data, form)
 		recordData.value = recordList.value[currentIndex.value].data
+		const current = recordList.value[currentIndex.value]
+		// 仅当后端有记录ID时尝试更新
+		if (current.id) {
+			try {
+				// 仅提交该类型相关的 payload 字段
+				const key = current.type.key
+				const payload = (() => {
+					if (key === 'noting') return { content: recordData.value.content, photos: recordData.value.photos || [] }
+					if (key === 'eating') return { foodType: recordData.value.foodType, weight: recordData.value.weight, note: recordData.value.note }
+					if (key === 'drinking') return { amount: recordData.value.amount, method: recordData.value.method, note: recordData.value.note }
+					if (key === 'weight') return { weight: recordData.value.weight, method: recordData.value.method, note: recordData.value.note }
+					if (key === 'washing') return { washType: recordData.value.washType, product: recordData.value.product, note: recordData.value.note }
+					if (key === 'shit') return { status: recordData.value.status, color: recordData.value.color, note: recordData.value.note }
+					if (key === 'abnormal') return { abnormalType: recordData.value.abnormalType, severity: recordData.value.severity, description: recordData.value.description }
+					if (key === 'medicine') return { medicineName: recordData.value.medicineName, dosage: recordData.value.dosage, medicineTime: recordData.value.medicineTime, note: recordData.value.note }
+					return {}
+				})()
+				api.updateRecord(current.id, { payload })
+			} catch (e) {
+				// 忽略失败，前端仍保持编辑结果
+			}
+		}
 	}
 	editMode.value = false
-	uni.showToast({
-		title: '保存成功',
-		icon: 'success'
-	})
+	uni.showToast({ title: '保存成功', icon: 'success' })
 }
 
 // 删除记录
@@ -870,6 +884,11 @@ function showAddModal() {
 	selectedPets.value = []
 	// 重置展开状态
 	showAllPets.value = false
+	// 当前卡片类型优先；没有则使用进入页的类型作为默认表单
+	if (!currentRecord.value || !currentRecord.value.key) {
+		const slideType = recordList.value[currentIndex.value]?.type?.key
+		currentRecord.value = recordTypes[slideType] || recordTypes[currentFrontType.value] || recordTypes.eating
+	}
 	showModal.value = true
 }
 
@@ -878,14 +897,100 @@ function hideAddModal() {
 	showModal.value = false
 }
 
-// 保存新记录
-function saveNewRecord() {
-	// 这里可以添加保存逻辑，比如调用API
-	uni.showToast({
-		title: '记录已保存',
-		icon: 'success'
+// 选择记事图片
+async function selectNotePhotos() {
+	try {
+		const chosen = await new Promise((resolve, reject) => {
+			uni.chooseImage({
+				count: 9,
+				sizeType: ['compressed'],
+				success: resolve,
+				fail: reject
+			})
+		})
+		const tempPaths = chosen?.tempFilePaths || []
+		// 开发环境：uploadImages 会直接返回本地路径；生产可替换为对象存储后的 URL
+		const urls = await uploadImages(tempPaths)
+		if (!newRecord.photos) newRecord.photos = []
+		newRecord.photos = [...newRecord.photos, ...urls].slice(0, 9)
+	} catch (e) {
+		uni.showToast({ title: '选择图片失败', icon: 'none' })
+	}
+}
+
+function removeNotePhoto(index) {
+    if (!newRecord.photos) return
+    uni.showModal({
+        title: '删除照片',
+        content: '确定要删除这张照片吗？',
+        confirmText: '删除',
+        cancelText: '取消',
+        confirmColor: '#ff4757',
+        success: (res) => {
+            if (res.confirm) {
+                newRecord.photos.splice(index, 1)
+            }
+        }
+    })
+}
+
+function previewPhoto(list, index) {
+	if (!Array.isArray(list) || list.length === 0) return
+	uni.previewImage({
+		current: index,
+		urls: list
 	})
+}
+
+// 保存新记录
+async function saveNewRecord() {
+	if (selectedPets.value.length === 0) {
+		uni.showToast({ title: '请选择宠物', icon: 'none' })
+		return
+	}
+	const typeMap = { eating: 'feed', drinking: 'water', weight: 'weight', washing: 'clean', noting: 'diary', shit: 'diary', abnormal: 'diary', medicine: 'medicine' }
+	const payloadBuilder = {
+		eating: () => ({ foodType: newRecord.foodType, weight: newRecord.weight, note: newRecord.note }),
+		drinking: () => ({ amount: newRecord.amount, method: newRecord.method, note: newRecord.note }),
+		weight: () => ({ weight: newRecord.weight, method: newRecord.method, note: newRecord.note }),
+		washing: () => ({ washType: newRecord.washType, product: newRecord.product, note: newRecord.note }),
+		noting: () => ({ content: newRecord.content, photos: newRecord.photos || [] }),
+		shit: () => ({ status: newRecord.status, color: newRecord.color, note: newRecord.note }),
+		abnormal: () => ({ abnormalType: newRecord.abnormalType, severity: newRecord.severity, description: newRecord.description }),
+		medicine: () => ({ medicineName: newRecord.medicineName, dosage: newRecord.dosage, medicineTime: newRecord.medicineTime, note: newRecord.note })
+	}
+	const frontKey = currentRecord.value.key
+	const backendType = typeMap[frontKey] || 'diary'
+	const payload = (payloadBuilder[frontKey] ? payloadBuilder[frontKey]() : payloadBuilder['noting']())
+	try {
+		const createdDisplayItems = []
+		for (const idx of selectedPets.value) {
+			const pet = petList.value[idx]
+			const created = await api.createRecord({ petId: pet.id, type: backendType, payload, time: new Date().toISOString() })
+			// 本地立即插入一条，提升“实时刷新”的观感
+			createdDisplayItems.push({
+				type: recordTypes[frontKey] || recordTypes.noting,
+				data: {
+					time: created?.time || new Date().toISOString(),
+					petName: pet.name,
+					petAvatar: pet.avatarUrl || pet.avatar || '/static/logo.png',
+					...(payload || {})
+				}
+			})
+		}
+		if (createdDisplayItems.length > 0) {
+			recordList.value = [...createdDisplayItems, ...recordList.value]
+			currentIndex.value = 0
+			currentRecord.value = createdDisplayItems[0].type
+			recordData.value = createdDisplayItems[0].data
+		}
+		uni.showToast({ title: '记录已保存', icon: 'success' })
 	hideAddModal()
+		// 重新加载列表
+		await initRecordList({ type: frontKey })
+	} catch (e) {
+		uni.showToast({ title: '保存失败', icon: 'none' })
+	}
 }
 </script>
 
@@ -897,7 +1002,8 @@ function saveNewRecord() {
 	padding-top: calc(40rpx + constant(safe-area-inset-top));
 	background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%);
 	position: relative;
-    overflow: hidden; /* 整页不滚动 */
+	overflow: hidden;
+	/* 整页不滚动 */
 }
 
 /* 装饰图标 */
@@ -938,7 +1044,8 @@ function saveNewRecord() {
     justify-content: flex-start;
     padding: 0 10rpx;
     box-sizing: border-box;
-    overflow: visible; /* 外层不滚动不裁切 */
+	overflow: visible;
+	/* 外层不滚动不裁切 */
     position: relative;
 }
 
@@ -950,7 +1057,8 @@ function saveNewRecord() {
 
 /* 编辑模式下限制卡片最大宽度，避免视觉跳变过宽 */
 .sheet--edit {
-    max-width: 590rpx; /* 可按需微调 580~620rpx */
+	max-width: 590rpx;
+	/* 可按需微调 580~620rpx */
 }
 
 .sheet-bg {
@@ -980,7 +1088,8 @@ function saveNewRecord() {
 	z-index: 1;
 	min-height: 600rpx;
 	box-sizing: border-box;
-    overflow: visible; /* 内容不滚动 */
+	overflow: visible;
+	/* 内容不滚动 */
 }
 
 /* 轮播指示器 */
@@ -990,6 +1099,26 @@ function saveNewRecord() {
 	align-items: center;
 	gap: 16rpx;
 	margin-top: 40rpx;
+}
+
+/* 空状态 */
+.empty {
+	width: 100%;
+	min-height: 60vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 20rpx;
+}
+
+.empty-img {
+	width: 380rpx;
+}
+
+.empty-text {
+	color: #666;
+	font-size: 28rpx;
 }
 
 .indicator {
@@ -1243,6 +1372,63 @@ function saveNewRecord() {
 	font-size: 30rpx;
 }
 
+/* 记事-图片上传样式 */
+.photo-uploader {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12rpx;
+}
+
+.photo-thumb {
+	position: relative;
+	width: 140rpx;
+	height: 140rpx;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 12rpx;
+	overflow: hidden;
+	background: #f6f6f6;
+}
+
+.photo-thumb-img {
+	width: 100%;
+	height: 100%;
+}
+
+.photo-remove {
+	position: absolute;
+	top: 4rpx;
+	right: 4rpx;
+	width: 36rpx;
+	height: 36rpx;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 28rpx;
+}
+
+.photo-add {
+	width: 140rpx;
+	height: 140rpx;
+	border: 4rpx dashed #2c2c2c;
+	border-radius: 12rpx;
+	color: #666;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 48rpx;
+	background: #fff;
+}
+
+.uploader-hint {
+	display: block;
+	margin-top: 8rpx;
+	color: #999;
+	font-size: 22rpx;
+}
+
 .photo-gallery {
 	display: flex;
 	gap: 12rpx;
@@ -1282,7 +1468,8 @@ function saveNewRecord() {
     width: 300rpx;
     z-index: 5;
     opacity: 0.9;
-    pointer-events: none; /* 不阻挡点击 */
+	pointer-events: none;
+	/* 不阻挡点击 */
 }
 
 .bottom-cat.bottom-cat--dog {
@@ -1340,6 +1527,8 @@ function saveNewRecord() {
 
 .modal-body {
 	padding: 28rpx;
+	max-height: 60vh;
+	overflow-y: auto;
 }
 
 .record-type-list {
@@ -1487,5 +1676,4 @@ function saveNewRecord() {
 	padding-top: 24rpx;
 	border-top: 2rpx solid #e9e9e9;
 }
-	       
 </style>

@@ -103,8 +103,8 @@
 						<text class="k big">日常照片：</text>
 					</view>
 					<view class="gallery">
-						<view v-for="(g, i) in editMode ? form.gallery : gallery" :key="'g' + i" class="g-wrapper">
-							<image class="g" :src="g" mode="aspectFill" />
+							<view v-for="(g, i) in editMode ? form.gallery : gallery" :key="'g' + i" class="g-wrapper">
+								<image class="g" :src="g" mode="aspectFill" @tap="preview(i)" />
 							<view v-if="editMode" class="g-delete" @tap="deletePhoto(i)">×</view>
 						</view>
 						<view v-if="editMode" class="g add" @tap="pickGallery">+</view>
@@ -197,6 +197,15 @@ function deletePhoto(index) {
 			}
 		})
 	}
+}
+
+function preview(index) {
+    const list = editMode.value ? form.gallery : gallery.value
+    if (!Array.isArray(list) || list.length === 0) return
+    uni.previewImage({
+        current: index,
+        urls: list
+    })
 }
 
 async function deletePet() {
