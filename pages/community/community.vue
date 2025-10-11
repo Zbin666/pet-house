@@ -24,7 +24,18 @@
 		<!-- 搜索框 -->
 		<view class="search">
 			<image class="search-ico-img" src="/static/community/search.png" mode="widthFix" />
-			<input class="search-input" type="text" placeholder="输入你想搜索的内容" placeholder-class="ph" />
+			<input 
+				class="search-input" 
+				type="text" 
+				placeholder="输入你想搜索的内容" 
+				placeholder-class="ph"
+				v-model="searchText"
+				@confirm="handleSearch"
+				@input="handleSearchInput"
+			/>
+			<view v-if="searchText" class="search-clear" @tap="clearSearch">
+				<text>✕</text>
+			</view>
 		</view>
 
 		<!-- 类目 tabs -->
@@ -34,8 +45,17 @@
 		</scroll-view>
 
 		<!-- 动态列表（广场） -->
-		<view class="feed" v-if="topTab === 'square'">
-			<view class="card" v-for="post in posts" :key="post.id" @tap="goDetail(post)">
+		<scroll-view 
+			class="feed-scroll" 
+			v-if="topTab === 'square'"
+			scroll-y
+			@scrolltolower="loadMoreFeeds"
+			:refresher-enabled="true"
+			:refresher-triggered="isRefreshing"
+			@refresherrefresh="onRefresh"
+		>
+			<view class="feed">
+				<view class="card" v-for="post in posts" :key="post.id" @tap="goDetail(post)">
 				<view class="card-hd">
 					<image class="avatar" :src="post.avatar" mode="aspectFill" />
 					<view class="title-meta">
@@ -45,6 +65,7 @@
 					<text class="time">{{ post.time }}</text>
 				</view>
 				<view class="card-bd">
+					<text v-if="post.title" class="post-title">{{ post.title }}</text>
 					<text class="content">{{ post.text }}</text>
 					<view class="pics" v-if="post.images && post.images.length">
 						<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" />
@@ -59,13 +80,32 @@
 						<image class="ft-icon" src="/static/community/emoji.png" mode="widthFix" />
 						<text>{{ post.comments }}</text>
 					</view>
-					<view class="ft-item">
-						<image class="ft-icon" src="/static/community/good.png" mode="widthFix" />
+					<view class="ft-item" @tap.stop="toggleLike(post)">
+						<image class="ft-icon" :src="post.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
 						<text>{{ post.likes }}</text>
+					</view>
+					<view v-if="post.isOwner" class="ft-item delete-item" @tap.stop="deletePost(post)">
+						<image class="ft-icon" src="/static/user/delete.png" mode="widthFix" />
 					</view>
 				</view>
 			</view>
+			
+			<!-- 加载状态提示 -->
+			<view class="loading-container" v-if="isLoading && posts.length > 0">
+				<view class="loading-dots">
+					<view class="dot"></view>
+					<view class="dot"></view>
+					<view class="dot"></view>
+				</view>
+			</view>
+			
+			<!-- 空状态 -->
+			<view class="empty-state" v-if="posts.length === 0 && !isLoading">
+				<image class="empty-icon" src="/static/logo.png" mode="aspectFit" />
+				<text class="empty-text">暂无动态</text>
+			</view>
 		</view>
+		</scroll-view>
 
 		<!-- 科普列表 -->
 		<view class="science-feed" v-if="topTab === 'science'">
@@ -125,12 +165,23 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { api } from '@/utils/api.js'
 
 const topTab = ref('square')
+const currentUser = ref(null)
+const searchText = ref('')
+const isSearching = ref(false)
+
+// 无限滚动状态管理
+const currentPage = ref(1)
+const pageSize = ref(10) // 每次加载10条动态
+const isLoading = ref(false)
+const hasMore = ref(true)
+const isRefreshing = ref(false)
 
 // 动态顶部内边距
 const dynamicTopPadding = ref('')
-onMounted(() => {
+onMounted(async () => {
 	try {
 		const info = uni.getSystemInfoSync()
 		const statusBar = info.statusBarHeight || 0
@@ -141,6 +192,19 @@ onMounted(() => {
 	} catch (e) {
 		dynamicTopPadding.value = ''
 	}
+	
+	// 获取当前用户信息
+	try {
+		const userProfile = await api.getProfile()
+		currentUser.value = userProfile
+	} catch (e) {
+		console.error('获取用户信息失败:', e)
+	}
+	
+	// 初次进入加载广场数据
+	loadFeeds()
+	// 监听刷新事件
+	try { uni.$on('feeds:refresh', () => { if (topTab.value === 'square') loadFeeds() }) } catch (e) {}
 })
 const categories = ref([
 	{ key: 'rec', name: '推荐' },
@@ -151,10 +215,123 @@ const categories = ref([
 ])
 const currentCategory = ref('rec')
 
-const posts = ref([
-	{ id: 'p1', user: '喵星人', pet: '布偶猫', breed: '呆呆', time: '刚刚', text: '布偶是一只仙女喵哦~ 💖💖 优雅的姿态太可爱啦！', avatar: '/static/logo.png', images: ['/static/logo.png', '/static/logo.png', '/static/logo.png'], likes: 2631, comments: 2631, shares: 2631 },
-	{ id: 'p2', user: '汪汪大队', pet: '金毛', breed: '呼呼', time: '12:30', text: '好喜欢我的呼呼～ 事事有回应件件有着落的', avatar: '/static/logo.png', images: ['/static/logo.png', '/static/logo.png', '/static/logo.png'], likes: 102, comments: 8, shares: 5 }
-])
+const posts = ref([])
+
+async function loadFeeds(params = {}, isLoadMore = false) {
+	if (isLoading.value) return // 防止重复加载
+	
+	try {
+		isLoading.value = true
+		
+		// 如果是加载更多，使用当前页码；否则重置为第一页
+		const page = isLoadMore ? currentPage.value : 1
+		
+		const res = await api.getFeeds({ 
+			page, 
+			limit: pageSize.value, 
+			...params 
+		})
+		
+		const list = Array.isArray(res) ? res : (res.feeds || res.data || [])
+		const total = res.pagination?.total || res.total || list.length
+		
+		console.log('=== 数据处理 ===')
+		console.log('当前页:', page)
+		console.log('每页大小:', pageSize.value)
+		console.log('返回数据量:', list.length)
+		console.log('总数据量:', total)
+		console.log('是否加载更多:', isLoadMore)
+		
+		// 检查是否还有更多数据
+		hasMore.value = (page * pageSize.value) < total
+		console.log('计算hasMore:', hasMore.value, '(', page * pageSize.value, '<', total, ')')
+		
+		const processedList = list.map((f) => {
+			const user = f.User || {}
+			const pet = f.Pet || {}
+			const imgs = Array.isArray(f.images) ? f.images : []
+			// 直接使用原始时间（UTC时间）进行显示
+			let time = '刚刚'
+			
+			if (f.createdAt) {
+				// 解析UTC时间
+				const created = new Date(f.createdAt)
+				
+				// 直接显示UTC时间，格式：MM/DD HH:MM
+				const month = created.getUTCMonth() + 1
+				const date = created.getUTCDate()
+				const hours = created.getUTCHours().toString().padStart(2, '0')
+				const minutes = created.getUTCMinutes().toString().padStart(2, '0')
+				
+				time = `${month}/${date} ${hours}:${minutes}`
+			}
+			
+			// 提取标题（从tags字段中获取第一个标签作为标题）
+			let title = ''
+			if (f.tags && Array.isArray(f.tags) && f.tags.length > 0) {
+				title = f.tags[0]
+			} else if (f.tags && typeof f.tags === 'string') {
+				try {
+					const parsedTags = JSON.parse(f.tags)
+					if (Array.isArray(parsedTags) && parsedTags.length > 0) {
+						title = parsedTags[0]
+					}
+				} catch (e) {
+					// 如果解析失败，忽略
+				}
+			}
+			
+			return {
+				id: f.id,
+				userId: f.userId, // 添加动态作者ID
+				user: user.nickname || '用户',
+				pet: pet.name || '',
+				breed: pet.breed || '',
+				time,
+				title: title ? `#${title}` : '',
+				text: f.text || '',
+				avatar: user.avatarUrl || '/static/logo.png',
+				images: imgs,
+				likes: f.likes || 0,
+				comments: typeof f.commentsCount === 'number' ? f.commentsCount : (Array.isArray(f.Comments) ? f.Comments.length : 0),
+				shares: f.shares || 0,
+				isOwner: currentUser.value && f.userId === currentUser.value.id, // 判断是否为作者
+				isLiked: f.isLiked || false // 添加点赞状态
+			}
+		})
+		
+		// 如果是加载更多，追加到现有列表；否则替换列表
+		if (isLoadMore) {
+			console.log('追加数据：', processedList.length, '条')
+			posts.value = [...posts.value, ...processedList]
+			currentPage.value += 1
+			console.log('追加后总数：', posts.value.length, '条')
+		} else {
+			console.log('替换数据：', processedList.length, '条')
+			posts.value = processedList
+			currentPage.value = 2 // 下次加载更多时从第2页开始
+			console.log('替换后总数：', posts.value.length, '条')
+		}
+		
+		console.log('最终状态：', {
+			currentPage: currentPage.value,
+			hasMore: hasMore.value,
+			totalPosts: posts.value.length
+		})
+		
+	} catch (e) {
+		console.error('加载动态失败:', e)
+		if (!isLoadMore) {
+			posts.value = []
+		}
+		uni.showToast({
+			title: '加载失败',
+			icon: 'none'
+		})
+	} finally {
+		isLoading.value = false
+	}
+}
 
 // 问答数据
 const qaPosts = ref([
@@ -200,10 +377,113 @@ const sciencePosts = ref([
 
 function selectCategory(key) { 
 	currentCategory.value = key 
+	// 如果需要按类目过滤，将 key 作为标签传给后端
+	if (topTab.value === 'square') {
+		// 重置分页状态
+		currentPage.value = 1
+		hasMore.value = true
+		
+		const categoryParam = key === 'rec' ? undefined : key
+		loadFeeds(categoryParam ? { category: categoryParam } : {})
+	}
 }
+
+// 搜索功能
+function handleSearch() {
+	if (searchText.value.trim()) {
+		isSearching.value = true
+		// 重置分页状态
+		currentPage.value = 1
+		hasMore.value = true
+		loadFeeds({ search: searchText.value.trim() })
+	}
+}
+
+function handleSearchInput() {
+	// 实时搜索（可选，这里使用防抖）
+	clearTimeout(searchTimeout)
+	searchTimeout = setTimeout(() => {
+		if (searchText.value.trim()) {
+			isSearching.value = true
+			// 重置分页状态
+			currentPage.value = 1
+			hasMore.value = true
+			loadFeeds({ search: searchText.value.trim() })
+		} else if (isSearching.value) {
+			// 如果清空搜索框，重新加载所有数据
+			isSearching.value = false
+			// 重置分页状态
+			currentPage.value = 1
+			hasMore.value = true
+			loadFeeds()
+		}
+	}, 500) // 500ms防抖
+}
+
+function clearSearch() {
+	searchText.value = ''
+	isSearching.value = false
+	// 重置分页状态
+	currentPage.value = 1
+	hasMore.value = true
+	loadFeeds() // 重新加载所有数据
+}
+
+// 加载更多动态
+async function loadMoreFeeds() {
+	console.log('=== 触发加载更多 ===')
+	console.log('hasMore:', hasMore.value)
+	console.log('isLoading:', isLoading.value)
+	console.log('currentPage:', currentPage.value)
+	console.log('posts.length:', posts.value.length)
+	
+	if (!hasMore.value || isLoading.value) {
+		console.log('跳过加载：hasMore=', hasMore.value, 'isLoading=', isLoading.value)
+		return
+	}
+	
+	const params = {}
+	if (searchText.value.trim()) {
+		params.search = searchText.value.trim()
+	}
+	if (currentCategory.value !== 'rec') {
+		params.category = currentCategory.value
+	}
+	
+	console.log('开始加载更多，参数:', params)
+	await loadFeeds(params, true)
+}
+
+// 下拉刷新
+async function onRefresh() {
+	isRefreshing.value = true
+	
+	// 重置分页状态
+	currentPage.value = 1
+	hasMore.value = true
+	
+	const params = {}
+	if (searchText.value.trim()) {
+		params.search = searchText.value.trim()
+	}
+	if (currentCategory.value !== 'rec') {
+		params.category = currentCategory.value
+	}
+	
+	await loadFeeds(params, false)
+	
+	setTimeout(() => {
+		isRefreshing.value = false
+	}, 500)
+}
+
+let searchTimeout = null
 
 function switchTab(tab) {
 	topTab.value = tab
+	if (tab === 'square' && posts.value.length === 0) {
+		loadFeeds()
+	}
 }
 
 function goDetail(post) {
@@ -238,6 +518,79 @@ function goScienceDetail(article) {
 }
 function goToCreate() { uni.navigateTo({ url: '/pages/createCommunity/createCommunity' }) }
 function noop() { }
+
+// 切换点赞状态
+async function toggleLike(post) {
+	if (!currentUser.value) {
+		uni.showToast({
+			title: '请先登录',
+			icon: 'none'
+		})
+		return
+	}
+	
+	try {
+		const result = await api.likeFeed(post.id)
+		if (result) {
+			// 更新点赞数量和状态
+			post.likes = result.likes
+			post.isLiked = result.isLiked
+			
+			uni.showToast({
+				title: post.isLiked ? '已点赞' : '已取消点赞',
+				icon: 'none',
+				duration: 1000
+			})
+		}
+	} catch (error) {
+		console.error('点赞操作失败:', error)
+		uni.showToast({
+			title: '操作失败',
+			icon: 'none'
+		})
+	}
+}
+
+// 删除动态
+async function deletePost(post) {
+	try {
+		uni.showModal({
+			title: '确认删除',
+			content: '确定要删除这条动态吗？删除后无法恢复。',
+			confirmText: '删除',
+			cancelText: '取消',
+			confirmColor: '#ff4757',
+			success: async (res) => {
+				if (res.confirm) {
+					try {
+						await api.deleteFeed(post.id)
+						uni.showToast({
+							title: '删除成功',
+							icon: 'success'
+						})
+						// 从列表中移除已删除的动态
+						const index = posts.value.findIndex(p => p.id === post.id)
+						if (index > -1) {
+							posts.value.splice(index, 1)
+						}
+					} catch (error) {
+						console.error('删除动态失败:', error)
+						uni.showToast({
+							title: '删除失败',
+							icon: 'none'
+						})
+					}
+				}
+			}
+		})
+	} catch (error) {
+		console.error('删除动态失败:', error)
+		uni.showToast({
+			title: '删除失败',
+			icon: 'none'
+		})
+	}
+}
 </script>
 
 <style scoped>
@@ -404,6 +757,22 @@ function noop() { }
 	font-size: 28rpx;
 }
 
+.search-clear {
+	width: 40rpx;
+	height: 40rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #f0f0f0;
+	border-radius: 50%;
+	margin-left: 12rpx;
+}
+
+.search-clear text {
+	font-size: 24rpx;
+	color: #666;
+}
+
 .ph {
 	color: #bbb;
 }
@@ -430,11 +799,19 @@ function noop() { }
 	font-weight: 600;
 }
 
+/* 滚动容器 */
+.feed-scroll {
+	height: calc(100vh - 200rpx);
+	/* 确保滚动检测正常工作 */
+	overflow-y: auto;
+}
+
 /* 动态卡片 */
 .feed {
 	display: flex;
 	flex-direction: column;
 	gap: 35rpx;
+	padding-bottom: 20rpx;
 }
 
 .card {
@@ -486,6 +863,15 @@ function noop() { }
 	margin-top: 10rpx;
 }
 
+.post-title {
+	display: block;
+	color: #82919c;
+	font-size: 28rpx;
+	font-weight: 600;
+	margin: 16rpx 0 0rpx 0;
+	line-height: 1.4;
+}
+
 .content {
 	display: block;
 	color: #333;
@@ -528,6 +914,15 @@ function noop() { }
 .ft-icon {
 	width: 24rpx;
 	height: 24rpx;
+}
+
+.delete-item {
+	background: #ffebee !important;
+	border: 2rpx solid #ffcdd2 !important;
+}
+
+.delete-item .ft-icon {
+	filter: hue-rotate(0deg) saturate(1.5) brightness(0.8);
 }
 
 .floating-add-btn {
@@ -735,5 +1130,71 @@ function noop() { }
 .s-reads {
 	color: #7a7a7a;
 	font-size: 24rpx;
+}
+
+/* 加载状态样式 - 微信朋友圈风格 */
+.loading-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 20rpx 0;
+}
+
+.loading-dots {
+	display: flex;
+	gap: 8rpx;
+}
+
+.dot {
+	width: 12rpx;
+	height: 12rpx;
+	background: #999;
+	border-radius: 50%;
+	animation: dot-bounce 1.4s ease-in-out infinite both;
+}
+
+.dot:nth-child(1) {
+	animation-delay: -0.32s;
+}
+
+.dot:nth-child(2) {
+	animation-delay: -0.16s;
+}
+
+.dot:nth-child(3) {
+	animation-delay: 0s;
+}
+
+@keyframes dot-bounce {
+	0%, 80%, 100% {
+		transform: scale(0.8);
+		opacity: 0.5;
+	}
+	40% {
+		transform: scale(1.2);
+		opacity: 1;
+	}
+}
+
+
+/* 空状态样式 */
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 100rpx 0;
+	gap: 20rpx;
+}
+
+.empty-icon {
+	width: 120rpx;
+	height: 120rpx;
+	opacity: 0.5;
+}
+
+.empty-text {
+	font-size: 28rpx;
+	color: #999;
 }
 </style>

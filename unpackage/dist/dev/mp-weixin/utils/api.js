@@ -59,6 +59,10 @@ const api = {
     method: "POST",
     data
   }),
+  getUserStats: () => request({
+    url: "/users/stats",
+    method: "GET"
+  }),
   // 宠物管理
   getPets: () => request({
     url: "/pets",
@@ -144,6 +148,10 @@ const api = {
     method: "GET",
     data: params
   }),
+  getFeed: (id) => request({
+    url: `/feeds/${id}`,
+    method: "GET"
+  }),
   createFeed: (data) => request({
     url: "/feeds",
     method: "POST",
@@ -153,24 +161,12 @@ const api = {
     url: `/feeds/${id}/like`,
     method: "POST"
   }),
+  deleteFeed: (id) => request({
+    url: `/feeds/${id}`,
+    method: "DELETE"
+  }),
   createComment: (id, data) => request({
     url: `/feeds/${id}/comments`,
-    method: "POST",
-    data
-  }),
-  // 问答系统
-  getQuestions: (params) => request({
-    url: "/questions",
-    method: "GET",
-    data: params
-  }),
-  createQuestion: (data) => request({
-    url: "/questions",
-    method: "POST",
-    data
-  }),
-  createAnswer: (id, data) => request({
-    url: `/questions/${id}/answers`,
     method: "POST",
     data
   }),
@@ -183,21 +179,6 @@ const api = {
   getArticle: (id) => request({
     url: `/articles/${id}`,
     method: "GET"
-  }),
-  // 话题管理
-  getTopics: (params) => request({
-    url: "/topics",
-    method: "GET",
-    data: params
-  }),
-  getPopularTopics: () => request({
-    url: "/topics/popular",
-    method: "GET"
-  }),
-  createTopic: (data) => request({
-    url: "/topics",
-    method: "POST",
-    data
   }),
   // 媒体管理
   getUploadPolicy: (type) => request({

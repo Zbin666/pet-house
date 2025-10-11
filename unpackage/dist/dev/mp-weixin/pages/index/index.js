@@ -9,9 +9,13 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
     const hasPet = common_vendor.ref(false);
     const userInfo = common_vendor.ref(null);
     const pets = common_vendor.ref([]);
+    const homeReminders = common_vendor.ref([]);
+    const dailyScience = common_vendor.ref(null);
     const currentPet = common_vendor.computed(() => {
       var _a;
-      return ((_a = pets.value) == null ? void 0 : _a[0]) || null;
+      const pet = ((_a = pets.value) == null ? void 0 : _a[0]) || null;
+      common_vendor.index.__f__("log", "at pages/index/index.vue:118", "currentPet computed:", pet);
+      return pet;
     });
     const petMeta = common_vendor.computed(() => {
       if (!currentPet.value)
@@ -40,17 +44,94 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
         return;
       }
       await loadPets();
+      await loadTodayReminders();
+      await loadDailyScience();
     });
     common_vendor.onShow(async () => {
       await loadPets();
+      await loadTodayReminders();
+      await loadDailyScience();
     });
+    function processImageUrl(url) {
+      if (!url)
+        return null;
+      if (url.startsWith("wxfile://")) {
+        return url;
+      }
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        return url;
+      }
+      if (url.startsWith("/")) {
+        return `http://10.161.196.67:3000${url}`;
+      }
+      return `http://10.161.196.67:3000/${url}`;
+    }
+    function getDefaultPetAvatar() {
+      return "/static/index/add.png";
+    }
     async function loadPets() {
+      var _a, _b;
       try {
+        common_vendor.index.__f__("log", "at pages/index/index.vue:195", "=== 首页加载宠物数据调试信息 ===");
         const result = await utils_api.api.getPets();
+        common_vendor.index.__f__("log", "at pages/index/index.vue:197", "API返回结果:", result);
         pets.value = Array.isArray(result) ? result : result.data || [];
+        pets.value = pets.value.map((pet) => ({
+          ...pet,
+          avatarUrl: processImageUrl(pet.avatarUrl)
+        }));
+        common_vendor.index.__f__("log", "at pages/index/index.vue:208", "处理后的宠物数据:", pets.value);
+        common_vendor.index.__f__("log", "at pages/index/index.vue:209", "第一个宠物的头像URL:", (_a = pets.value[0]) == null ? void 0 : _a.avatarUrl);
+        common_vendor.index.__f__("log", "at pages/index/index.vue:210", "第一个宠物的完整数据:", pets.value[0]);
         hasPet.value = pets.value.length > 0;
+        common_vendor.index.__f__("log", "at pages/index/index.vue:213", "是否有宠物:", hasPet.value);
+        if ((_b = pets.value[0]) == null ? void 0 : _b.avatarUrl) {
+          common_vendor.index.__f__("log", "at pages/index/index.vue:217", "头像URL详情:", {
+            url: pets.value[0].avatarUrl,
+            type: typeof pets.value[0].avatarUrl,
+            length: pets.value[0].avatarUrl.length
+          });
+        }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/index/index.vue:154", "加载宠物数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/index/index.vue:224", "加载宠物数据失败:", error);
+      }
+    }
+    async function loadTodayReminders() {
+      try {
+        const now = /* @__PURE__ */ new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+        const res = await utils_api.api.getSubscriptions({ startDate: start, endDate: end });
+        const list = Array.isArray(res) ? res : res.subscriptions || res.data || [];
+        homeReminders.value = list.map((s) => ({
+          id: s.id,
+          title: s.content || (s.type === "medicine" ? "用药提醒" : s.type === "vaccine" ? "疫苗提醒" : s.type === "wash" ? "洗护提醒" : "日常提醒"),
+          time: new Date(s.fireAt).toTimeString().slice(0, 5)
+        }));
+      } catch (e) {
+        homeReminders.value = [];
+      }
+    }
+    async function loadDailyScience() {
+      try {
+        const res = await utils_api.api.getArticles({ category: "science", page: 1, limit: 200 });
+        const list = Array.isArray(res) ? res : res.articles || res.data || [];
+        if (!list.length) {
+          dailyScience.value = null;
+          return;
+        }
+        const dayIndex = Math.floor(Date.now() / 864e5);
+        const idx = dayIndex % list.length;
+        const stable = list.slice().sort((a, b) => {
+          const at = new Date(a.createdAt || 0).getTime();
+          const bt = new Date(b.createdAt || 0).getTime();
+          if (at !== bt)
+            return at - bt;
+          return String(a.id).localeCompare(String(b.id));
+        });
+        dailyScience.value = stable[idx];
+      } catch (e) {
+        dailyScience.value = null;
       }
     }
     function getGreeting() {
@@ -70,15 +151,31 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
       common_vendor.index.setStorageSync("recordTab", tab);
       common_vendor.index.switchTab({ url: "/pages/record/record" });
     }
+    function onImageLoad(e) {
+      common_vendor.index.__f__("log", "at pages/index/index.vue:296", "图片加载成功:", e);
+    }
+    function onImageError(e) {
+      var _a;
+      common_vendor.index.__f__("error", "at pages/index/index.vue:300", "图片加载失败:", e);
+      common_vendor.index.__f__("error", "at pages/index/index.vue:301", "失败的图片URL:", (_a = currentPet.value) == null ? void 0 : _a.avatarUrl);
+      if (currentPet.value) {
+        currentPet.value.avatarUrl = getDefaultPetAvatar();
+      }
+    }
     function goPetDetail() {
       const pet = currentPet.value;
+      common_vendor.index.__f__("log", "at pages/index/index.vue:311", "=== 首页跳转宠物详情调试信息 ===");
+      common_vendor.index.__f__("log", "at pages/index/index.vue:312", "当前宠物数据:", pet);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:313", "宠物头像URL:", pet == null ? void 0 : pet.avatarUrl);
       if (!pet || !pet.id)
         return;
       const q = encodeURIComponent(JSON.stringify(pet));
+      common_vendor.index.__f__("log", "at pages/index/index.vue:317", "编码后的数据:", q);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:318", "跳转URL:", `/pages/petDetail/petDetail?pet=${q}`);
       common_vendor.index.navigateTo({ url: `/pages/petDetail/petDetail?pet=${q}` });
     }
     return (_ctx, _cache) => {
-      var _a, _b, _c, _d;
+      var _a, _b, _c, _d, _e, _f;
       return common_vendor.e({
         a: common_vendor.t(((_a = userInfo.value) == null ? void 0 : _a.nickname) || "用户"),
         b: common_vendor.t(getGreeting()),
@@ -87,30 +184,45 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
       }, hasPet.value ? common_vendor.e({
         e: (_b = currentPet.value) == null ? void 0 : _b.avatarUrl
       }, ((_c = currentPet.value) == null ? void 0 : _c.avatarUrl) ? {
-        f: currentPet.value.avatarUrl
-      } : {}, {
-        g: common_vendor.t(((_d = currentPet.value) == null ? void 0 : _d.name) || "我的宠物"),
-        h: common_vendor.t(petMeta.value),
-        i: petTags.value.length
+        f: currentPet.value.avatarUrl,
+        g: common_vendor.o(onImageError),
+        h: common_vendor.o(onImageLoad)
+      } : {
+        i: getDefaultPetAvatar()
+      }, {
+        j: common_vendor.t(((_d = currentPet.value) == null ? void 0 : _d.name) || "我的宠物"),
+        k: common_vendor.t(petMeta.value),
+        l: petTags.value.length
       }, petTags.value.length ? {
-        j: common_vendor.f(petTags.value, (tag, i, i0) => {
+        m: common_vendor.f(petTags.value, (tag, i, i0) => {
           return {
             a: common_vendor.t(tag),
             b: i
           };
         })
       } : {}, {
-        k: common_vendor.o(goPetDetail)
+        n: common_vendor.o(goPetDetail)
       }) : {
-        l: common_assets._imports_0$1,
-        m: common_vendor.o(goAddPet)
+        o: common_assets._imports_0$1,
+        p: common_vendor.o(goAddPet)
       }, {
-        n: common_assets._imports_2$1,
-        o: common_vendor.o(($event) => goToRecord("calendar")),
-        p: common_assets._imports_3,
-        q: common_vendor.o(($event) => goToRecord("stats")),
-        r: common_assets._imports_4,
-        s: common_assets._imports_5
+        q: homeReminders.value.length === 0
+      }, homeReminders.value.length === 0 ? {} : {
+        r: common_vendor.f(homeReminders.value, (r, k0, i0) => {
+          return {
+            a: common_vendor.t(r.title),
+            b: r.id
+          };
+        })
+      }, {
+        s: common_assets._imports_2$1,
+        t: common_vendor.o(($event) => goToRecord("calendar")),
+        v: common_assets._imports_3,
+        w: common_vendor.o(($event) => goToRecord("stats")),
+        x: common_vendor.t(((_e = dailyScience.value) == null ? void 0 : _e.title) ? `【${dailyScience.value.title}】` : "【今日小知识】"),
+        y: common_vendor.t(((_f = dailyScience.value) == null ? void 0 : _f.content) || "每日为你推荐一条宠物健康小知识～"),
+        z: common_assets._imports_4,
+        A: common_assets._imports_5
       });
     };
   }

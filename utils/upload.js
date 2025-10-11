@@ -30,29 +30,73 @@ export function compressImage(filePath, quality = 0.8) {
  */
 export async function uploadImage(filePath, type = 'gallery') {
   try {
-    // 开发环境：直接返回本地文件路径作为URL
-    // 生产环境：需要集成真实的对象存储服务
-    console.log('开发环境：使用本地文件路径作为图片URL')
-    return filePath
+    console.log('=== 前端图片上传调试信息 ===');
+    console.log('文件路径:', filePath);
+    console.log('上传类型:', type);
+    console.log('上传URL:', 'http://10.161.196.67:3000/api/media/upload');
+    console.log('Token:', uni.getStorageSync('token'));
     
-    // 生产环境代码（需要配置对象存储）：
-    // 1. 获取上传策略
-    // const policyRes = await api.getUploadPolicy(type)
-    // const { uploadUrl, formData, key } = policyRes.data
-    // 
-    // 2. 上传到对象存储
-    // const uploadRes = await uploadToOSS(filePath, uploadUrl, formData, key)
-    // 
-    // 3. 确认上传完成
-    // const completeRes = await api.completeUpload({
-    //   url: `${uploadUrl}${key}`,
-    //   fileKey: key,
-    //   type: type
-    // })
-    // 
-    // return completeRes.data.url
+    // 上传到后端服务器
+    const uploadTask = uni.uploadFile({
+      url: 'http://10.161.196.67:3000/api/media/upload',
+      filePath: filePath,
+      name: 'file',
+      formData: {
+        type: type
+      },
+      header: {
+        'Authorization': `Bearer ${uni.getStorageSync('token')}`
+      }
+    })
+    
+    return new Promise((resolve, reject) => {
+      uploadTask.then((res) => {
+        console.log('📤 上传响应:');
+        console.log('- 状态码:', res.statusCode);
+        console.log('- 响应头:', res.header);
+        console.log('- 响应数据:', res.data);
+        
+        if (res.statusCode === 200) {
+          const data = JSON.parse(res.data)
+          console.log('📋 解析后的数据:', data);
+          
+          if (data.success) {
+            // 返回完整的图片URL
+            const imageUrl = `http://10.161.196.67:3000/uploads/${data.filename}`
+            console.log('✅ 图片上传成功:');
+            console.log('- 文件名:', data.filename);
+            console.log('- 相对URL:', data.url);
+            console.log('- 完整URL:', imageUrl);
+            console.log('- 媒体ID:', data.id);
+            
+            // 测试图片URL是否可访问
+            uni.request({
+              url: imageUrl,
+              method: 'HEAD',
+              success: (testRes) => {
+                console.log('🔍 图片URL测试结果:', testRes.statusCode);
+              },
+              fail: (testErr) => {
+                console.error('❌ 图片URL测试失败:', testErr);
+              }
+            });
+            
+            resolve(imageUrl)
+          } else {
+            console.error('❌ 上传失败:', data.message);
+            reject(new Error(data.message || '上传失败'))
+          }
+        } else {
+          console.error('❌ HTTP错误:', res.statusCode);
+          reject(new Error(`上传失败: ${res.statusCode}`))
+        }
+      }).catch((error) => {
+        console.error('❌ 图片上传异常:', error)
+        reject(error)
+      })
+    })
   } catch (error) {
-    console.error('图片上传失败:', error)
+    console.error('❌ 图片上传失败:', error)
     throw error
   }
 }

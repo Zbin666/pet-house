@@ -814,44 +814,59 @@ function saveEdit() {
 }
 
 // 删除记录
-function deleteRecord() {
+async function deleteRecord() {
 	uni.showModal({
 		title: '确认删除',
 		content: `确定要删除这条${currentRecord.value.title}记录吗？`,
 		confirmText: '删除',
 		cancelText: '取消',
 		confirmColor: '#ff4757',
-		success: (res) => {
+		success: async (res) => {
 			if (res.confirm) {
-				// 从轮播图中删除当前记录
-				recordList.value.splice(currentIndex.value, 1)
-				
-				// 如果删除后没有记录了，返回上一页
-				if (recordList.value.length === 0) {
+				try {
+					// 获取当前记录的ID
+					const currentRecordData = recordList.value[currentIndex.value]
+					if (currentRecordData && currentRecordData.id) {
+						// 调用后端API删除记录
+						await api.deleteRecord(currentRecordData.id)
+					}
+					
+					// 从轮播图中删除当前记录
+					recordList.value.splice(currentIndex.value, 1)
+					
+					// 如果删除后没有记录了，返回上一页
+					if (recordList.value.length === 0) {
+						uni.showToast({
+							title: '删除成功',
+							icon: 'success'
+						})
+						setTimeout(() => {
+							uni.navigateBack()
+						}, 1500)
+						return
+					}
+					
+					// 调整当前索引
+					if (currentIndex.value >= recordList.value.length) {
+						currentIndex.value = recordList.value.length - 1
+					}
+					
+					// 更新当前记录数据
+					const newCurrentRecordData = recordList.value[currentIndex.value]
+					currentRecord.value = newCurrentRecordData.type
+					recordData.value = newCurrentRecordData.data
+					
 					uni.showToast({
 						title: '删除成功',
 						icon: 'success'
 					})
-					setTimeout(() => {
-						uni.navigateBack()
-					}, 1500)
-					return
+				} catch (error) {
+					console.error('删除记录失败:', error)
+					uni.showToast({
+						title: '删除失败',
+						icon: 'none'
+					})
 				}
-				
-				// 调整当前索引
-				if (currentIndex.value >= recordList.value.length) {
-					currentIndex.value = recordList.value.length - 1
-				}
-				
-				// 更新当前记录数据
-				const currentRecordData = recordList.value[currentIndex.value]
-				currentRecord.value = currentRecordData.type
-				recordData.value = currentRecordData.data
-				
-				uni.showToast({
-					title: '删除成功',
-					icon: 'success'
-				})
 			}
 		}
 	})

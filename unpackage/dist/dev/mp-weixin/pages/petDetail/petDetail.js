@@ -9,11 +9,43 @@ const _sfc_main = {
     common_vendor.onLoad(async (query) => {
       var _a;
       common_vendor.index.setNavigationBarColor({ frontColor: "#000000", backgroundColor: "#fff1a8" });
+      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:130", "=== 宠物详情页加载调试信息 ===");
+      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:131", "URL参数:", query);
       if (query == null ? void 0 : query.pet) {
         try {
           const data = JSON.parse(decodeURIComponent(query.pet));
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:136", "解析后的宠物数据:", data);
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:137", "宠物头像URL:", data.avatarUrl);
           Object.assign(pet.value, data);
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:139", "赋值后的pet.value:", pet.value);
+          if (data.avatarUrl) {
+            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:143", "🔍 测试图片URL可访问性...");
+            common_vendor.index.request({
+              url: data.avatarUrl,
+              method: "HEAD",
+              success: (testRes) => {
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:150", "✅ 原始图片URL测试成功:", testRes.statusCode);
+              },
+              fail: (testErr) => {
+                common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:153", "❌ 原始图片URL测试失败:", testErr);
+              }
+            });
+            const filename = data.avatarUrl.split("/").pop();
+            const testUrl = `http://10.161.196.67:3000/api/test-image/${filename}`;
+            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:160", "🧪 测试API路由:", testUrl);
+            common_vendor.index.request({
+              url: testUrl,
+              method: "GET",
+              success: (apiRes) => {
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:166", "✅ API路由测试成功:", apiRes.statusCode);
+              },
+              fail: (apiErr) => {
+                common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:169", "❌ API路由测试失败:", apiErr);
+              }
+            });
+          }
         } catch (e) {
+          common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:174", "解析宠物数据失败:", e);
         }
       }
       if ((_a = pet.value) == null ? void 0 : _a.id) {
@@ -22,7 +54,7 @@ const _sfc_main = {
           const mediaList = Array.isArray(res) ? res : res.media || res.data || [];
           gallery.value = mediaList.map((m) => m.url).filter(Boolean);
         } catch (err) {
-          common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:141", "加载宠物相册失败", err);
+          common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:184", "加载宠物相册失败", err);
         }
       }
     });
@@ -126,78 +158,87 @@ const _sfc_main = {
       const today = (/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0);
       return Math.max(1, Math.floor((today - start) / 864e5) + 1);
     });
+    function onAvatarLoad(e) {
+      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:287", "✅ 头像图片加载成功:", e);
+    }
+    function onAvatarError(e) {
+      common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:291", "❌ 头像图片加载失败:", e);
+      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:292", "当前图片URL:", pet.value.avatarUrl);
+    }
     return (_ctx, _cache) => {
       return common_vendor.e({
         a: editMode.value && form.avatarUrl ? form.avatarUrl : pet.value.avatarUrl || "/static/logo.png",
-        b: common_vendor.o(($event) => editMode.value ? pickAvatar() : null),
-        c: !editMode.value
+        b: common_vendor.o(onAvatarLoad),
+        c: common_vendor.o(onAvatarError),
+        d: common_vendor.o(($event) => editMode.value ? pickAvatar() : null),
+        e: !editMode.value
       }, !editMode.value ? {
-        d: common_vendor.t(pet.value.name)
+        f: common_vendor.t(pet.value.name)
       } : {
-        e: form.name,
-        f: common_vendor.o(($event) => form.name = $event.detail.value)
+        g: form.name,
+        h: common_vendor.o(($event) => form.name = $event.detail.value)
       }, {
-        g: !editMode.value
+        i: !editMode.value
       }, !editMode.value ? {
-        h: common_vendor.t(pet.value.months || 0)
+        j: common_vendor.t(pet.value.months || 0)
       } : {
-        i: form.months,
-        j: common_vendor.o(common_vendor.m(($event) => form.months = $event.detail.value, {
+        k: form.months,
+        l: common_vendor.o(common_vendor.m(($event) => form.months = $event.detail.value, {
           number: true
         }))
       }, {
-        k: !editMode.value
+        m: !editMode.value
       }, !editMode.value ? {
-        l: common_vendor.t(pet.value.weight || 0)
+        n: common_vendor.t(pet.value.weight || 0)
       } : {
-        m: form.weight,
-        n: common_vendor.o(($event) => form.weight = $event.detail.value)
+        o: form.weight,
+        p: common_vendor.o(($event) => form.weight = $event.detail.value)
       }, {
-        o: !editMode.value
+        q: !editMode.value
       }, !editMode.value ? {
-        p: common_vendor.t(pet.value.gender === "male" ? "男生" : "女生")
+        r: common_vendor.t(pet.value.gender === "male" ? "男生" : "女生")
       } : {
-        q: common_vendor.t(genders.value[genderIndex.value]),
-        r: genders.value,
-        s: genderIndex.value,
-        t: common_vendor.o(onGenderChange)
+        s: common_vendor.t(genders.value[genderIndex.value]),
+        t: genders.value,
+        v: genderIndex.value,
+        w: common_vendor.o(onGenderChange)
       }, {
-        v: !editMode.value
+        x: !editMode.value
       }, !editMode.value ? {
-        w: common_vendor.t(pet.value.breed)
+        y: common_vendor.t(pet.value.breed)
       } : {
-        x: form.breed,
-        y: common_vendor.o(($event) => form.breed = $event.detail.value)
+        z: form.breed,
+        A: common_vendor.o(($event) => form.breed = $event.detail.value)
       }, {
-        z: !editMode.value
+        B: !editMode.value
       }, !editMode.value ? {
-        A: common_assets._imports_0$8,
-        B: common_vendor.o(startEdit),
-        C: common_assets._imports_1$1,
-        D: common_vendor.o(deletePet)
+        C: common_assets._imports_0$8,
+        D: common_vendor.o(startEdit),
+        E: common_assets._imports_1$1,
+        F: common_vendor.o(deletePet)
       } : {
-        E: common_vendor.o(cancelEdit),
-        F: common_vendor.o(saveEdit)
+        G: common_vendor.o(cancelEdit),
+        H: common_vendor.o(saveEdit)
       }, {
-        G: common_assets._imports_1$5,
-        H: !editMode.value
+        I: common_assets._imports_1$5,
+        J: !editMode.value
       }, !editMode.value ? {
-        I: common_vendor.t(pet.value.neutered ? "已绝育" : "未绝育")
+        K: common_vendor.t(pet.value.neutered ? "已绝育" : "未绝育")
       } : {
-        J: form.neutered,
-        K: common_vendor.o((e) => form.neutered = e.detail.value)
+        L: form.neutered,
+        M: common_vendor.o((e) => form.neutered = e.detail.value)
       }, {
-        L: common_assets._imports_1$5,
-        M: !editMode.value
+        N: common_assets._imports_1$5,
+        O: !editMode.value
       }, !editMode.value ? {
-        N: common_vendor.f(vaccines.value, (v, i, i0) => {
+        P: common_vendor.f(vaccines.value, (v, i, i0) => {
           return {
             a: common_vendor.t(v),
             b: i
           };
         })
       } : {
-        O: common_vendor.f(vaccineOptions.value, (opt, k0, i0) => {
+        Q: common_vendor.f(vaccineOptions.value, (opt, k0, i0) => {
           return {
             a: opt,
             b: form.vaccines.includes(opt),
@@ -205,18 +246,18 @@ const _sfc_main = {
             d: opt
           };
         }),
-        P: common_vendor.o(onVaccinesChange)
+        R: common_vendor.o(onVaccinesChange)
       }, {
-        Q: common_assets._imports_1$5,
-        R: !editMode.value
+        S: common_assets._imports_1$5,
+        T: !editMode.value
       }, !editMode.value ? {
-        S: common_vendor.t(temperament.value)
+        U: common_vendor.t(temperament.value)
       } : {
-        T: form.temperament,
-        U: common_vendor.o(($event) => form.temperament = $event.detail.value)
+        V: form.temperament,
+        W: common_vendor.o(($event) => form.temperament = $event.detail.value)
       }, {
-        V: common_assets._imports_1$5,
-        W: common_vendor.f(editMode.value ? form.gallery : gallery.value, (g, i, i0) => {
+        X: common_assets._imports_1$5,
+        Y: common_vendor.f(editMode.value ? form.gallery : gallery.value, (g, i, i0) => {
           return common_vendor.e({
             a: g,
             b: common_vendor.o(($event) => preview(i), "g" + i)
@@ -226,10 +267,10 @@ const _sfc_main = {
             d: "g" + i
           });
         }),
-        X: editMode.value,
-        Y: editMode.value
+        Z: editMode.value,
+        aa: editMode.value
       }, editMode.value ? {
-        Z: common_vendor.o(pickGallery)
+        ab: common_vendor.o(pickGallery)
       } : {});
     };
   }

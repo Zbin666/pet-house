@@ -49,6 +49,14 @@
 .card-bd.data-v-6818b03b {
 	margin-top: 10rpx;
 }
+.post-title.data-v-6818b03b {
+	display: block;
+	color: #82919c;
+	font-size: 28rpx;
+	font-weight: 600;
+	margin: 16rpx 0 8rpx 0;
+	line-height: 1.4;
+}
 .content.data-v-6818b03b {
 	display: block;
 	color: #333;
@@ -212,14 +220,22 @@
 	align-items: center;
 	gap: 8rpx;
 }
+.c-column.data-v-6818b03b {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	margin-left: 12rpx;
+}
 .c-name.data-v-6818b03b {
 	font-weight: 700;
-	color: #1a1aa1;
+	color: #2c2c2c;
 	font-size: 28rpx;
 }
 .c-role.data-v-6818b03b {
-	color: #666;
+	display: block;
+	color: #7a7a7a;
 	font-size: 24rpx;
+	margin-top: 4rpx;
 }
 .c-time.data-v-6818b03b {
 	margin-left: auto;

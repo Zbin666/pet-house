@@ -37,12 +37,12 @@ const _sfc_main = {
     const gender = common_vendor.ref("female");
     const genderIcon = common_vendor.computed(() => gender.value === "male" ? "/static/user/male.png" : "/static/user/female.png");
     async function loadData() {
-      var _a;
       try {
         const petsResult = await utils_api.api.getPets();
         pets.value = Array.isArray(petsResult) ? petsResult : petsResult.data || [];
-        const feedsResult = await utils_api.api.getFeeds({ page: 1, limit: 1 });
-        stats.value.feeds = ((_a = feedsResult.pagination) == null ? void 0 : _a.total) || 0;
+        const statsResult = await utils_api.api.getUserStats();
+        stats.value.feeds = statsResult.feeds || 0;
+        stats.value.likes = statsResult.likes || 0;
         maxTogetherDays.value = pets.value.reduce((max, p) => {
           const start = p.startTogether || p.createdAt;
           if (!start)
@@ -51,7 +51,7 @@ const _sfc_main = {
           return Math.max(max, days);
         }, 0);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/user/user.vue:147", "加载数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/user/user.vue:148", "加载数据失败:", error);
       }
     }
     function goEdit() {
@@ -108,13 +108,13 @@ const _sfc_main = {
             f: common_vendor.o(($event) => goPetDetail(p), p.id)
           };
         }),
-        k: common_assets._imports_2$3,
+        k: common_assets._imports_2$2,
         l: common_vendor.o(goEdit),
         m: common_assets._imports_3$3,
         n: common_vendor.o(openSetting),
         o: common_assets._imports_4$1,
         p: common_vendor.o(openPrivacy),
-        q: common_assets._imports_5$1,
+        q: common_assets._imports_5$2,
         r: common_vendor.o(openFeedback),
         s: common_assets._imports_3$3,
         t: common_vendor.o(logoutAction),

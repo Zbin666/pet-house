@@ -10,6 +10,7 @@
 				<text class="time">{{ post.time }}</text>
 			</view>
 			<view class="card-bd">
+				<text v-if="post.title" class="post-title">{{ post.title }}</text>
 				<text class="content">{{ post.text }}</text>
 				<view class="pics" v-if="post.images && post.images.length">
 					<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" />
@@ -24,8 +25,8 @@
 					<image class="ft-icon" src="/static/community/emoji.png" mode="widthFix" />
 					<text>{{ comments.length }}</text>
 				</view>
-				<view class="ft-item">
-					<image class="ft-icon" src="/static/community/good.png" mode="widthFix" />
+				<view class="ft-item" @tap.stop="likePost">
+					<image class="ft-icon" :src="post.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
 					<text>{{ post.likes }}</text>
 				</view>
 			</view>
@@ -51,8 +52,10 @@
 								<image class="c-avatar" :src="c.avatar" mode="aspectFill" />
 								<view class="c-info">
 									<view class="c-row">
-										<text class="c-name">{{ c.user }}</text>
-										<text class="c-role" v-if="c.role">｜{{ c.role }}</text>
+										<view class="c-column">
+											<text class="c-name">{{ c.user }}</text>
+											<text class="c-role" v-if="c.petName">{{ c.petName }}｜{{ c.petBreed }}</text>
+										</view>
 										<text class="c-time">{{ c.time }}</text>
 									</view>
 								</view>
@@ -101,10 +104,11 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { api } from '@/utils/api.js'
 
 // 动态顶部内边距
 const dynamicTopPadding = ref('')
-onMounted(() => {
+onMounted(async () => {
 	try {
 		const info = uni.getSystemInfoSync()
 		const statusBar = info.statusBarHeight || 0
@@ -112,43 +116,140 @@ onMounted(() => {
 		const rpxToPx = (rpx) => (rpx * screenW) / 750
 		const topPx = 15
 		dynamicTopPadding.value = `padding-top:${topPx}px;`
+		
+		// 加载当前用户的宠物信息
+		try {
+			const pets = await api.getPets()
+			const petsList = Array.isArray(pets) ? pets : (pets.data || [])
+			if (petsList.length > 0) {
+				currentUserPet.value = petsList[0] // 使用第一个宠物
+			}
+		} catch (e) {
+			console.error('获取宠物信息失败:', e)
+		}
 	} catch (e) {
 		dynamicTopPadding.value = ''
 	}
 })
 
-const post = reactive({ id: '', user: '昵称', text: '这是一条圈子动态内容。', cover: '/static/logo.png', likes: 0, avatar: '/static/logo.png', pet: '', breed: '', images: [], shares: 0, isLiked: false })
+const post = reactive({ id: '', user: '昵称', text: '这是一条圈子动态内容。', cover: '/static/logo.png', likes: 0, avatar: '/static/logo.png', pet: '', breed: '', images: [], shares: 0, isLiked: false, time: '' })
 const commentText = ref('')
-const comments = reactive([
-	{
-		id: 'c1', user: '刘医生', role: '专业宠物医生', time: '刚刚', avatar: '/static/logo.png', text: '好可爱啊～～～～ 想养一只',
-		replies: [
-			{ user: 'iU我以为', text: '找个好看的麻袋，带走' },
-			{ user: '7issue', text: '啊啊啊，看起来好高贵呀' },
-			{ user: 'iU我以为', text: '对对，好想养一只呀' }
-		]
-	},
-	{ id: 'c2', user: '刘医生', role: '专业宠物医生', time: '刚刚', avatar: '/static/logo.png', text: '1.避免高温遛狗 夏季天气炎热，狗狗汗腺不发达，很难快速调节体温，容易出现中暑...' }
-])
+const comments = reactive([])
+const currentUserPet = ref(null) // 当前用户的宠物信息
+
+async function loadDetail(id) {
+	try {
+		const f = await api.getFeed(id)
+		const user = f.User || {}
+		const pet = f.Pet || {}
+		post.id = f.id
+		post.user = user.nickname || '昵称'
+		post.pet = pet.name || ''
+		post.breed = pet.breed || ''
+		post.text = f.text || ''
+		post.avatar = user.avatarUrl || '/static/logo.png'
+		post.images = Array.isArray(f.images) ? f.images : []
+		post.cover = post.images[0] ? post.images[0] : (f.cover || '/static/logo.png')
+		post.likes = f.likes || 0
+		post.shares = f.shares || 0
+		post.isLiked = f.isLiked || false // 添加点赞状态
+		
+		// 提取标题（从tags字段中获取第一个标签作为标题）
+		let title = ''
+		if (f.tags && Array.isArray(f.tags) && f.tags.length > 0) {
+			title = f.tags[0]
+		} else if (f.tags && typeof f.tags === 'string') {
+			try {
+				const parsedTags = JSON.parse(f.tags)
+				if (Array.isArray(parsedTags) && parsedTags.length > 0) {
+					title = parsedTags[0]
+				}
+			} catch (e) {
+				// 如果解析失败，忽略
+			}
+		}
+		post.title = title ? `#${title}` : ''
+		// 处理时间显示
+		if (f.createdAt) {
+			const created = new Date(f.createdAt)
+			const now = new Date()
+			const timeDiff = now.getTime() - created.getTime()
+			const minutesDiff = Math.floor(timeDiff / (1000 * 60))
+			
+			if (minutesDiff < 1) {
+				post.time = '刚刚'
+			} else if (minutesDiff < 60) {
+				post.time = `${minutesDiff}分钟前`
+			} else if (minutesDiff < 1440) { // 24小时
+				const hoursDiff = Math.floor(minutesDiff / 60)
+				post.time = `${hoursDiff}小时前`
+			} else {
+				// 超过24小时显示具体时间
+				post.time = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
+			}
+		} else {
+			post.time = ''
+		}
+		comments.splice(0, comments.length, ...((f.Comments || []).map((c) => {
+			// 处理评论时间显示
+			let commentTime = ''
+			if (c.createdAt) {
+				const created = new Date(c.createdAt)
+				const now = new Date()
+				const timeDiff = now.getTime() - created.getTime()
+				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
+				
+				if (minutesDiff < 1) {
+					commentTime = '刚刚'
+				} else if (minutesDiff < 60) {
+					commentTime = `${minutesDiff}分钟前`
+				} else if (minutesDiff < 1440) { // 24小时
+					const hoursDiff = Math.floor(minutesDiff / 60)
+					commentTime = `${hoursDiff}小时前`
+				} else {
+					commentTime = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
+				}
+			}
+			
+			return {
+				id: c.id,
+				user: c.User?.nickname || '用户',
+				petName: c.Pet?.name || '',
+				petBreed: c.Pet?.breed || '',
+				time: commentTime,
+				avatar: c.User?.avatarUrl || '/static/logo.png',
+				text: c.text,
+				replies: []
+			}
+		})))
+	} catch (e) {
+		uni.showToast({ title: '加载失败', icon: 'none' })
+	}
+}
 
 onLoad(() => {
 	const eventChannel = getCurrentPages().pop()?.getOpenerEventChannel?.()
+	let incoming = null
 	try {
-		eventChannel && eventChannel.on('post', (data) => {
-			if (data) {
-				post.id = data.id || ''
-				post.user = data.user || '昵称'
-				post.text = data.text || ''
-				post.avatar = data.avatar || '/static/logo.png'
-				post.pet = data.pet || ''
-				post.breed = data.breed || ''
-				post.images = Array.isArray(data.images) ? data.images : []
-				post.cover = post.images[0] ? post.images[0] : (data.cover || '/static/logo.png')
-				post.likes = data.likes || 0
-				post.shares = data.shares || 0
-			}
-		})
+		eventChannel && eventChannel.on('post', (data) => { incoming = data })
 	} catch (e) { }
+	// 如果带有 id 则请求详情，否则用事件数据填充
+	setTimeout(() => {
+		if (incoming && incoming.id) {
+			loadDetail(incoming.id)
+		} else if (incoming) {
+			post.id = incoming.id || ''
+			post.user = incoming.user || '昵称'
+			post.pet = incoming.pet || ''
+			post.breed = incoming.breed || ''
+			post.text = incoming.text || ''
+			post.avatar = incoming.avatar || '/static/logo.png'
+			post.images = Array.isArray(incoming.images) ? incoming.images : []
+			post.cover = post.images[0] ? post.images[0] : (incoming.cover || '/static/logo.png')
+			post.likes = incoming.likes || 0
+			post.shares = incoming.shares || 0
+		}
+	}, 0)
 })
 
 // 分享动态
@@ -160,42 +261,73 @@ function sharePost() {
 }
 
 // 点赞动态
-function likePost() {
-	post.isLiked = !post.isLiked
-	post.likes = post.isLiked ? post.likes + 1 : Math.max(post.likes - 1, 0)
-	uni.showToast({
-		title: post.isLiked ? '已点赞' : '取消点赞',
-		icon: 'none'
-	})
+async function likePost() {
+	try {
+		const result = await api.likeFeed(post.id)
+		if (result) {
+			// 更新点赞数量和状态
+			post.likes = result.likes
+			post.isLiked = result.isLiked
+			
+			uni.showToast({
+				title: post.isLiked ? '已点赞' : '已取消点赞',
+				icon: 'none',
+				duration: 1000
+			})
+		}
+	} catch (error) {
+		console.error('点赞操作失败:', error)
+		uni.showToast({
+			title: '操作失败',
+			icon: 'none'
+		})
+	}
 }
 
 // 提交评论
-function submitComment() {
+async function submitComment() {
 	if (!commentText.value.trim()) {
-		uni.showToast({
-			title: '请输入评论内容',
-			icon: 'none'
-		})
+		uni.showToast({ title: '请输入评论内容', icon: 'none' })
 		return
 	}
-	
-	// 添加新评论
-	const newComment = {
-		id: 'c' + Date.now(),
-		user: '我',
-		role: '',
-		time: '刚刚',
-		avatar: '/static/logo.png',
-		text: commentText.value,
-		replies: []
+	try {
+		const c = await api.createComment(post.id, { text: commentText.value.trim() })
+		// 处理新评论的时间格式，与动态时间格式保持一致
+		let commentTime = '刚刚'
+		if (c.createdAt) {
+			const created = new Date(c.createdAt)
+			const now = new Date()
+			const timeDiff = now.getTime() - created.getTime()
+			const minutesDiff = Math.floor(timeDiff / (1000 * 60))
+			
+			if (minutesDiff < 1) {
+				commentTime = '刚刚'
+			} else if (minutesDiff < 60) {
+				commentTime = `${minutesDiff}分钟前`
+			} else if (minutesDiff < 1440) { // 24小时
+				const hoursDiff = Math.floor(minutesDiff / 60)
+				commentTime = `${hoursDiff}小时前`
+			} else {
+				// 超过24小时显示具体时间
+				commentTime = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
+			}
+		}
+		
+		comments.push({
+			id: c.id,
+			user: c.User?.nickname || '我',
+			petName: currentUserPet.value?.name || '',
+			petBreed: currentUserPet.value?.breed || '',
+			time: commentTime,
+			avatar: c.User?.avatarUrl || '/static/logo.png',
+			text: c.text,
+			replies: []
+		})
+		commentText.value = ''
+		uni.showToast({ title: '评论提交成功', icon: 'success' })
+	} catch (e) {
+		uni.showToast({ title: '评论失败', icon: 'none' })
 	}
-	comments.push(newComment)
-	
-	uni.showToast({
-		title: '评论提交成功',
-		icon: 'success'
-	})
-	commentText.value = ''
 }
 </script>
 
@@ -257,6 +389,15 @@ function submitComment() {
 
 .card-bd {
 	margin-top: 10rpx;
+}
+
+.post-title {
+	display: block;
+	color: #82919c;
+	font-size: 28rpx;
+	font-weight: 600;
+	margin: 16rpx 0 8rpx 0;
+	line-height: 1.4;
 }
 
 .content {
@@ -445,15 +586,24 @@ function submitComment() {
 	gap: 8rpx;
 }
 
+.c-column {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	margin-left: 12rpx;
+}
+
 .c-name {
 	font-weight: 700;
-	color: #1a1aa1;
+	color: #2c2c2c;
 	font-size: 28rpx;
 }
 
 .c-role {
-	color: #666;
+	display: block;
+	color: #7a7a7a;
 	font-size: 24rpx;
+	margin-top: 4rpx;
 }
 
 .c-time {

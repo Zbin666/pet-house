@@ -18,10 +18,64 @@ function compressImage(filePath, quality = 0.8) {
 }
 async function uploadImage(filePath, type = "gallery") {
   try {
-    common_vendor.index.__f__("log", "at utils/upload.js:35", "开发环境：使用本地文件路径作为图片URL");
-    return filePath;
+    common_vendor.index.__f__("log", "at utils/upload.js:33", "=== 前端图片上传调试信息 ===");
+    common_vendor.index.__f__("log", "at utils/upload.js:34", "文件路径:", filePath);
+    common_vendor.index.__f__("log", "at utils/upload.js:35", "上传类型:", type);
+    common_vendor.index.__f__("log", "at utils/upload.js:36", "上传URL:", "http://10.161.196.67:3000/api/media/upload");
+    common_vendor.index.__f__("log", "at utils/upload.js:37", "Token:", common_vendor.index.getStorageSync("token"));
+    const uploadTask = common_vendor.index.uploadFile({
+      url: "http://10.161.196.67:3000/api/media/upload",
+      filePath,
+      name: "file",
+      formData: {
+        type
+      },
+      header: {
+        "Authorization": `Bearer ${common_vendor.index.getStorageSync("token")}`
+      }
+    });
+    return new Promise((resolve, reject) => {
+      uploadTask.then((res) => {
+        common_vendor.index.__f__("log", "at utils/upload.js:54", "📤 上传响应:");
+        common_vendor.index.__f__("log", "at utils/upload.js:55", "- 状态码:", res.statusCode);
+        common_vendor.index.__f__("log", "at utils/upload.js:56", "- 响应头:", res.header);
+        common_vendor.index.__f__("log", "at utils/upload.js:57", "- 响应数据:", res.data);
+        if (res.statusCode === 200) {
+          const data = JSON.parse(res.data);
+          common_vendor.index.__f__("log", "at utils/upload.js:61", "📋 解析后的数据:", data);
+          if (data.success) {
+            const imageUrl = `http://10.161.196.67:3000/uploads/${data.filename}`;
+            common_vendor.index.__f__("log", "at utils/upload.js:66", "✅ 图片上传成功:");
+            common_vendor.index.__f__("log", "at utils/upload.js:67", "- 文件名:", data.filename);
+            common_vendor.index.__f__("log", "at utils/upload.js:68", "- 相对URL:", data.url);
+            common_vendor.index.__f__("log", "at utils/upload.js:69", "- 完整URL:", imageUrl);
+            common_vendor.index.__f__("log", "at utils/upload.js:70", "- 媒体ID:", data.id);
+            common_vendor.index.request({
+              url: imageUrl,
+              method: "HEAD",
+              success: (testRes) => {
+                common_vendor.index.__f__("log", "at utils/upload.js:77", "🔍 图片URL测试结果:", testRes.statusCode);
+              },
+              fail: (testErr) => {
+                common_vendor.index.__f__("error", "at utils/upload.js:80", "❌ 图片URL测试失败:", testErr);
+              }
+            });
+            resolve(imageUrl);
+          } else {
+            common_vendor.index.__f__("error", "at utils/upload.js:86", "❌ 上传失败:", data.message);
+            reject(new Error(data.message || "上传失败"));
+          }
+        } else {
+          common_vendor.index.__f__("error", "at utils/upload.js:90", "❌ HTTP错误:", res.statusCode);
+          reject(new Error(`上传失败: ${res.statusCode}`));
+        }
+      }).catch((error) => {
+        common_vendor.index.__f__("error", "at utils/upload.js:94", "❌ 图片上传异常:", error);
+        reject(error);
+      });
+    });
   } catch (error) {
-    common_vendor.index.__f__("error", "at utils/upload.js:55", "图片上传失败:", error);
+    common_vendor.index.__f__("error", "at utils/upload.js:99", "❌ 图片上传失败:", error);
     throw error;
   }
 }
@@ -42,7 +96,7 @@ async function uploadImages(filePaths, type = "gallery", petId = null) {
           description: "宠物照片"
         });
       } catch (error) {
-        common_vendor.index.__f__("warn", "at utils/upload.js:90", "创建媒体记录失败:", error);
+        common_vendor.index.__f__("warn", "at utils/upload.js:134", "创建媒体记录失败:", error);
       }
     }
     common_vendor.index.hideLoading();

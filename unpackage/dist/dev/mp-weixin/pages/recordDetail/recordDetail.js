@@ -260,36 +260,48 @@ const _sfc_main = {
       editMode.value = false;
       common_vendor.index.showToast({ title: "保存成功", icon: "success" });
     }
-    function deleteRecord() {
+    async function deleteRecord() {
       common_vendor.index.showModal({
         title: "确认删除",
         content: `确定要删除这条${currentRecord.value.title}记录吗？`,
         confirmText: "删除",
         cancelText: "取消",
         confirmColor: "#ff4757",
-        success: (res) => {
+        success: async (res) => {
           if (res.confirm) {
-            recordList.value.splice(currentIndex.value, 1);
-            if (recordList.value.length === 0) {
+            try {
+              const currentRecordData = recordList.value[currentIndex.value];
+              if (currentRecordData && currentRecordData.id) {
+                await utils_api.api.deleteRecord(currentRecordData.id);
+              }
+              recordList.value.splice(currentIndex.value, 1);
+              if (recordList.value.length === 0) {
+                common_vendor.index.showToast({
+                  title: "删除成功",
+                  icon: "success"
+                });
+                setTimeout(() => {
+                  common_vendor.index.navigateBack();
+                }, 1500);
+                return;
+              }
+              if (currentIndex.value >= recordList.value.length) {
+                currentIndex.value = recordList.value.length - 1;
+              }
+              const newCurrentRecordData = recordList.value[currentIndex.value];
+              currentRecord.value = newCurrentRecordData.type;
+              recordData.value = newCurrentRecordData.data;
               common_vendor.index.showToast({
                 title: "删除成功",
                 icon: "success"
               });
-              setTimeout(() => {
-                common_vendor.index.navigateBack();
-              }, 1500);
-              return;
+            } catch (error) {
+              common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:864", "删除记录失败:", error);
+              common_vendor.index.showToast({
+                title: "删除失败",
+                icon: "none"
+              });
             }
-            if (currentIndex.value >= recordList.value.length) {
-              currentIndex.value = recordList.value.length - 1;
-            }
-            const currentRecordData = recordList.value[currentIndex.value];
-            currentRecord.value = currentRecordData.type;
-            recordData.value = currentRecordData.data;
-            common_vendor.index.showToast({
-              title: "删除成功",
-              icon: "success"
-            });
           }
         }
       });
@@ -662,7 +674,7 @@ const _sfc_main = {
           };
         })
       } : {
-        k: common_assets._imports_2$4
+        k: common_assets._imports_2$3
       }, {
         l: common_assets._imports_3$1,
         m: common_vendor.o(showAddModal),

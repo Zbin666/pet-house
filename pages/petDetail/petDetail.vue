@@ -9,7 +9,9 @@
 				<view class="header">
 					<view class="avatar-wrap" @tap="editMode ? pickAvatar() : null">
 						<image class="avatar" :src="editMode && form.avatarUrl ? form.avatarUrl : (pet.avatarUrl || '/static/logo.png')"
-							mode="aspectFill" />
+							mode="aspectFill" 
+							@load="onAvatarLoad"
+							@error="onAvatarError" />
 					</view>
 					<view class="kv">
 						<view class="kv-row"><text class="k">姓名：</text>
@@ -125,11 +127,52 @@ const pet = ref({})
 onLoad(async (query) => {
 	// 设置导航栏背景色与页面背景顶部颜色一致
 	uni.setNavigationBarColor({ frontColor: '#000000', backgroundColor: '#fff1a8' })
+    console.log('=== 宠物详情页加载调试信息 ===');
+    console.log('URL参数:', query);
+    
     if (query?.pet) {
         try {
             const data = JSON.parse(decodeURIComponent(query.pet))
+            console.log('解析后的宠物数据:', data);
+            console.log('宠物头像URL:', data.avatarUrl);
             Object.assign(pet.value, data)
-        } catch (e) { }
+            console.log('赋值后的pet.value:', pet.value);
+            
+            // 测试图片URL是否可访问
+            if (data.avatarUrl) {
+                console.log('🔍 测试图片URL可访问性...');
+                
+                // 测试原始URL
+                uni.request({
+                    url: data.avatarUrl,
+                    method: 'HEAD',
+                    success: (testRes) => {
+                        console.log('✅ 原始图片URL测试成功:', testRes.statusCode);
+                    },
+                    fail: (testErr) => {
+                        console.error('❌ 原始图片URL测试失败:', testErr);
+                    }
+                });
+                
+                // 测试API路由
+                const filename = data.avatarUrl.split('/').pop();
+                const testUrl = `http://10.161.196.67:3000/api/test-image/${filename}`;
+                console.log('🧪 测试API路由:', testUrl);
+                
+                uni.request({
+                    url: testUrl,
+                    method: 'GET',
+                    success: (apiRes) => {
+                        console.log('✅ API路由测试成功:', apiRes.statusCode);
+                    },
+                    fail: (apiErr) => {
+                        console.error('❌ API路由测试失败:', apiErr);
+                    }
+                });
+            }
+        } catch (e) { 
+            console.error('解析宠物数据失败:', e);
+        }
     }
     // 拉取该宠物的媒体图片
     if (pet.value?.id) {
@@ -238,6 +281,16 @@ const togetherDays = computed(() => {
 
 function goEdit() { uni.navigateTo({ url: '/pages/editPet/editPet' }) }
 function goAlbum() { uni.navigateTo({ url: '/pages/album/album' }) }
+
+// 图片加载事件
+function onAvatarLoad(e) {
+    console.log('✅ 头像图片加载成功:', e);
+}
+
+function onAvatarError(e) {
+    console.error('❌ 头像图片加载失败:', e);
+    console.log('当前图片URL:', pet.value.avatarUrl);
+}
 </script>
 
 <style scoped>

@@ -133,8 +133,9 @@ async function loadData() {
 		pets.value = Array.isArray(petsResult) ? petsResult : (petsResult.data || [])
 		
 		// 加载统计数据
-		const feedsResult = await api.getFeeds({ page: 1, limit: 1 })
-		stats.value.feeds = feedsResult.pagination?.total || 0
+		const statsResult = await api.getUserStats()
+		stats.value.feeds = statsResult.feeds || 0
+		stats.value.likes = statsResult.likes || 0
 		
 		// 计算最长在一起天数：对所有宠物取 max(days)
 		maxTogetherDays.value = pets.value.reduce((max, p) => {

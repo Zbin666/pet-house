@@ -145,6 +145,20 @@
 	flex: 1;
 	font-size: 28rpx;
 }
+.search-clear.data-v-a6ef5318 {
+	width: 40rpx;
+	height: 40rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #f0f0f0;
+	border-radius: 50%;
+	margin-left: 12rpx;
+}
+.search-clear text.data-v-a6ef5318 {
+	font-size: 24rpx;
+	color: #666;
+}
 .ph.data-v-a6ef5318 {
 	color: #bbb;
 }
@@ -169,11 +183,19 @@
 	font-weight: 600;
 }
 
+/* 滚动容器 */
+.feed-scroll.data-v-a6ef5318 {
+	height: calc(100vh - 200rpx);
+	/* 确保滚动检测正常工作 */
+	overflow-y: auto;
+}
+
 /* 动态卡片 */
 .feed.data-v-a6ef5318 {
 	display: flex;
 	flex-direction: column;
 	gap: 35rpx;
+	padding-bottom: 20rpx;
 }
 .card.data-v-a6ef5318 {
 	background: #fff;
@@ -216,6 +238,14 @@
 .card-bd.data-v-a6ef5318 {
 	margin-top: 10rpx;
 }
+.post-title.data-v-a6ef5318 {
+	display: block;
+	color: #82919c;
+	font-size: 28rpx;
+	font-weight: 600;
+	margin: 16rpx 0 0rpx 0;
+	line-height: 1.4;
+}
 .content.data-v-a6ef5318 {
 	display: block;
 	color: #333;
@@ -253,6 +283,13 @@
 .ft-icon.data-v-a6ef5318 {
 	width: 24rpx;
 	height: 24rpx;
+}
+.delete-item.data-v-a6ef5318 {
+	background: #ffebee !important;
+	border: 2rpx solid #ffcdd2 !important;
+}
+.delete-item .ft-icon.data-v-a6ef5318 {
+	filter: hue-rotate(0deg) saturate(1.5) brightness(0.8);
 }
 .floating-add-btn.data-v-a6ef5318 {
 	position: fixed;
@@ -435,4 +472,62 @@
 .s-reads.data-v-a6ef5318 {
 	color: #7a7a7a;
 	font-size: 24rpx;
+}
+
+/* 加载状态样式 - 微信朋友圈风格 */
+.loading-container.data-v-a6ef5318 {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 20rpx 0;
+}
+.loading-dots.data-v-a6ef5318 {
+	display: flex;
+	gap: 8rpx;
+}
+.dot.data-v-a6ef5318 {
+	width: 12rpx;
+	height: 12rpx;
+	background: #999;
+	border-radius: 50%;
+	animation: dot-bounce-a6ef5318 1.4s ease-in-out infinite both;
+}
+.dot.data-v-a6ef5318:nth-child(1) {
+	animation-delay: -0.32s;
+}
+.dot.data-v-a6ef5318:nth-child(2) {
+	animation-delay: -0.16s;
+}
+.dot.data-v-a6ef5318:nth-child(3) {
+	animation-delay: 0s;
+}
+@keyframes dot-bounce-a6ef5318 {
+0%, 80%, 100% {
+		transform: scale(0.8);
+		opacity: 0.5;
+}
+40% {
+		transform: scale(1.2);
+		opacity: 1;
+}
+}
+
+
+/* 空状态样式 */
+.empty-state.data-v-a6ef5318 {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 100rpx 0;
+	gap: 20rpx;
+}
+.empty-icon.data-v-a6ef5318 {
+	width: 120rpx;
+	height: 120rpx;
+	opacity: 0.5;
+}
+.empty-text.data-v-a6ef5318 {
+	font-size: 28rpx;
+	color: #999;
 }

@@ -16,8 +16,20 @@
 			<view v-if="hasPet" class="pet-content" @tap="goPetDetail">
 				<view class="pet-left">
 					<view class="pet-avatar">
-						<image v-if="currentPet?.avatarUrl" :src="currentPet.avatarUrl" class="pet-avatar-inner" mode="aspectFill" />
-						<view v-else class="pet-avatar-inner"></view>
+						<image 
+							v-if="currentPet?.avatarUrl" 
+							:src="currentPet.avatarUrl" 
+							class="pet-avatar-inner" 
+							mode="aspectFill" 
+							@error="onImageError" 
+							@load="onImageLoad" 
+						/>
+						<image 
+							v-else 
+							:src="getDefaultPetAvatar()" 
+							class="pet-avatar-inner" 
+							mode="aspectFill" 
+						/>
 					</view>
 				</view>
 				<view class="pet-right">
@@ -40,21 +52,17 @@
 		<!-- Quick list + small cards -->
 		<view class="row">
 			<view class="todo-card">
-				<view class="todo-item">
-					<view class="bullet"></view><text>给火火打疫苗</text>
-				</view>
-				<view class="todo-item">
-					<view class="bullet"></view><text>清理猫砂</text>
-				</view>
-				<view class="todo-item">
-					<view class="bullet"></view><text>购买火火吃的小零食</text>
-				</view>
-				<view class="todo-item">
-					<view class="bullet"></view><text>给火火清理耳朵</text>
-				</view>
-				<view class="todo-item">
-					<view class="bullet"></view><text>给火火剪指甲</text>
-				</view>
+				<scroll-view class="todo-scroll" scroll-y="true">
+					<view v-if="homeReminders.length === 0" class="todo-item">
+						<view class="bullet"></view><text>今天暂无提醒</text>
+					</view>
+					<view v-else>
+						<view class="todo-item" v-for="r in homeReminders" :key="r.id">
+							<view class="bullet"></view>
+							<text>{{ r.title }}</text>
+						</view>
+					</view>
+				</scroll-view>
 			</view>
 			<view class="side-cards">
 				<view class="side-card" @tap="goToRecord('calendar')">
@@ -81,9 +89,9 @@
 					<text>今日科普</text>
 					<view class="title-notch"></view>
 				</view>
-				<text class="science-sub">【长出蒜瓣毛】</text>
+				<text class="science-sub">{{ dailyScience?.title ? `【${dailyScience.title}】` : '【今日小知识】' }}</text>
 			</view>
-			<view class="science-text">当你看到自家猫的毛发分层了，那是它的蒜瓣毛—猫咪体表新陈代谢时产生的产物。毛发蓬松，说明平时吃的很好很有营养，是被养的很好的表现哦～</view>
+			<view class="science-text">{{ dailyScience?.content || '每日为你推荐一条宠物健康小知识～' }}</view>
 			<image class="science-illust" src="/static/index/popular-science.png" mode="widthFix" />
 			<view class="science-icons">
 				<image class="fish" src="/static/index/fish.png" mode="widthFix" />
@@ -103,7 +111,13 @@ defineOptions({ name: 'HomeIndex' })
 const hasPet = ref(false)
 const userInfo = ref(null)
 const pets = ref([])
-const currentPet = computed(() => pets.value?.[0] || null)
+const homeReminders = ref([])
+const dailyScience = ref(null)
+const currentPet = computed(() => {
+  const pet = pets.value?.[0] || null
+  console.log('currentPet computed:', pet)
+  return pet
+})
 const petMeta = computed(() => {
   if (!currentPet.value) return ''
   const months = currentPet.value.months ? `${currentPet.value.months}个月` : ''
@@ -135,23 +149,122 @@ onMounted(async () => {
   
   // 加载宠物数据
   await loadPets()
+  await loadTodayReminders()
+  await loadDailyScience()
 })
 
 // 返回到首页时自动刷新宠物数据
 onShow(async () => {
   // 如果从详情返回且收到全局事件，或直接返回页面，都刷新一次
   await loadPets()
+  await loadTodayReminders()
+  await loadDailyScience()
 })
+
+// 处理图片URL，确保可以正常访问
+function processImageUrl(url) {
+  if (!url) return null
+  
+  // 如果是wxfile协议（小程序临时文件），直接返回
+  if (url.startsWith('wxfile://')) {
+    return url
+  }
+  
+  // 如果是完整的HTTP/HTTPS URL，直接返回
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  
+  // 如果是相对路径，添加基础URL
+  if (url.startsWith('/')) {
+    return `http://10.161.196.67:3000${url}`
+  }
+  
+  // 如果不是以/开头，添加基础URL和/
+  return `http://10.161.196.67:3000/${url}`
+}
+
+// 获取默认宠物头像
+function getDefaultPetAvatar() {
+  return '/static/index/add.png' // 使用现有的添加图标作为默认头像
+}
 
 // 加载宠物数据
 async function loadPets() {
   try {
+    console.log('=== 首页加载宠物数据调试信息 ===');
     const result = await api.getPets()
+    console.log('API返回结果:', result);
+    
     // 兼容后端直接返回数组 或 包在 data 里
     pets.value = Array.isArray(result) ? result : (result.data || [])
+    
+    // 处理图片URL
+    pets.value = pets.value.map(pet => ({
+      ...pet,
+      avatarUrl: processImageUrl(pet.avatarUrl)
+    }))
+    
+    console.log('处理后的宠物数据:', pets.value);
+    console.log('第一个宠物的头像URL:', pets.value[0]?.avatarUrl);
+    console.log('第一个宠物的完整数据:', pets.value[0]);
+    
     hasPet.value = pets.value.length > 0
+    console.log('是否有宠物:', hasPet.value);
+    
+    // 检查图片URL是否有效
+    if (pets.value[0]?.avatarUrl) {
+      console.log('头像URL详情:', {
+        url: pets.value[0].avatarUrl,
+        type: typeof pets.value[0].avatarUrl,
+        length: pets.value[0].avatarUrl.length
+      });
+    }
   } catch (error) {
     console.error('加载宠物数据失败:', error)
+  }
+}
+
+// 加载今日提醒
+async function loadTodayReminders() {
+  try {
+    const now = new Date()
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString()
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString()
+    const res = await api.getSubscriptions({ startDate: start, endDate: end })
+    const list = Array.isArray(res) ? res : (res.subscriptions || res.data || [])
+    homeReminders.value = list.map(s => ({
+      id: s.id,
+      title: s.content || (s.type === 'medicine' ? '用药提醒' : (s.type === 'vaccine' ? '疫苗提醒' : (s.type === 'wash' ? '洗护提醒' : '日常提醒'))),
+      time: (new Date(s.fireAt)).toTimeString().slice(0,5)
+    }))
+  } catch (e) {
+    homeReminders.value = []
+  }
+}
+
+// 加载“今日科普”：从后端取 science 类别文章，按固定顺序与当日索引选一条
+async function loadDailyScience() {
+  try {
+    const res = await api.getArticles({ category: 'science', page: 1, limit: 200 })
+    const list = Array.isArray(res) ? res : (res.articles || res.data || [])
+    if (!list.length) {
+      dailyScience.value = null
+      return
+    }
+    // 以天为周期的稳定索引
+    const dayIndex = Math.floor(Date.now() / 86400000)
+    const idx = dayIndex % list.length
+    // 后端已按创建时间倒序/无序时，这里再稳定排序：createdAt asc, id asc
+    const stable = list.slice().sort((a, b) => {
+      const at = new Date(a.createdAt || 0).getTime()
+      const bt = new Date(b.createdAt || 0).getTime()
+      if (at !== bt) return at - bt
+      return String(a.id).localeCompare(String(b.id))
+    })
+    dailyScience.value = stable[idx]
+  } catch (e) {
+    dailyScience.value = null
   }
 }
 
@@ -178,10 +291,32 @@ function goToRecord(tab) {
 	uni.switchTab({ url: '/pages/record/record' })
 }
 
+// 图片加载事件处理
+function onImageLoad(e) {
+  console.log('图片加载成功:', e)
+}
+
+function onImageError(e) {
+  console.error('图片加载失败:', e)
+  console.error('失败的图片URL:', currentPet.value?.avatarUrl)
+  
+  // 当图片加载失败时，使用默认头像
+  if (currentPet.value) {
+    currentPet.value.avatarUrl = getDefaultPetAvatar()
+  }
+}
+
 function goPetDetail() {
   const pet = currentPet.value
+  console.log('=== 首页跳转宠物详情调试信息 ===');
+  console.log('当前宠物数据:', pet);
+  console.log('宠物头像URL:', pet?.avatarUrl);
+  
   if (!pet || !pet.id) return
   const q = encodeURIComponent(JSON.stringify(pet))
+  console.log('编码后的数据:', q);
+  console.log('跳转URL:', `/pages/petDetail/petDetail?pet=${q}`);
+  
   uni.navigateTo({ url: `/pages/petDetail/petDetail?pet=${q}` })
 }
 </script>
@@ -394,20 +529,27 @@ function goPetDetail() {
 	order: 1;
 }
 
+.todo-scroll {
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+}
+
 .todo-item {
-	display: flex;
-	align-items: center;
-	gap: 12rpx;
-	padding: 12rpx 0;
-	font-size: 26rpx;
-	color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 12rpx 0;
+    font-size: 26rpx;
+    color: #1a1a1a;
 }
 
 .bullet {
-	width: 16rpx;
-	height: 16rpx;
-	background: #2c2c2c;
-	border-radius: 50%;
+    width: 16rpx;
+    height: 16rpx;
+    background: #2c2c2c;
+    border-radius: 50%;
+    flex: 0 0 16rpx;
 }
 
 .side-cards {
