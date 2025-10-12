@@ -1,5 +1,5 @@
 // API 基础配置（真机调试使用本机 WLAN IP）
-const BASE_URL = 'http://10.161.196.67:3000/api'
+const BASE_URL = 'http://10.161.39.206:3000/api'
 
 // 请求拦截器
 const request = (options) => {
@@ -281,6 +281,46 @@ export const api = {
   deleteMedia: (id) => request({
     url: `/media/${id}`,
     method: 'DELETE'
+  }),
+
+  // 评论点赞
+  likeComment: (id) => request({
+    url: `/feeds/comments/${id}/like`,
+    method: 'POST'
+  }),
+
+  // 关注/取消关注问题
+  followQuestion: (id) => request({
+    url: `/questions/${id}/follow`,
+    method: 'POST'
+  }),
+
+  // 评论相关API
+  getComments: (questionId) => request({
+    url: `/questions/${questionId}/comments`,
+    method: 'GET'
+  }),
+
+  createComment: (questionId, data) => request({
+    url: `/questions/${questionId}/comments`,
+    method: 'POST',
+    data
+  }),
+
+  createReply: (commentId, data) => request({
+    url: `/questions/comments/${commentId}/replies`,
+    method: 'POST',
+    data
+  }),
+
+  likeComment: (commentId) => request({
+    url: `/questions/comments/${commentId}/like`,
+    method: 'POST'
+  }),
+
+  likeReply: (replyId) => request({
+    url: `/questions/replies/${replyId}/like`,
+    method: 'POST'
   })
 }
 

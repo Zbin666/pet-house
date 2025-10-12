@@ -56,11 +56,17 @@
 											<text class="c-name">{{ c.user }}</text>
 											<text class="c-role" v-if="c.petName">{{ c.petName }}｜{{ c.petBreed }}</text>
 										</view>
-										<text class="c-time">{{ c.time }}</text>
 									</view>
 								</view>
 							</view>
 							<text class="c-text">{{ c.text }}</text>
+							<view class="c-actions">
+								<text class="c-time">{{ c.time }}</text>
+								<view class="c-like-btn" @tap.stop="likeComment(c)">
+									<image class="c-like-icon" :src="c.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
+									<text class="c-like-count" v-if="c.likes > 0">{{ c.likes }}</text>
+								</view>
+							</view>
 							<view class="reply-box" v-if="c.replies && c.replies.length">
 								<view class="reply-row" v-for="(r, ri) in c.replies" :key="ri">
 									<text class="r-name">{{ r.user }}：</text>
@@ -219,6 +225,8 @@ async function loadDetail(id) {
 				time: commentTime,
 				avatar: c.User?.avatarUrl || '/static/logo.png',
 				text: c.text,
+				likes: c.likes || 0,
+				isLiked: c.isLiked || false,
 				replies: []
 			}
 		})))
@@ -321,12 +329,38 @@ async function submitComment() {
 			time: commentTime,
 			avatar: c.User?.avatarUrl || '/static/logo.png',
 			text: c.text,
+			likes: 0,
+			isLiked: false,
 			replies: []
 		})
 		commentText.value = ''
 		uni.showToast({ title: '评论提交成功', icon: 'success' })
 	} catch (e) {
 		uni.showToast({ title: '评论失败', icon: 'none' })
+	}
+}
+
+// 点赞评论
+async function likeComment(comment) {
+	try {
+		const result = await api.likeComment(comment.id)
+		if (result) {
+			// 更新评论的点赞数量和状态
+			comment.likes = result.likes
+			comment.isLiked = result.isLiked
+			
+			uni.showToast({
+				title: comment.isLiked ? '已点赞' : '已取消点赞',
+				icon: 'none',
+				duration: 1000
+			})
+		}
+	} catch (error) {
+		console.error('点赞评论失败:', error)
+		uni.showToast({
+			title: '操作失败',
+			icon: 'none'
+		})
 	}
 }
 </script>
@@ -606,15 +640,40 @@ async function submitComment() {
 	margin-top: 4rpx;
 }
 
+.c-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 6rpx;
+}
+
+.c-like-btn {
+	display: flex;
+	align-items: center;
+	gap: 6rpx;
+	padding: 8rpx 12rpx;
+	background: #f5f5f5;
+	border-radius: 20rpx;
+}
+
+.c-like-icon {
+	width: 20rpx;
+	height: 20rpx;
+}
+
+.c-like-count {
+	font-size: 22rpx;
+	color: #666;
+}
+
 .c-time {
-	margin-left: auto;
 	color: #777;
 	font-size: 24rpx;
 }
 
 .c-text {
 	display: block;
-	margin-bottom: 20rpx;
+	margin-bottom: 10rpx;
 	color: #1a1a1a;
 	line-height: 1.7;
 	font-size: 26rpx;

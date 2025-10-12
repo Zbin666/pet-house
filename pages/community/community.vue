@@ -33,7 +33,7 @@
 				@confirm="handleSearch"
 				@input="handleSearchInput"
 			/>
-			<view v-if="searchText" class="search-clear" @tap="clearSearch">
+			<view v-if="searchText" class="search-clear" @tap.stop="clearSearch">
 				<text>✕</text>
 			</view>
 		</view>
@@ -45,17 +45,8 @@
 		</scroll-view>
 
 		<!-- 动态列表（广场） -->
-		<scroll-view 
-			class="feed-scroll" 
-			v-if="topTab === 'square'"
-			scroll-y
-			@scrolltolower="loadMoreFeeds"
-			:refresher-enabled="true"
-			:refresher-triggered="isRefreshing"
-			@refresherrefresh="onRefresh"
-		>
-			<view class="feed">
-				<view class="card" v-for="post in posts" :key="post.id" @tap="goDetail(post)">
+		<view class="feed" v-if="topTab === 'square'">
+			<view class="card" v-for="post in posts" :key="post.id" @tap="goDetail(post)">
 				<view class="card-hd">
 					<image class="avatar" :src="post.avatar" mode="aspectFill" />
 					<view class="title-meta">
@@ -89,23 +80,7 @@
 					</view>
 				</view>
 			</view>
-			
-			<!-- 加载状态提示 -->
-			<view class="loading-container" v-if="isLoading && posts.length > 0">
-				<view class="loading-dots">
-					<view class="dot"></view>
-					<view class="dot"></view>
-					<view class="dot"></view>
-				</view>
-			</view>
-			
-			<!-- 空状态 -->
-			<view class="empty-state" v-if="posts.length === 0 && !isLoading">
-				<image class="empty-icon" src="/static/logo.png" mode="aspectFit" />
-				<text class="empty-text">暂无动态</text>
-			</view>
 		</view>
-		</scroll-view>
 
 		<!-- 科普列表 -->
 		<view class="science-feed" v-if="topTab === 'science'">
@@ -123,67 +98,60 @@
 		</view>
 
 		<!-- 问答列表 -->
-		<scroll-view 
-			class="qa-scroll" 
-			v-if="topTab === 'qa'"
-			scroll-y
-			@scrolltolower="loadMoreQuestions"
-			:refresher-enabled="true"
-			:refresher-triggered="qaIsRefreshing"
-			@refresherrefresh="onQARefresh"
-		>
-			<view class="qa-feed">
-				<view class="qa-card" v-for="qa in qaPosts" :key="qa.id" @tap="goQADetail(qa)">
-					<!-- 问题标题 -->
-					<view class="qa-header">
-						<view class="urgent-tag" v-if="qa.isUrgent">
-							<text class="urgent-text">急</text>
+		<view class="qa-feed" v-if="topTab === 'qa'">
+			<view class="qa-card" v-for="qa in qaPosts" :key="qa.id" @tap="goQADetail(qa)">
+				<!-- 问题标题 -->
+				<view class="qa-header">
+					<view class="urgent-tag" v-if="qa.isUrgent">
+						<text class="urgent-text">急</text>
+					</view>
+					<text class="qa-title">{{ qa.title }}</text>
+				</view>
+
+				<!-- 标签 -->
+				<view class="qa-tags" v-if="qa.tags && qa.tags.length > 0">
+					<text class="qa-tag" v-for="tag in qa.tags" :key="tag">#{{ tag }}</text>
+				</view>
+
+				<!-- 虚线分隔 -->
+				<view class="qa-divider"></view>
+
+				<!-- 最高点赞评论或最早评论或未回答状态 -->
+				<view class="qa-content" v-if="qa.hasAnswer && qa.topAnswer">
+					<view class="top-answer-info">
+						<image class="top-answer-avatar" :src="qa.topAnswer.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
+						<view class="top-answer-meta">
+							<text class="top-answer-user">{{ qa.topAnswer.user.nickname }}</text>
+							<text class="top-answer-pet" v-if="qa.topAnswer.pet">{{ qa.topAnswer.pet.name }}｜{{ qa.topAnswer.pet.breed }}</text>
 						</view>
-						<text class="qa-title">{{ qa.title }}</text>
-						<view v-if="qa.isOwner" class="qa-delete" @tap.stop="deleteQuestion(qa)">
-							<image class="delete-icon" src="/static/user/delete.png" mode="widthFix" />
+						<view class="top-answer-likes" v-if="qa.topAnswer.isTopLiked">
+							<image class="like-icon" src="/static/community/good-active.png" mode="widthFix" />
+							<text class="like-count">{{ qa.topAnswer.likes }}</text>
+						</view>
+						<view class="top-answer-badge" v-else>
+							<text class="badge-text">最早</text>
 						</view>
 					</view>
-
-					<!-- 虚线分隔 -->
-					<view class="qa-divider"></view>
-
-					<!-- 医生信息或未回答状态 -->
-					<view class="qa-content" v-if="qa.hasAnswer">
-						<view class="doctor-info">
-							<image class="doctor-avatar" :src="qa.doctor.avatar" mode="aspectFill" />
-							<text class="doctor-text">{{ qa.doctor.name }} | {{ qa.doctor.title }}</text>
-						</view>
-						<text class="answer-preview">{{ qa.answerPreview }}</text>
-					</view>
-					<view class="qa-content" v-else>
-						<text class="no-answer">暂时还没有人回答</text>
-					</view>
-
-					<!-- 统计信息 -->
-					<view class="qa-stats">
-						<text class="stat-text">{{ qa.answerCount }}个回答</text>
-						<text class="stat-text">{{ qa.readCount }}个阅读</text>
-						<text class="stat-text">{{ qa.time }}</text>
+					<text class="top-answer-content">{{ qa.topAnswer.content.length > 50 ? qa.topAnswer.content.substring(0, 50) + '...' : qa.topAnswer.content }}</text>
+					<view class="view-all-answers" @tap.stop="goQADetail(qa)">
+						<text class="view-all-text">查看所有{{ qa.answerCount }}条回答</text>
+						<text class="arrow">→</text>
 					</view>
 				</view>
-				
-				<!-- 加载状态提示 -->
-				<view class="loading-container" v-if="qaIsLoading && qaPosts.length > 0">
-					<view class="loading-dots">
-						<view class="dot"></view>
-						<view class="dot"></view>
-						<view class="dot"></view>
-					</view>
+				<view class="qa-content" v-else-if="qa.hasAnswer">
+					<text class="no-answer">暂时还没有人回答</text>
 				</view>
-				
-				<!-- 空状态 -->
-				<view class="empty-state" v-if="qaPosts.length === 0 && !qaIsLoading">
-					<image class="empty-icon" src="/static/logo.png" mode="aspectFit" />
-					<text class="empty-text">暂无问答</text>
+				<view class="qa-content" v-else>
+					<text class="no-answer">暂时还没有人回答</text>
+				</view>
+
+				<!-- 统计信息 -->
+				<view class="qa-stats">
+					<text class="stat-text">{{ qa.answerCount }}个回答</text>
+					<text class="stat-text">{{ qa.readCount }}个阅读</text>
 				</view>
 			</view>
-		</scroll-view>
+		</view>
 
 		<!-- 浮动添加按钮 -->
 		<view class="floating-add-btn" v-if="topTab !== 'science'" @tap="goToCreate">
@@ -194,19 +162,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { api } from '@/utils/api.js'
 
 const topTab = ref('square')
 const currentUser = ref(null)
 const searchText = ref('')
 const isSearching = ref(false)
-
-// 无限滚动状态管理
-const currentPage = ref(1)
-const pageSize = ref(10) // 每次加载10条动态
-const isLoading = ref(false)
-const hasMore = ref(true)
-const isRefreshing = ref(false)
 
 // 动态顶部内边距
 const dynamicTopPadding = ref('')
@@ -232,8 +194,24 @@ onMounted(async () => {
 	
 	// 初次进入加载广场数据
 	loadFeeds()
+	// 加载问答数据
+	loadQuestions()
 	// 监听刷新事件
 	try { uni.$on('feeds:refresh', () => { if (topTab.value === 'square') loadFeeds() }) } catch (e) {}
+	// 监听问答刷新事件
+	try { uni.$on('qa:refresh', () => { if (topTab.value === 'qa') loadQuestions() }) } catch (e) {}
+})
+
+// 页面显示时刷新数据
+onShow(() => {
+	// 如果当前在问答标签页，刷新问答数据
+	if (topTab.value === 'qa') {
+		loadQuestions()
+	}
+	// 如果当前在广场标签页，刷新动态数据
+	else if (topTab.value === 'square') {
+		loadFeeds()
+	}
 })
 const categories = ref([
 	{ key: 'rec', name: '推荐' },
@@ -246,53 +224,32 @@ const currentCategory = ref('rec')
 
 const posts = ref([])
 
-async function loadFeeds(params = {}, isLoadMore = false) {
-	if (isLoading.value) return // 防止重复加载
-	
+async function loadFeeds(params = {}) {
 	try {
-		isLoading.value = true
-		
-		// 如果是加载更多，使用当前页码；否则重置为第一页
-		const page = isLoadMore ? currentPage.value : 1
-		
-		const res = await api.getFeeds({ 
-			page, 
-			limit: pageSize.value, 
-			...params 
-		})
-		
+		const res = await api.getFeeds({ page: 1, limit: 20, ...params })
 		const list = Array.isArray(res) ? res : (res.feeds || res.data || [])
-		const total = res.pagination?.total || res.total || list.length
 		
-		console.log('=== 数据处理 ===')
-		console.log('当前页:', page)
-		console.log('每页大小:', pageSize.value)
-		console.log('返回数据量:', list.length)
-		console.log('总数据量:', total)
-		console.log('是否加载更多:', isLoadMore)
-		
-		// 检查是否还有更多数据
-		hasMore.value = (page * pageSize.value) < total
-		console.log('计算hasMore:', hasMore.value, '(', page * pageSize.value, '<', total, ')')
-		
-		const processedList = list.map((f) => {
+		posts.value = list.map((f) => {
 			const user = f.User || {}
 			const pet = f.Pet || {}
 			const imgs = Array.isArray(f.images) ? f.images : []
-			// 直接使用原始时间（UTC时间）进行显示
-			let time = '刚刚'
+			const created = f.createdAt ? new Date(f.createdAt) : null
+			// 获取本地时间，确保时区正确
+			const now = new Date()
+			const timeDiff = now.getTime() - created.getTime()
+			const minutesDiff = Math.floor(timeDiff / (1000 * 60))
 			
-			if (f.createdAt) {
-				// 解析UTC时间
-				const created = new Date(f.createdAt)
-				
-				// 直接显示UTC时间，格式：MM/DD HH:MM
-				const month = created.getUTCMonth() + 1
-				const date = created.getUTCDate()
-				const hours = created.getUTCHours().toString().padStart(2, '0')
-				const minutes = created.getUTCMinutes().toString().padStart(2, '0')
-				
-				time = `${month}/${date} ${hours}:${minutes}`
+			let time = '刚刚'
+			if (minutesDiff < 1) {
+				time = '刚刚'
+			} else if (minutesDiff < 60) {
+				time = `${minutesDiff}分钟前`
+			} else if (minutesDiff < 1440) { // 24小时
+				const hoursDiff = Math.floor(minutesDiff / 60)
+				time = `${hoursDiff}小时前`
+			} else {
+				// 超过24小时显示具体时间
+				time = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
 			}
 			
 			// 提取标题（从tags字段中获取第一个标签作为标题）
@@ -328,71 +285,19 @@ async function loadFeeds(params = {}, isLoadMore = false) {
 				isLiked: f.isLiked || false // 添加点赞状态
 			}
 		})
-		
-		// 如果是加载更多，追加到现有列表；否则替换列表
-		if (isLoadMore) {
-			console.log('追加数据：', processedList.length, '条')
-			posts.value = [...posts.value, ...processedList]
-			currentPage.value += 1
-			console.log('追加后总数：', posts.value.length, '条')
-		} else {
-			console.log('替换数据：', processedList.length, '条')
-			posts.value = processedList
-			currentPage.value = 2 // 下次加载更多时从第2页开始
-			console.log('替换后总数：', posts.value.length, '条')
-		}
-		
-		console.log('最终状态：', {
-			currentPage: currentPage.value,
-			hasMore: hasMore.value,
-			totalPosts: posts.value.length
-		})
-		
 	} catch (e) {
-		console.error('加载动态失败:', e)
-		if (!isLoadMore) {
-			posts.value = []
-		}
-		uni.showToast({
-			title: '加载失败',
-			icon: 'none'
-		})
-	} finally {
-		isLoading.value = false
+		posts.value = []
 	}
 }
 
-// 问答数据
-const qaPosts = ref([])
-const qaCurrentPage = ref(1)
-const qaPageSize = ref(10)
-const qaIsLoading = ref(false)
-const qaHasMore = ref(true)
-const qaIsRefreshing = ref(false)
-
 // 加载问答数据
-async function loadQuestions(params = {}, isLoadMore = false) {
-	if (qaIsLoading.value) return
-	
+async function loadQuestions(params = {}) {
 	try {
-		qaIsLoading.value = true
+		const res = await api.getQuestions({ page: 1, limit: 20, ...params })
+		const list = Array.isArray(res) ? res : (res.questions || res.data || [])
 		
-		const page = isLoadMore ? qaCurrentPage.value : 1
-		
-		const res = await api.getQuestions({ 
-			page, 
-			limit: qaPageSize.value, 
-			...params 
-		})
-		
-		const questions = res.questions || []
-		const total = res.pagination?.total || questions.length
-		
-		// 检查是否还有更多数据
-		qaHasMore.value = (page * qaPageSize.value) < total
-		
-		// 处理问答数据，添加必要字段
-		const processedQuestions = questions.map((q) => {
+		// 处理问答数据
+		qaPosts.value = list.map(q => {
 			// 时间格式化
 			let time = '刚刚'
 			if (q.createdAt) {
@@ -404,117 +309,39 @@ async function loadQuestions(params = {}, isLoadMore = false) {
 				time = `${month}/${date} ${hours}:${minutes}`
 			}
 			
-			return {
-				...q,
-				time,
-				hasAnswer: q.answerCount > 0,
-				doctor: q.answers && q.answers.length > 0 ? {
-					name: q.answers[0].user.nickname,
-					title: '专业宠物医生',
-					avatar: q.answers[0].user.avatarUrl
-				} : null,
-				answerPreview: q.answers && q.answers.length > 0 ? 
-					q.answers[0].content.substring(0, 50) + '...' : null,
-				readCount: q.views || 0,
-				isOwner: currentUser.value && q.user.id === currentUser.value.id // 判断是否为作者
-			}
-		})
-		
-		// 如果是加载更多，追加到现有列表；否则替换列表
-		if (isLoadMore) {
-			qaPosts.value = [...qaPosts.value, ...processedQuestions]
-			qaCurrentPage.value += 1
-		} else {
-			qaPosts.value = processedQuestions
-			qaCurrentPage.value = 2
-		}
-		
-	} catch (e) {
-		console.error('加载问答失败:', e)
-		if (!isLoadMore) {
-			qaPosts.value = []
-		}
-		uni.showToast({
-			title: '加载失败',
-			icon: 'none'
-		})
-	} finally {
-		qaIsLoading.value = false
-	}
-}
-
-// 加载更多问答
-async function loadMoreQuestions() {
-	if (!qaHasMore.value || qaIsLoading.value) return
-	
-	const params = {}
-	if (searchText.value.trim()) {
-		params.search = searchText.value.trim()
-	}
-	
-	await loadQuestions(params, true)
-}
-
-// 问答下拉刷新
-async function onQARefresh() {
-	qaIsRefreshing.value = true
-	
-	// 重置分页状态
-	qaCurrentPage.value = 1
-	qaHasMore.value = true
-	
-	const params = {}
-	if (searchText.value.trim()) {
-		params.search = searchText.value.trim()
-	}
-	
-	await loadQuestions(params, false)
-	
-	setTimeout(() => {
-		qaIsRefreshing.value = false
-	}, 500)
-}
-
-// 删除问答
-async function deleteQuestion(question) {
-	try {
-		uni.showModal({
-			title: '确认删除',
-			content: '确定要删除这个问题吗？删除后无法恢复。',
-			confirmText: '删除',
-			cancelText: '取消',
-			confirmColor: '#ff4757',
-			success: async (res) => {
-				if (res.confirm) {
-					try {
-						await api.deleteQuestion(question.id)
-						uni.showToast({
-							title: '删除成功',
-							icon: 'success'
-						})
-						// 从列表中移除已删除的问答
-						const index = qaPosts.value.findIndex(q => q.id === question.id)
-						if (index > -1) {
-							qaPosts.value.splice(index, 1)
-						}
-					} catch (error) {
-						console.error('删除问答失败:', error)
-						uni.showToast({
-							title: '删除失败',
-							icon: 'none'
-						})
+			// 处理标签
+			let tags = []
+			if (q.tags) {
+				try {
+					tags = typeof q.tags === 'string' ? JSON.parse(q.tags) : q.tags
+					if (!Array.isArray(tags)) {
+						tags = []
 					}
+				} catch (e) {
+					tags = []
 				}
 			}
+			
+			return {
+				id: q.id,
+				title: q.title,
+				isUrgent: q.isUrgent,
+				hasAnswer: q.answerCount > 0,
+				topAnswer: q.topAnswer || null,
+				answerCount: q.answerCount || 0,
+				readCount: q.views || 0,
+				time: time,
+				tags: tags
+			}
 		})
-	} catch (error) {
-		console.error('删除问答失败:', error)
-		uni.showToast({
-			title: '删除失败',
-			icon: 'none'
-		})
+	} catch (e) {
+		console.error('加载问答数据失败:', e)
+		qaPosts.value = []
 	}
 }
+
+// 问答数据
+const qaPosts = ref([])
 
 // 科普数据
 const sciencePosts = ref([
@@ -532,133 +359,10 @@ function selectCategory(key) {
 	currentCategory.value = key 
 	// 如果需要按类目过滤，将 key 作为标签传给后端
 	if (topTab.value === 'square') {
-		// 重置分页状态
-		currentPage.value = 1
-		hasMore.value = true
-		
 		const categoryParam = key === 'rec' ? undefined : key
 		loadFeeds(categoryParam ? { category: categoryParam } : {})
 	}
 }
-
-// 搜索功能
-function handleSearch() {
-	if (searchText.value.trim()) {
-		isSearching.value = true
-		// 重置分页状态
-		currentPage.value = 1
-		hasMore.value = true
-		qaCurrentPage.value = 1
-		qaHasMore.value = true
-		
-		if (topTab.value === 'square') {
-			loadFeeds({ search: searchText.value.trim() })
-		} else if (topTab.value === 'qa') {
-			loadQuestions({ search: searchText.value.trim() })
-		}
-	}
-}
-
-function handleSearchInput() {
-	// 实时搜索（可选，这里使用防抖）
-	clearTimeout(searchTimeout)
-	searchTimeout = setTimeout(() => {
-		if (searchText.value.trim()) {
-			isSearching.value = true
-			// 重置分页状态
-			currentPage.value = 1
-			hasMore.value = true
-			qaCurrentPage.value = 1
-			qaHasMore.value = true
-			
-			if (topTab.value === 'square') {
-				loadFeeds({ search: searchText.value.trim() })
-			} else if (topTab.value === 'qa') {
-				loadQuestions({ search: searchText.value.trim() })
-			}
-		} else if (isSearching.value) {
-			// 如果清空搜索框，重新加载所有数据
-			isSearching.value = false
-			// 重置分页状态
-			currentPage.value = 1
-			hasMore.value = true
-			qaCurrentPage.value = 1
-			qaHasMore.value = true
-			
-			if (topTab.value === 'square') {
-				loadFeeds()
-			} else if (topTab.value === 'qa') {
-				loadQuestions()
-			}
-		}
-	}, 500) // 500ms防抖
-}
-
-function clearSearch() {
-	searchText.value = ''
-	isSearching.value = false
-	// 重置分页状态
-	currentPage.value = 1
-	hasMore.value = true
-	qaCurrentPage.value = 1
-	qaHasMore.value = true
-	
-	if (topTab.value === 'square') {
-		loadFeeds() // 重新加载所有数据
-	} else if (topTab.value === 'qa') {
-		loadQuestions() // 重新加载所有数据
-	}
-}
-
-// 加载更多动态
-async function loadMoreFeeds() {
-	console.log('=== 触发加载更多 ===')
-	console.log('hasMore:', hasMore.value)
-	console.log('isLoading:', isLoading.value)
-	console.log('currentPage:', currentPage.value)
-	console.log('posts.length:', posts.value.length)
-	
-	if (!hasMore.value || isLoading.value) {
-		console.log('跳过加载：hasMore=', hasMore.value, 'isLoading=', isLoading.value)
-		return
-	}
-	
-	const params = {}
-	if (searchText.value.trim()) {
-		params.search = searchText.value.trim()
-	}
-	if (currentCategory.value !== 'rec') {
-		params.category = currentCategory.value
-	}
-	
-	console.log('开始加载更多，参数:', params)
-	await loadFeeds(params, true)
-}
-
-// 下拉刷新
-async function onRefresh() {
-	isRefreshing.value = true
-	
-	// 重置分页状态
-	currentPage.value = 1
-	hasMore.value = true
-	
-	const params = {}
-	if (searchText.value.trim()) {
-		params.search = searchText.value.trim()
-	}
-	if (currentCategory.value !== 'rec') {
-		params.category = currentCategory.value
-	}
-	
-	await loadFeeds(params, false)
-	
-	setTimeout(() => {
-		isRefreshing.value = false
-	}, 500)
-}
-
-let searchTimeout = null
 
 function switchTab(tab) {
 	topTab.value = tab
@@ -773,6 +477,53 @@ async function deletePost(post) {
 			icon: 'none'
 		})
 	}
+}
+
+// 搜索处理
+function handleSearch() {
+	if (!searchText.value.trim()) return
+	
+	isSearching.value = true
+	if (topTab.value === 'square') {
+		loadFeeds({ search: searchText.value.trim() })
+	} else if (topTab.value === 'qa') {
+		loadQuestions({ search: searchText.value.trim() })
+	}
+}
+
+// 搜索输入处理（防抖）
+let searchTimeout = null
+function handleSearchInput() {
+	if (searchTimeout) {
+		clearTimeout(searchTimeout)
+	}
+	
+	searchTimeout = setTimeout(() => {
+		if (searchText.value.trim()) {
+			handleSearch()
+		} else {
+			// 如果搜索框为空，重新加载数据
+			if (topTab.value === 'square') {
+				loadFeeds()
+			} else if (topTab.value === 'qa') {
+				loadQuestions()
+			}
+			isSearching.value = false
+		}
+	}, 500) // 500ms 防抖
+}
+
+// 清除搜索
+function clearSearch() {
+	console.log('清除搜索被调用')
+	searchText.value = ''
+	isSearching.value = false
+	if (topTab.value === 'square') {
+		loadFeeds()
+	} else if (topTab.value === 'qa') {
+		loadQuestions()
+	}
+	console.log('搜索文本已清除:', searchText.value)
 }
 </script>
 
@@ -940,24 +691,25 @@ async function deletePost(post) {
 	font-size: 28rpx;
 }
 
+.ph {
+	color: #bbb;
+}
+
 .search-clear {
-	width: 40rpx;
-	height: 40rpx;
+	width: 42rpx;
+	height: 42rpx;
+	background: #ddd;
+	border-radius: 50%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: #f0f0f0;
-	border-radius: 50%;
 	margin-left: 12rpx;
 }
 
 .search-clear text {
-	font-size: 24rpx;
 	color: #666;
-}
-
-.ph {
-	color: #bbb;
+	font-size: 28rpx;
+	font-weight: bold;
 }
 
 /* 类目 */
@@ -982,19 +734,11 @@ async function deletePost(post) {
 	font-weight: 600;
 }
 
-/* 滚动容器 */
-.feed-scroll {
-	height: calc(100vh - 200rpx);
-	/* 确保滚动检测正常工作 */
-	overflow-y: auto;
-}
-
 /* 动态卡片 */
 .feed {
 	display: flex;
 	flex-direction: column;
 	gap: 35rpx;
-	padding-bottom: 20rpx;
 }
 
 .card {
@@ -1125,17 +869,11 @@ async function deletePost(post) {
 }
 
 /* 问答样式 */
-.qa-scroll {
-	height: calc(100vh - 200rpx);
-	overflow-y: auto;
-}
-
 .qa-feed {
 	display: flex;
 	flex-direction: column;
 	gap: 20rpx;
 	margin-top: 20rpx;
-	padding-bottom: 20rpx;
 }
 
 .qa-card {
@@ -1203,20 +941,20 @@ async function deletePost(post) {
 	padding: 12rpx 8rpx 10rpx 0;
 }
 
-.qa-delete {
-	width: 40rpx;
-	height: 40rpx;
+.qa-tags {
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: #ffebee;
-	border-radius: 50%;
-	margin-left: 12rpx;
+	flex-wrap: wrap;
+	gap: 8rpx;
+	margin: 12rpx 0;
 }
 
-.delete-icon {
-	width: 24rpx;
-	height: 24rpx;
+.qa-tag {
+	background: #f0f8ff;
+	color: #4a90e2;
+	font-size: 22rpx;
+	padding: 4rpx 12rpx;
+	border-radius: 12rpx;
+	border: 1rpx solid #d0e7ff;
 }
 
 .qa-divider {
@@ -1229,30 +967,102 @@ async function deletePost(post) {
 	margin-bottom: 16rpx;
 }
 
-.doctor-info {
+.top-answer-info {
 	display: flex;
 	align-items: center;
 	gap: 12rpx;
 	margin-bottom: 12rpx;
 }
 
-.doctor-avatar {
+.top-answer-avatar {
 	width: 60rpx;
 	height: 60rpx;
 	border-radius: 50%;
 	background: #f5f5f5;
+	border: 2rpx solid #2c2c2c;
 }
 
-.doctor-text {
+.top-answer-meta {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+.top-answer-user {
 	font-size: 24rpx;
-	color: #666;
+	font-weight: 600;
+	color: #2c2c2c;
 }
 
-.answer-preview {
+.top-answer-pet {
+	font-size: 20rpx;
+	color: #7a7a7a;
+	margin-top: 2rpx;
+}
+
+.top-answer-likes {
+	display: flex;
+	align-items: center;
+	gap: 4rpx;
+	background: #f0f8ff;
+	padding: 6rpx 12rpx;
+	border-radius: 16rpx;
+	border: 1rpx solid #d0e7ff;
+}
+
+.like-icon {
+	width: 16rpx;
+	height: 16rpx;
+}
+
+.like-count {
+	font-size: 20rpx;
+	color: #4a90e2;
+	font-weight: 600;
+}
+
+.top-answer-badge {
+	background: #f0f9ff;
+	padding: 6rpx 12rpx;
+	border-radius: 16rpx;
+	border: 1rpx solid #bae6fd;
+}
+
+.badge-text {
+	font-size: 20rpx;
+	color: #0ea5e9;
+	font-weight: 600;
+}
+
+.top-answer-content {
 	font-size: 26rpx;
-	color: #888;
+	color: #333;
 	line-height: 1.5;
 	display: block;
+	margin-bottom: 12rpx;
+}
+
+.view-all-answers {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: #f8f9fa;
+	padding: 12rpx 16rpx;
+	border-radius: 12rpx;
+	border: 1rpx solid #e9ecef;
+}
+
+.view-all-text {
+	font-size: 24rpx;
+	color: #4a90e2;
+	font-weight: 500;
+}
+
+.arrow {
+	font-size: 24rpx;
+	color: #4a90e2;
+	font-weight: bold;
+	line-height: 1;
 }
 
 .no-answer {
@@ -1335,71 +1145,5 @@ async function deletePost(post) {
 .s-reads {
 	color: #7a7a7a;
 	font-size: 24rpx;
-}
-
-/* 加载状态样式 - 微信朋友圈风格 */
-.loading-container {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	padding: 20rpx 0;
-}
-
-.loading-dots {
-	display: flex;
-	gap: 8rpx;
-}
-
-.dot {
-	width: 12rpx;
-	height: 12rpx;
-	background: #999;
-	border-radius: 50%;
-	animation: dot-bounce 1.4s ease-in-out infinite both;
-}
-
-.dot:nth-child(1) {
-	animation-delay: -0.32s;
-}
-
-.dot:nth-child(2) {
-	animation-delay: -0.16s;
-}
-
-.dot:nth-child(3) {
-	animation-delay: 0s;
-}
-
-@keyframes dot-bounce {
-	0%, 80%, 100% {
-		transform: scale(0.8);
-		opacity: 0.5;
-	}
-	40% {
-		transform: scale(1.2);
-		opacity: 1;
-	}
-}
-
-
-/* 空状态样式 */
-.empty-state {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	padding: 100rpx 0;
-	gap: 20rpx;
-}
-
-.empty-icon {
-	width: 120rpx;
-	height: 120rpx;
-	opacity: 0.5;
-}
-
-.empty-text {
-	font-size: 28rpx;
-	color: #999;
 }
 </style>

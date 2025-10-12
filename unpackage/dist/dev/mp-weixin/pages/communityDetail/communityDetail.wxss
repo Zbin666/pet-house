@@ -237,14 +237,35 @@
 	font-size: 24rpx;
 	margin-top: 4rpx;
 }
+.c-actions.data-v-6818b03b {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 6rpx;
+}
+.c-like-btn.data-v-6818b03b {
+	display: flex;
+	align-items: center;
+	gap: 6rpx;
+	padding: 8rpx 12rpx;
+	background: #f5f5f5;
+	border-radius: 20rpx;
+}
+.c-like-icon.data-v-6818b03b {
+	width: 20rpx;
+	height: 20rpx;
+}
+.c-like-count.data-v-6818b03b {
+	font-size: 22rpx;
+	color: #666;
+}
 .c-time.data-v-6818b03b {
-	margin-left: auto;
 	color: #777;
 	font-size: 24rpx;
 }
 .c-text.data-v-6818b03b {
 	display: block;
-	margin-bottom: 20rpx;
+	margin-bottom: 10rpx;
 	color: #1a1a1a;
 	line-height: 1.7;
 	font-size: 26rpx;

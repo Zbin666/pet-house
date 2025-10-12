@@ -21,7 +21,7 @@ const _sfc_main = {
             currentUserPet.value = petsList[0];
           }
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:128", "获取宠物信息失败:", e);
+          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:134", "获取宠物信息失败:", e);
         }
       } catch (e) {
         dynamicTopPadding.value = "";
@@ -105,6 +105,8 @@ const _sfc_main = {
             time: commentTime,
             avatar: ((_d = c.User) == null ? void 0 : _d.avatarUrl) || "/static/logo.png",
             text: c.text,
+            likes: c.likes || 0,
+            isLiked: c.isLiked || false,
             replies: []
           };
         }));
@@ -158,7 +160,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:279", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:287", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -198,12 +200,34 @@ const _sfc_main = {
           time: commentTime,
           avatar: ((_d = c.User) == null ? void 0 : _d.avatarUrl) || "/static/logo.png",
           text: c.text,
+          likes: 0,
+          isLiked: false,
           replies: []
         });
         commentText.value = "";
         common_vendor.index.showToast({ title: "评论提交成功", icon: "success" });
       } catch (e) {
         common_vendor.index.showToast({ title: "评论失败", icon: "none" });
+      }
+    }
+    async function likeComment(comment) {
+      try {
+        const result = await utils_api.api.likeComment(comment.id);
+        if (result) {
+          comment.likes = result.likes;
+          comment.isLiked = result.isLiked;
+          common_vendor.index.showToast({
+            title: comment.isLiked ? "已点赞" : "已取消点赞",
+            icon: "none",
+            duration: 1e3
+          });
+        }
+      } catch (error) {
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:359", "点赞评论失败:", error);
+        common_vendor.index.showToast({
+          title: "操作失败",
+          icon: "none"
+        });
       }
     }
     return (_ctx, _cache) => {
@@ -244,11 +268,17 @@ const _sfc_main = {
             d: common_vendor.t(c.petName),
             e: common_vendor.t(c.petBreed)
           } : {}, {
-            f: common_vendor.t(c.time),
-            g: common_vendor.t(c.text),
-            h: c.replies && c.replies.length
+            f: common_vendor.t(c.text),
+            g: common_vendor.t(c.time),
+            h: c.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+            i: c.likes > 0
+          }, c.likes > 0 ? {
+            j: common_vendor.t(c.likes)
+          } : {}, {
+            k: common_vendor.o(($event) => likeComment(c), c.id),
+            l: c.replies && c.replies.length
           }, c.replies && c.replies.length ? {
-            i: common_vendor.f(c.replies, (r, ri, i1) => {
+            m: common_vendor.f(c.replies, (r, ri, i1) => {
               return {
                 a: common_vendor.t(r.user),
                 b: common_vendor.t(r.text),
@@ -256,7 +286,7 @@ const _sfc_main = {
               };
             })
           } : {}, {
-            j: c.id
+            n: c.id
           });
         }),
         t: common_assets._imports_0$5,
