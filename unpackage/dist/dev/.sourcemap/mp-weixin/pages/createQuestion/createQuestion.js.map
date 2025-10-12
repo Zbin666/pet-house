@@ -1,0 +1,1 @@
+{"version":3,"file":"createQuestion.js","sources":["../../HBuilderX.4.57/HBuilderX/plugins/uniapp-cli-vite/uniPage:/cGFnZXMvY3JlYXRlUXVlc3Rpb24vY3JlYXRlUXVlc3Rpb24udnVl"],"sourcesContent":["import MiniProgramPage from 'E:/Uni-App-file/pet-house/pages/createQuestion/createQuestion.vue'\nwx.createPage(MiniProgramPage)"],"names":[],"mappings":";;;;;;;AACA,GAAG,WAAW,eAAe;"}

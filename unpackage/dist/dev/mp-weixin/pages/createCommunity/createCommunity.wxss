@@ -19,6 +19,31 @@
     box-sizing: border-box;
 }
 
+/* 发布类型选择 */
+.type-selector.data-v-d3a0ca1a {
+    display: flex;
+    background: #fff;
+    border: 4rpx solid #2c2c2c;
+    border-radius: 20rpx;
+    margin-bottom: 30rpx;
+    box-shadow: 0 6rpx 0 #2c2c2c;
+    overflow: hidden;
+}
+.type-btn.data-v-d3a0ca1a {
+    flex: 1;
+    padding: 20rpx;
+    text-align: center;
+    background: #fff;
+    color: #666;
+    font-size: 28rpx;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+.type-btn.active.data-v-d3a0ca1a {
+    background: #2c2c2c;
+    color: #fff;
+}
+
 /* 用户信息 */
 .user-info.data-v-d3a0ca1a {
 	display: flex;
@@ -46,6 +71,23 @@
 	font-size: 24rpx;
 	color: #7a7a7a;
 	margin-top: 4rpx;
+}
+
+/* 标题输入区域 */
+.title-input-area.data-v-d3a0ca1a {
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	margin-bottom: 30rpx;
+	box-shadow: 0 6rpx 0 #2c2c2c;
+}
+.title-input.data-v-d3a0ca1a {
+	width: 100%;
+	font-size: 32rpx;
+	font-weight: 600;
+	color: #333;
+	line-height: 1.4;
 }
 
 /* 文本输入区域 */
@@ -200,6 +242,51 @@
 }
 .topic-placeholder.data-v-d3a0ca1a {
 	color: #bbb;
+}
+
+/* 紧急标记区域 */
+.urgent-area.data-v-d3a0ca1a {
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	margin-bottom: 30rpx;
+	box-shadow: 0 6rpx 0 #2c2c2c;
+}
+.urgent-title.data-v-d3a0ca1a {
+	font-size: 28rpx;
+	font-weight: 600;
+	color: #2c2c2c;
+	margin-bottom: 20rpx;
+}
+.urgent-option.data-v-d3a0ca1a {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+.urgent-checkbox.data-v-d3a0ca1a {
+	width: 40rpx;
+	height: 40rpx;
+	border: 4rpx solid #ddd;
+	border-radius: 8rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #fff;
+	transition: all 0.3s ease;
+}
+.urgent-checkbox.checked.data-v-d3a0ca1a {
+	background: #ff6b35;
+	border-color: #ff6b35;
+	color: #fff;
+}
+.urgent-checkbox text.data-v-d3a0ca1a {
+	font-size: 24rpx;
+	font-weight: bold;
+}
+.urgent-label.data-v-d3a0ca1a {
+	font-size: 26rpx;
+	color: #333;
 }
 
 /* 位置信息 */

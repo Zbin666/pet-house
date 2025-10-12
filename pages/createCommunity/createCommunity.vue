@@ -2,6 +2,16 @@
 	<view class="page">
 		<!-- 内容区域 -->
 		<view class="content">
+			<!-- 发布类型选择 -->
+			<view class="type-selector">
+				<view :class="['type-btn', !isQuestion ? 'active' : '']" @tap="isQuestion = false">
+					<text>发布动态</text>
+				</view>
+				<view :class="['type-btn', isQuestion ? 'active' : '']" @tap="isQuestion = true">
+					<text>发布问答</text>
+				</view>
+			</view>
+			
 			<!-- 用户信息 -->
 			<view class="user-info">
 				<image class="user-avatar" :src="userInfo.avatarUrl || '/static/logo.png'" mode="aspectFill" />
@@ -11,12 +21,24 @@
 				</view>
 			</view>
 
+			<!-- 问答标题输入（仅问答模式） -->
+			<view class="title-input-area" v-if="isQuestion">
+				<input 
+					class="title-input" 
+					v-model="questionTitle" 
+					placeholder="请输入问题标题..." 
+					placeholder-class="placeholder"
+					:maxlength="100"
+				/>
+				<view class="char-count">{{ questionTitle.length }}/100</view>
+			</view>
+
 			<!-- 文本输入区域 -->
 			<view class="text-input-area">
 				<textarea 
 					class="content-input" 
 					v-model="content" 
-					placeholder="分享你的宠物日常..." 
+					:placeholder="isQuestion ? '详细描述你的问题...' : '分享你的宠物日常...'" 
 					placeholder-class="placeholder"
 					:maxlength="500"
 					auto-height
@@ -24,8 +46,8 @@
 				<view class="char-count">{{ content.length }}/500</view>
 			</view>
 
-			<!-- 图片上传区域 -->
-			<view class="image-upload-area">
+			<!-- 图片上传区域（仅动态模式） -->
+			<view class="image-upload-area" v-if="!isQuestion">
 				<view class="upload-title">添加图片</view>
 				<view class="image-grid">
 					<view 
@@ -75,12 +97,23 @@
 				</view>
 			</view>
 
+			<!-- 紧急标记（仅问答模式） -->
+			<view class="urgent-area" v-if="isQuestion">
+				<view class="urgent-title">问题类型</view>
+				<view class="urgent-option" @tap="isUrgent = !isUrgent">
+					<view :class="['urgent-checkbox', isUrgent ? 'checked' : '']">
+						<text v-if="isUrgent">✓</text>
+					</view>
+					<text class="urgent-label">紧急问题</text>
+				</view>
+			</view>
+
 			<!-- 位置信息（按需开启） -->
 		</view>
 
 		<!-- 发布按钮 -->
 		<view class="publish-btn" @tap="publish">
-			<text class="publish-text">发布</text>
+			<text class="publish-text">{{ isQuestion ? '发布问题' : '发布' }}</text>
 		</view>
 	</view>
 </template>
@@ -97,27 +130,60 @@ const location = ref('')
 const userInfo = ref({})
 const currentPet = ref({})
 
+// 问答相关
+const isQuestion = ref(false)
+const questionTitle = ref('')
+const isUrgent = ref(false)
+
 async function publish() {
-	if (!content.value.trim() && images.value.length === 0) {
-		uni.showToast({ title: '请输入内容或添加图片', icon: 'none' })
-		return
-	}
-	try {
-		const payload = {
-			text: content.value.trim(),
-			images: images.value,
-			tags: topics.value,
-			petId: currentPet.value.id
+	if (isQuestion.value) {
+		// 发布问答
+		if (!questionTitle.value.trim() || !content.value.trim()) {
+			uni.showToast({ title: '请输入问题标题和内容', icon: 'none' })
+			return
 		}
-		await api.createFeed(payload)
-		uni.showToast({ title: '发布成功', icon: 'success' })
-		setTimeout(() => {
-			uni.navigateBack()
-			// 通知广场刷新
-			try { uni.$emit('feeds:refresh') } catch (e) {}
-		}, 800)
-	} catch (e) {
-		uni.showToast({ title: '发布失败', icon: 'none' })
+		
+		try {
+			const payload = {
+				title: questionTitle.value.trim(),
+				content: content.value.trim(),
+				isUrgent: isUrgent.value,
+				tags: topics.value,
+				petId: currentPet.value.id
+			}
+			await api.createQuestion(payload)
+			uni.showToast({ title: '问题发布成功', icon: 'success' })
+			setTimeout(() => {
+				uni.navigateBack()
+				// 通知问答列表刷新
+				try { uni.$emit('questions:refresh') } catch (e) {}
+			}, 800)
+		} catch (e) {
+			uni.showToast({ title: '发布失败', icon: 'none' })
+		}
+	} else {
+		// 发布动态
+		if (!content.value.trim() && images.value.length === 0) {
+			uni.showToast({ title: '请输入内容或添加图片', icon: 'none' })
+			return
+		}
+		try {
+			const payload = {
+				text: content.value.trim(),
+				images: images.value,
+				tags: topics.value,
+				petId: currentPet.value.id
+			}
+			await api.createFeed(payload)
+			uni.showToast({ title: '发布成功', icon: 'success' })
+			setTimeout(() => {
+				uni.navigateBack()
+				// 通知广场刷新
+				try { uni.$emit('feeds:refresh') } catch (e) {}
+			}, 800)
+		} catch (e) {
+			uni.showToast({ title: '发布失败', icon: 'none' })
+		}
 	}
 }
 
@@ -198,6 +264,33 @@ function chooseLocation() {
     box-sizing: border-box;
 }
 
+/* 发布类型选择 */
+.type-selector {
+    display: flex;
+    background: #fff;
+    border: 4rpx solid #2c2c2c;
+    border-radius: 20rpx;
+    margin-bottom: 30rpx;
+    box-shadow: 0 6rpx 0 #2c2c2c;
+    overflow: hidden;
+}
+
+.type-btn {
+    flex: 1;
+    padding: 20rpx;
+    text-align: center;
+    background: #fff;
+    color: #666;
+    font-size: 28rpx;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.type-btn.active {
+    background: #2c2c2c;
+    color: #fff;
+}
+
 /* 用户信息 */
 .user-info {
 	display: flex;
@@ -229,6 +322,24 @@ function chooseLocation() {
 	font-size: 24rpx;
 	color: #7a7a7a;
 	margin-top: 4rpx;
+}
+
+/* 标题输入区域 */
+.title-input-area {
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	margin-bottom: 30rpx;
+	box-shadow: 0 6rpx 0 #2c2c2c;
+}
+
+.title-input {
+	width: 100%;
+	font-size: 32rpx;
+	font-weight: 600;
+	color: #333;
+	line-height: 1.4;
 }
 
 /* 文本输入区域 */
@@ -401,6 +512,57 @@ function chooseLocation() {
 
 .topic-placeholder {
 	color: #bbb;
+}
+
+/* 紧急标记区域 */
+.urgent-area {
+	background: #fff;
+	border: 4rpx solid #2c2c2c;
+	border-radius: 20rpx;
+	padding: 30rpx;
+	margin-bottom: 30rpx;
+	box-shadow: 0 6rpx 0 #2c2c2c;
+}
+
+.urgent-title {
+	font-size: 28rpx;
+	font-weight: 600;
+	color: #2c2c2c;
+	margin-bottom: 20rpx;
+}
+
+.urgent-option {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+
+.urgent-checkbox {
+	width: 40rpx;
+	height: 40rpx;
+	border: 4rpx solid #ddd;
+	border-radius: 8rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #fff;
+	transition: all 0.3s ease;
+}
+
+.urgent-checkbox.checked {
+	background: #ff6b35;
+	border-color: #ff6b35;
+	color: #fff;
+}
+
+.urgent-checkbox text {
+	font-size: 24rpx;
+	font-weight: bold;
+}
+
+.urgent-label {
+	font-size: 26rpx;
+	color: #333;
 }
 
 /* 位置信息 */

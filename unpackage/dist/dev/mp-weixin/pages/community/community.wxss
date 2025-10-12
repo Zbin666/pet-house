@@ -307,11 +307,16 @@
 }
 
 /* 问答样式 */
+.qa-scroll.data-v-a6ef5318 {
+	height: calc(100vh - 200rpx);
+	overflow-y: auto;
+}
 .qa-feed.data-v-a6ef5318 {
 	display: flex;
 	flex-direction: column;
 	gap: 20rpx;
 	margin-top: 20rpx;
+	padding-bottom: 20rpx;
 }
 .qa-card.data-v-a6ef5318 {
 	position: relative;
@@ -370,6 +375,20 @@
 	line-height: 1.4;
 	flex: 1;
 	padding: 12rpx 8rpx 10rpx 0;
+}
+.qa-delete.data-v-a6ef5318 {
+	width: 40rpx;
+	height: 40rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #ffebee;
+	border-radius: 50%;
+	margin-left: 12rpx;
+}
+.delete-icon.data-v-a6ef5318 {
+	width: 24rpx;
+	height: 24rpx;
 }
 .qa-divider.data-v-a6ef5318 {
 	height: 0;

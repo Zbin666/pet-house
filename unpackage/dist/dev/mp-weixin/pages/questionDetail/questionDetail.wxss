@@ -162,6 +162,7 @@
 	align-items: center;
 	gap: 12rpx;
 	margin-bottom: 10rpx;
+	position: relative;
 }
 .avatar.data-v-f887a9d3 {
 	width: 64rpx;
@@ -189,6 +190,34 @@
 	font-size: 26rpx;
 	line-height: 1.7;
 }
+.answer-actions.data-v-f887a9d3 {
+	position: absolute;
+	right: 0;
+	top: 0;
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+.like-btn.data-v-f887a9d3 {
+	display: flex;
+	align-items: center;
+	gap: 6rpx;
+	padding: 8rpx 12rpx;
+	background: #f5f5f5;
+	border-radius: 20rpx;
+}
+.like-icon.data-v-f887a9d3 {
+	width: 20rpx;
+	height: 20rpx;
+}
+.like-count.data-v-f887a9d3 {
+	font-size: 22rpx;
+	color: #666;
+}
+.answer-time.data-v-f887a9d3 {
+	font-size: 22rpx;
+	color: #999;
+}
 
 /* 底部输入条 */
 .answer-input-bar.data-v-f887a9d3 {
@@ -209,15 +238,27 @@
 .answer-input.data-v-f887a9d3 {
     display: block;
     width: 100%;
-    max-width: 640rpx;
-    height: 60rpx; /* 输入框高度略增 */
-    margin: 0 auto;
+    max-width: 500rpx;
+    height: 60rpx;
     background: #fff;
     border: 4rpx solid #2c2c2c;
     border-radius: 999rpx;
     padding: 14rpx 22rpx;
     font-size: 26rpx;
     box-sizing: border-box;
+}
+.submit-btn.data-v-f887a9d3 {
+    background: #2c2c2c;
+    color: #fff;
+    border: none;
+    border-radius: 20rpx;
+    padding: 12rpx 24rpx;
+    font-size: 24rpx;
+    margin-left: 12rpx;
+}
+.submit-btn.data-v-f887a9d3:disabled {
+    background: #ccc;
+    color: #999;
 }
 
 /* 底部占位高度，与广场详情一致 */

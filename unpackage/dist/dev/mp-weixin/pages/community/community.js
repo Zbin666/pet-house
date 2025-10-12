@@ -30,7 +30,7 @@ const _sfc_main = {
         const userProfile = await utils_api.api.getProfile();
         currentUser.value = userProfile;
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:201", "获取用户信息失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:230", "获取用户信息失败:", e);
       }
       loadFeeds();
       try {
@@ -64,14 +64,14 @@ const _sfc_main = {
         });
         const list = Array.isArray(res) ? res : res.feeds || res.data || [];
         const total = ((_a = res.pagination) == null ? void 0 : _a.total) || res.total || list.length;
-        common_vendor.index.__f__("log", "at pages/community/community.vue:238", "=== 数据处理 ===");
-        common_vendor.index.__f__("log", "at pages/community/community.vue:239", "当前页:", page);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:240", "每页大小:", pageSize.value);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:241", "返回数据量:", list.length);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:242", "总数据量:", total);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:243", "是否加载更多:", isLoadMore);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:267", "=== 数据处理 ===");
+        common_vendor.index.__f__("log", "at pages/community/community.vue:268", "当前页:", page);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:269", "每页大小:", pageSize.value);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:270", "返回数据量:", list.length);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:271", "总数据量:", total);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:272", "是否加载更多:", isLoadMore);
         hasMore.value = page * pageSize.value < total;
-        common_vendor.index.__f__("log", "at pages/community/community.vue:247", "计算hasMore:", hasMore.value, "(", page * pageSize.value, "<", total, ")");
+        common_vendor.index.__f__("log", "at pages/community/community.vue:276", "计算hasMore:", hasMore.value, "(", page * pageSize.value, "<", total, ")");
         const processedList = list.map((f) => {
           const user = f.User || {};
           const pet = f.Pet || {};
@@ -119,23 +119,23 @@ const _sfc_main = {
           };
         });
         if (isLoadMore) {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:305", "追加数据：", processedList.length, "条");
+          common_vendor.index.__f__("log", "at pages/community/community.vue:334", "追加数据：", processedList.length, "条");
           posts.value = [...posts.value, ...processedList];
           currentPage.value += 1;
-          common_vendor.index.__f__("log", "at pages/community/community.vue:308", "追加后总数：", posts.value.length, "条");
+          common_vendor.index.__f__("log", "at pages/community/community.vue:337", "追加后总数：", posts.value.length, "条");
         } else {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:310", "替换数据：", processedList.length, "条");
+          common_vendor.index.__f__("log", "at pages/community/community.vue:339", "替换数据：", processedList.length, "条");
           posts.value = processedList;
           currentPage.value = 2;
-          common_vendor.index.__f__("log", "at pages/community/community.vue:313", "替换后总数：", posts.value.length, "条");
+          common_vendor.index.__f__("log", "at pages/community/community.vue:342", "替换后总数：", posts.value.length, "条");
         }
-        common_vendor.index.__f__("log", "at pages/community/community.vue:316", "最终状态：", {
+        common_vendor.index.__f__("log", "at pages/community/community.vue:345", "最终状态：", {
           currentPage: currentPage.value,
           hasMore: hasMore.value,
           totalPosts: posts.value.length
         });
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:323", "加载动态失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:352", "加载动态失败:", e);
         if (!isLoadMore) {
           posts.value = [];
         }
@@ -147,34 +147,132 @@ const _sfc_main = {
         isLoading.value = false;
       }
     }
-    const qaPosts = common_vendor.ref([
-      {
-        id: "qa1",
-        title: "狗狗夏天要注意什么?",
-        isUrgent: false,
-        hasAnswer: true,
-        doctor: {
-          name: "刘医生",
-          title: "专业宠物医生",
-          avatar: "/static/logo.png"
-        },
-        answerPreview: "天气炎热的夏天又到了,每次到这时候都要剃毛散热了,还要避免中暑;避免高温遛狗夏季天...",
-        answerCount: 10,
-        readCount: 50,
-        time: "2小时前"
-      },
-      {
-        id: "qa2",
-        title: "小猫猫护食咋办?",
-        isUrgent: true,
-        hasAnswer: false,
-        doctor: null,
-        answerPreview: null,
-        answerCount: 0,
-        readCount: 12,
-        time: "30分钟前"
+    const qaPosts = common_vendor.ref([]);
+    const qaCurrentPage = common_vendor.ref(1);
+    const qaPageSize = common_vendor.ref(10);
+    const qaIsLoading = common_vendor.ref(false);
+    const qaHasMore = common_vendor.ref(true);
+    const qaIsRefreshing = common_vendor.ref(false);
+    async function loadQuestions(params = {}, isLoadMore = false) {
+      var _a;
+      if (qaIsLoading.value)
+        return;
+      try {
+        qaIsLoading.value = true;
+        const page = isLoadMore ? qaCurrentPage.value : 1;
+        const res = await utils_api.api.getQuestions({
+          page,
+          limit: qaPageSize.value,
+          ...params
+        });
+        const questions = res.questions || [];
+        const total = ((_a = res.pagination) == null ? void 0 : _a.total) || questions.length;
+        qaHasMore.value = page * qaPageSize.value < total;
+        const processedQuestions = questions.map((q) => {
+          let time = "刚刚";
+          if (q.createdAt) {
+            const created = new Date(q.createdAt);
+            const month = created.getUTCMonth() + 1;
+            const date = created.getUTCDate();
+            const hours = created.getUTCHours().toString().padStart(2, "0");
+            const minutes = created.getUTCMinutes().toString().padStart(2, "0");
+            time = `${month}/${date} ${hours}:${minutes}`;
+          }
+          return {
+            ...q,
+            time,
+            hasAnswer: q.answerCount > 0,
+            doctor: q.answers && q.answers.length > 0 ? {
+              name: q.answers[0].user.nickname,
+              title: "专业宠物医生",
+              avatar: q.answers[0].user.avatarUrl
+            } : null,
+            answerPreview: q.answers && q.answers.length > 0 ? q.answers[0].content.substring(0, 50) + "..." : null,
+            readCount: q.views || 0,
+            isOwner: currentUser.value && q.user.id === currentUser.value.id
+            // 判断是否为作者
+          };
+        });
+        if (isLoadMore) {
+          qaPosts.value = [...qaPosts.value, ...processedQuestions];
+          qaCurrentPage.value += 1;
+        } else {
+          qaPosts.value = processedQuestions;
+          qaCurrentPage.value = 2;
+        }
+      } catch (e) {
+        common_vendor.index.__f__("error", "at pages/community/community.vue:433", "加载问答失败:", e);
+        if (!isLoadMore) {
+          qaPosts.value = [];
+        }
+        common_vendor.index.showToast({
+          title: "加载失败",
+          icon: "none"
+        });
+      } finally {
+        qaIsLoading.value = false;
       }
-    ]);
+    }
+    async function loadMoreQuestions() {
+      if (!qaHasMore.value || qaIsLoading.value)
+        return;
+      const params = {};
+      if (searchText.value.trim()) {
+        params.search = searchText.value.trim();
+      }
+      await loadQuestions(params, true);
+    }
+    async function onQARefresh() {
+      qaIsRefreshing.value = true;
+      qaCurrentPage.value = 1;
+      qaHasMore.value = true;
+      const params = {};
+      if (searchText.value.trim()) {
+        params.search = searchText.value.trim();
+      }
+      await loadQuestions(params, false);
+      setTimeout(() => {
+        qaIsRefreshing.value = false;
+      }, 500);
+    }
+    async function deleteQuestion(question) {
+      try {
+        common_vendor.index.showModal({
+          title: "确认删除",
+          content: "确定要删除这个问题吗？删除后无法恢复。",
+          confirmText: "删除",
+          cancelText: "取消",
+          confirmColor: "#ff4757",
+          success: async (res) => {
+            if (res.confirm) {
+              try {
+                await utils_api.api.deleteQuestion(question.id);
+                common_vendor.index.showToast({
+                  title: "删除成功",
+                  icon: "success"
+                });
+                const index = qaPosts.value.findIndex((q) => q.id === question.id);
+                if (index > -1) {
+                  qaPosts.value.splice(index, 1);
+                }
+              } catch (error) {
+                common_vendor.index.__f__("error", "at pages/community/community.vue:501", "删除问答失败:", error);
+                common_vendor.index.showToast({
+                  title: "删除失败",
+                  icon: "none"
+                });
+              }
+            }
+          }
+        });
+      } catch (error) {
+        common_vendor.index.__f__("error", "at pages/community/community.vue:511", "删除问答失败:", error);
+        common_vendor.index.showToast({
+          title: "删除失败",
+          icon: "none"
+        });
+      }
+    }
     const sciencePosts = common_vendor.ref([
       { id: "s1", title: "猫咪的20种肢体语言～快来速查🔎 终于知道猫猫心里在想什么了", reads: 50, cover: "/static/logo.png" },
       { id: "s2", title: "狗狗防暑保命清单", reads: 36, cover: "/static/logo.png" },
@@ -199,7 +297,13 @@ const _sfc_main = {
         isSearching.value = true;
         currentPage.value = 1;
         hasMore.value = true;
-        loadFeeds({ search: searchText.value.trim() });
+        qaCurrentPage.value = 1;
+        qaHasMore.value = true;
+        if (topTab.value === "square") {
+          loadFeeds({ search: searchText.value.trim() });
+        } else if (topTab.value === "qa") {
+          loadQuestions({ search: searchText.value.trim() });
+        }
       }
     }
     function handleSearchInput() {
@@ -209,12 +313,24 @@ const _sfc_main = {
           isSearching.value = true;
           currentPage.value = 1;
           hasMore.value = true;
-          loadFeeds({ search: searchText.value.trim() });
+          qaCurrentPage.value = 1;
+          qaHasMore.value = true;
+          if (topTab.value === "square") {
+            loadFeeds({ search: searchText.value.trim() });
+          } else if (topTab.value === "qa") {
+            loadQuestions({ search: searchText.value.trim() });
+          }
         } else if (isSearching.value) {
           isSearching.value = false;
           currentPage.value = 1;
           hasMore.value = true;
-          loadFeeds();
+          qaCurrentPage.value = 1;
+          qaHasMore.value = true;
+          if (topTab.value === "square") {
+            loadFeeds();
+          } else if (topTab.value === "qa") {
+            loadQuestions();
+          }
         }
       }, 500);
     }
@@ -223,16 +339,22 @@ const _sfc_main = {
       isSearching.value = false;
       currentPage.value = 1;
       hasMore.value = true;
-      loadFeeds();
+      qaCurrentPage.value = 1;
+      qaHasMore.value = true;
+      if (topTab.value === "square") {
+        loadFeeds();
+      } else if (topTab.value === "qa") {
+        loadQuestions();
+      }
     }
     async function loadMoreFeeds() {
-      common_vendor.index.__f__("log", "at pages/community/community.vue:434", "=== 触发加载更多 ===");
-      common_vendor.index.__f__("log", "at pages/community/community.vue:435", "hasMore:", hasMore.value);
-      common_vendor.index.__f__("log", "at pages/community/community.vue:436", "isLoading:", isLoading.value);
-      common_vendor.index.__f__("log", "at pages/community/community.vue:437", "currentPage:", currentPage.value);
-      common_vendor.index.__f__("log", "at pages/community/community.vue:438", "posts.length:", posts.value.length);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:615", "=== 触发加载更多 ===");
+      common_vendor.index.__f__("log", "at pages/community/community.vue:616", "hasMore:", hasMore.value);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:617", "isLoading:", isLoading.value);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:618", "currentPage:", currentPage.value);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:619", "posts.length:", posts.value.length);
       if (!hasMore.value || isLoading.value) {
-        common_vendor.index.__f__("log", "at pages/community/community.vue:441", "跳过加载：hasMore=", hasMore.value, "isLoading=", isLoading.value);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:622", "跳过加载：hasMore=", hasMore.value, "isLoading=", isLoading.value);
         return;
       }
       const params = {};
@@ -242,7 +364,7 @@ const _sfc_main = {
       if (currentCategory.value !== "rec") {
         params.category = currentCategory.value;
       }
-      common_vendor.index.__f__("log", "at pages/community/community.vue:453", "开始加载更多，参数:", params);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:634", "开始加载更多，参数:", params);
       await loadFeeds(params, true);
     }
     async function onRefresh() {
@@ -266,6 +388,8 @@ const _sfc_main = {
       topTab.value = tab;
       if (tab === "square" && posts.value.length === 0) {
         loadFeeds();
+      } else if (tab === "qa" && qaPosts.value.length === 0) {
+        loadQuestions();
       }
     }
     function goDetail(post) {
@@ -326,7 +450,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:546", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:729", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -354,7 +478,7 @@ const _sfc_main = {
                   posts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:577", "删除动态失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:760", "删除动态失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -364,7 +488,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:587", "删除动态失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:770", "删除动态失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"
@@ -473,32 +597,47 @@ const _sfc_main = {
         })
       } : {}, {
         H: topTab.value === "qa"
-      }, topTab.value === "qa" ? {
+      }, topTab.value === "qa" ? common_vendor.e({
         I: common_vendor.f(qaPosts.value, (qa, k0, i0) => {
           return common_vendor.e({
             a: qa.isUrgent
           }, qa.isUrgent ? {} : {}, {
             b: common_vendor.t(qa.title),
-            c: qa.hasAnswer
-          }, qa.hasAnswer ? {
-            d: qa.doctor.avatar,
-            e: common_vendor.t(qa.doctor.name),
-            f: common_vendor.t(qa.doctor.title),
-            g: common_vendor.t(qa.answerPreview)
+            c: qa.isOwner
+          }, qa.isOwner ? {
+            d: common_assets._imports_1$1,
+            e: common_vendor.o(($event) => deleteQuestion(qa), qa.id)
           } : {}, {
-            h: common_vendor.t(qa.answerCount),
-            i: common_vendor.t(qa.readCount),
-            j: qa.id,
-            k: common_vendor.o(($event) => goQADetail(qa), qa.id)
+            f: qa.hasAnswer
+          }, qa.hasAnswer ? {
+            g: qa.doctor.avatar,
+            h: common_vendor.t(qa.doctor.name),
+            i: common_vendor.t(qa.doctor.title),
+            j: common_vendor.t(qa.answerPreview)
+          } : {}, {
+            k: common_vendor.t(qa.answerCount),
+            l: common_vendor.t(qa.readCount),
+            m: common_vendor.t(qa.time),
+            n: qa.id,
+            o: common_vendor.o(($event) => goQADetail(qa), qa.id)
           });
-        })
+        }),
+        J: qaIsLoading.value && qaPosts.value.length > 0
+      }, qaIsLoading.value && qaPosts.value.length > 0 ? {} : {}, {
+        K: qaPosts.value.length === 0 && !qaIsLoading.value
+      }, qaPosts.value.length === 0 && !qaIsLoading.value ? {
+        L: common_assets._imports_5$1
       } : {}, {
-        J: topTab.value !== "science"
+        M: common_vendor.o(loadMoreQuestions),
+        N: qaIsRefreshing.value,
+        O: common_vendor.o(onQARefresh)
+      }) : {}, {
+        P: topTab.value !== "science"
       }, topTab.value !== "science" ? {
-        K: common_assets._imports_3$1,
-        L: common_vendor.o(goToCreate)
+        Q: common_assets._imports_3$1,
+        R: common_vendor.o(goToCreate)
       } : {}, {
-        M: common_vendor.s(dynamicTopPadding.value)
+        S: common_vendor.s(dynamicTopPadding.value)
       });
     };
   }

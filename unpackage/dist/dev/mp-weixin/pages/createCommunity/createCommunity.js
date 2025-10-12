@@ -11,29 +11,59 @@ const _sfc_main = {
     common_vendor.ref("");
     const userInfo = common_vendor.ref({});
     const currentPet = common_vendor.ref({});
+    const isQuestion = common_vendor.ref(false);
+    const questionTitle = common_vendor.ref("");
+    const isUrgent = common_vendor.ref(false);
     async function publish() {
-      if (!content.value.trim() && images.value.length === 0) {
-        common_vendor.index.showToast({ title: "请输入内容或添加图片", icon: "none" });
-        return;
-      }
-      try {
-        const payload = {
-          text: content.value.trim(),
-          images: images.value,
-          tags: topics.value,
-          petId: currentPet.value.id
-        };
-        await utils_api.api.createFeed(payload);
-        common_vendor.index.showToast({ title: "发布成功", icon: "success" });
-        setTimeout(() => {
-          common_vendor.index.navigateBack();
-          try {
-            common_vendor.index.$emit("feeds:refresh");
-          } catch (e) {
-          }
-        }, 800);
-      } catch (e) {
-        common_vendor.index.showToast({ title: "发布失败", icon: "none" });
+      if (isQuestion.value) {
+        if (!questionTitle.value.trim() || !content.value.trim()) {
+          common_vendor.index.showToast({ title: "请输入问题标题和内容", icon: "none" });
+          return;
+        }
+        try {
+          const payload = {
+            title: questionTitle.value.trim(),
+            content: content.value.trim(),
+            isUrgent: isUrgent.value,
+            tags: topics.value,
+            petId: currentPet.value.id
+          };
+          await utils_api.api.createQuestion(payload);
+          common_vendor.index.showToast({ title: "问题发布成功", icon: "success" });
+          setTimeout(() => {
+            common_vendor.index.navigateBack();
+            try {
+              common_vendor.index.$emit("questions:refresh");
+            } catch (e) {
+            }
+          }, 800);
+        } catch (e) {
+          common_vendor.index.showToast({ title: "发布失败", icon: "none" });
+        }
+      } else {
+        if (!content.value.trim() && images.value.length === 0) {
+          common_vendor.index.showToast({ title: "请输入内容或添加图片", icon: "none" });
+          return;
+        }
+        try {
+          const payload = {
+            text: content.value.trim(),
+            images: images.value,
+            tags: topics.value,
+            petId: currentPet.value.id
+          };
+          await utils_api.api.createFeed(payload);
+          common_vendor.index.showToast({ title: "发布成功", icon: "success" });
+          setTimeout(() => {
+            common_vendor.index.navigateBack();
+            try {
+              common_vendor.index.$emit("feeds:refresh");
+            } catch (e) {
+            }
+          }, 800);
+        } catch (e) {
+          common_vendor.index.showToast({ title: "发布失败", icon: "none" });
+        }
       }
     }
     function chooseImage() {
@@ -68,7 +98,7 @@ const _sfc_main = {
           currentPet.value = pets[0];
         }
       } catch (e) {
-        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:163", "Failed to load user/pet info:", e);
+        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:229", "Failed to load user/pet info:", e);
       }
     }
     common_vendor.onMounted(() => {
@@ -76,27 +106,40 @@ const _sfc_main = {
     });
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: userInfo.value.avatarUrl || "/static/logo.png",
-        b: common_vendor.t(userInfo.value.nickname || "用户"),
-        c: common_vendor.t(currentPet.value.name || "未设置宠物"),
-        d: common_vendor.t(currentPet.value.breed ? "｜" + currentPet.value.breed : ""),
-        e: content.value,
-        f: common_vendor.o(($event) => content.value = $event.detail.value),
-        g: common_vendor.t(content.value.length),
-        h: common_vendor.f(images.value, (image, index, i0) => {
+        a: common_vendor.n(!isQuestion.value ? "active" : ""),
+        b: common_vendor.o(($event) => isQuestion.value = false),
+        c: common_vendor.n(isQuestion.value ? "active" : ""),
+        d: common_vendor.o(($event) => isQuestion.value = true),
+        e: userInfo.value.avatarUrl || "/static/logo.png",
+        f: common_vendor.t(userInfo.value.nickname || "用户"),
+        g: common_vendor.t(currentPet.value.name || "未设置宠物"),
+        h: common_vendor.t(currentPet.value.breed ? "｜" + currentPet.value.breed : ""),
+        i: isQuestion.value
+      }, isQuestion.value ? {
+        j: questionTitle.value,
+        k: common_vendor.o(($event) => questionTitle.value = $event.detail.value),
+        l: common_vendor.t(questionTitle.value.length)
+      } : {}, {
+        m: isQuestion.value ? "详细描述你的问题..." : "分享你的宠物日常...",
+        n: content.value,
+        o: common_vendor.o(($event) => content.value = $event.detail.value),
+        p: common_vendor.t(content.value.length),
+        q: !isQuestion.value
+      }, !isQuestion.value ? common_vendor.e({
+        r: common_vendor.f(images.value, (image, index, i0) => {
           return {
             a: image,
             b: common_vendor.o(($event) => removeImage(index), index),
             c: index
           };
         }),
-        i: images.value.length < 9
+        s: images.value.length < 9
       }, images.value.length < 9 ? {
-        j: common_vendor.o(chooseImage)
-      } : {}, {
-        k: topics.value.length > 0
+        t: common_vendor.o(chooseImage)
+      } : {}) : {}, {
+        v: topics.value.length > 0
       }, topics.value.length > 0 ? {
-        l: common_vendor.f(topics.value, (tag, index, i0) => {
+        w: common_vendor.f(topics.value, (tag, index, i0) => {
           return {
             a: common_vendor.t(tag),
             b: common_vendor.o(($event) => removeTopic(index), index),
@@ -104,10 +147,18 @@ const _sfc_main = {
           };
         })
       } : {}, {
-        m: common_vendor.o(addTopic),
-        n: currentTopic.value,
-        o: common_vendor.o(($event) => currentTopic.value = $event.detail.value),
-        p: common_vendor.o(publish)
+        x: common_vendor.o(addTopic),
+        y: currentTopic.value,
+        z: common_vendor.o(($event) => currentTopic.value = $event.detail.value),
+        A: isQuestion.value
+      }, isQuestion.value ? common_vendor.e({
+        B: isUrgent.value
+      }, isUrgent.value ? {} : {}, {
+        C: common_vendor.n(isUrgent.value ? "checked" : ""),
+        D: common_vendor.o(($event) => isUrgent.value = !isUrgent.value)
+      }) : {}, {
+        E: common_vendor.t(isQuestion.value ? "发布问题" : "发布"),
+        F: common_vendor.o(publish)
       });
     };
   }

@@ -207,6 +207,40 @@ export const api = {
     data
   }),
   
+  // 问答功能
+  getQuestions: (params) => request({
+    url: '/questions',
+    method: 'GET',
+    data: params
+  }),
+  
+  getQuestion: (id) => request({
+    url: `/questions/${id}`,
+    method: 'GET'
+  }),
+  
+  createQuestion: (data) => request({
+    url: '/questions',
+    method: 'POST',
+    data
+  }),
+  
+  deleteQuestion: (id) => request({
+    url: `/questions/${id}`,
+    method: 'DELETE'
+  }),
+  
+  createAnswer: (id, data) => request({
+    url: `/questions/${id}/answers`,
+    method: 'POST',
+    data
+  }),
+  
+  likeAnswer: (id) => request({
+    url: `/questions/answers/${id}/like`,
+    method: 'POST'
+  }),
+  
   // 科普文章
   getArticles: (params) => request({
     url: '/articles',
