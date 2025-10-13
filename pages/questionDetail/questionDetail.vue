@@ -1,5 +1,5 @@
 <template>
-	<view class="page" :style="dynamicTopPadding">
+	<view class="page" :style="dynamicTopPadding" @tap="cancelReply">
 		<!-- 问题卡片 -->
 		<view class="qa-card">
 			<view class="qa-header">
@@ -46,10 +46,52 @@
 							<text class="answer-text">{{ answer.content }}</text>
 							<view class="answer-actions">
 								<text class="answer-time">{{ answer.time }}</text>
+								<text class="answer-reply" @tap.stop="startReplyToAnswer(answer)">回复</text>
 								<view class="like-btn" @tap="likeAnswer(answer)">
 									<image class="like-icon" :src="answer.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
 									<text class="like-count">{{ answer.likes }}</text>
 								</view>
+							</view>
+							
+							<!-- 该回答的评论列表 -->
+							<view class="answer-comments" v-if="answer.showComments && answer.comments && answer.comments.length" @tap.stop>
+								<view class="comment-item" v-for="comment in answer.comments.slice(0, answer.expandedComments)" :key="comment.id">
+									<view class="comment-user">
+										<image class="c-avatar" :src="comment.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
+										<view class="c-info">
+											<view class="c-row">
+												<view class="c-column">
+										<text class="c-name">
+											{{ comment.user.nickname }}
+											<text v-if="comment.replyTo && comment.replyTo.nickname" style="color:#999; font-size:24rpx; margin-left:8rpx;">
+												▶ {{ comment.replyTo.nickname }}
+											</text>
+										</text>
+													<text class="c-role" v-if="comment.pet && comment.pet.name">{{ comment.pet.name }}｜{{ comment.pet.breed }}</text>
+												</view>
+											</view>
+										</view>
+									</view>
+									<text class="c-text">{{ comment.content }}</text>
+									<view class="c-actions">
+										<text class="c-time">{{ comment.time }}</text>
+										<text class="c-reply" @tap.stop="startReply(comment, answer)">回复</text>
+										<view class="c-like-btn" @tap.stop="likeComment(comment)">
+											<image class="c-like-icon" :src="comment.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
+											<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
+										</view>
+									</view>
+									
+									<!-- 此处不再显示评论内的回复展开/列表 -->
+								</view>
+							</view>
+							<!-- 回答的评论展开/收起按钮（放在回答+评论整体底部） -->
+							<view class="answer-reply-expand" v-if="answer.comments && answer.comments.length > 0" @tap.stop="toggleAnswerComments(answer)">
+								<text class="expand-text">
+									{{ !answer.showComments ? `展开${answer.comments.length}条回复` : 
+									   answer.expandedComments >= answer.comments.length ? '收起' : '展开更多' }}
+								</text>
+								<text class="expand-arrow" :class="{ 'expanded': answer.showComments }">↓</text>
 							</view>
 						</view>
 						<view class="answer-card empty" v-if="qa.answers.length === 0">
@@ -60,142 +102,28 @@
 			</view>
 		</view>
 
-		<!-- 评论区 -->
-		<view class="comments-section">
-			<view class="comments-card">
-				<view class="comments-card-bg bg1"></view>
-				<view class="comments-card-body">
-					<view class="comments-ribbon"><text>全部评论</text></view>
-					<view class="comment-list">
-						<view class="comment-item" v-for="comment in comments" :key="comment.id">
-							<view class="comment-user">
-								<image class="c-avatar" :src="comment.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
-								<view class="c-info">
-									<view class="c-row">
-										<view class="c-column">
-											<text class="c-name">{{ comment.user.nickname }}</text>
-											<text class="c-role" v-if="comment.pet && comment.pet.name">{{ comment.pet.name }}｜{{ comment.pet.breed }}</text>
-										</view>
-									</view>
-								</view>
-							</view>
-							<text class="c-text">{{ comment.content }}</text>
-							<view class="c-actions">
-								<text class="c-time">{{ comment.time }}</text>
-								<view class="c-action-buttons">
-									<text class="reply-btn" @tap="startReply(comment.id)">回复</text>
-									<view class="c-like-btn" @tap="likeComment(comment)">
-										<image class="c-like-icon" :src="comment.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
-										<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
-									</view>
-								</view>
-							</view>
-							
-							<!-- 回复列表 -->
-							<view class="reply-list" v-if="comment.replies && comment.replies.length">
-								<view class="reply-item" v-for="reply in comment.replies" :key="reply.id">
-									<view class="reply-user">
-										<image class="r-avatar" :src="reply.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
-										<view class="r-info">
-											<view class="r-row">
-												<view class="r-column">
-													<text class="r-name">{{ reply.user.nickname }}</text>
-													<text class="r-role" v-if="reply.pet && reply.pet.name">{{ reply.pet.name }}｜{{ reply.pet.breed }}</text>
-												</view>
-											</view>
-										</view>
-									</view>
-									<text class="r-text">{{ reply.content }}</text>
-									<view class="r-actions">
-										<text class="r-time">{{ reply.time }}</text>
-										<view class="r-like-btn" @tap="likeReply(reply)">
-											<image class="r-like-icon" :src="reply.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
-											<text class="r-like-count" v-if="reply.likes > 0">{{ reply.likes }}</text>
-										</view>
-									</view>
-								</view>
-							</view>
-							
-							<!-- 回复输入框 -->
-							<view class="reply-input" v-if="replyingToComment === comment.id">
-								<input 
-									class="reply-input-field" 
-									v-model="currentReply"
-									placeholder="输入你的回复" 
-									:disabled="isSubmittingReply"
-								/>
-								<view class="reply-input-actions">
-									<button class="reply-cancel-btn" @tap="cancelReply">取消</button>
-									<button 
-										class="reply-submit-btn" 
-										@tap="submitReply(comment.id)"
-										:disabled="isSubmittingReply || !currentReply.trim()"
-									>
-										{{ isSubmittingReply ? '提交中...' : '提交' }}
-									</button>
-								</view>
-							</view>
-						</view>
-						
-						<view class="comment-item empty" v-if="comments.length === 0">
-							<text class="empty-text">暂时还没有评论，来抢第一个评论吧～</text>
-						</view>
-					</view>
-				</view>
-			</view>
-		</view>
 
 		<!-- 占位高度，避免内容被底部栏遮挡（与广场详情一致） -->
 		<view class="bottom-safe-spacer"></view>
 
 		<!-- 底部输入 -->
-		<view class="bottom-input-bar">
-			<view class="input-tabs">
-				<view class="tab-item" :class="{ active: !showCommentInput }" @tap="showCommentInput = false">
-					<text>回答</text>
-				</view>
-				<view class="tab-item" :class="{ active: showCommentInput }" @tap="showCommentInput = true">
-					<text>评论</text>
-				</view>
-			</view>
-			
-			<view class="input-content" v-if="!showCommentInput">
-				<input 
-					class="input-field" 
-					v-model="currentAnswer"
-					placeholder="输入你的回答" 
-					:disabled="isSubmitting"
-				/>
-				<button 
-					class="submit-btn" 
-					@tap="submitAnswer"
-					:disabled="isSubmitting || !currentAnswer.trim()"
-				>
-					{{ isSubmitting ? '提交中...' : '提交' }}
-				</button>
-			</view>
-			
-			<view class="input-content" v-else>
-				<input 
-					class="input-field" 
-					v-model="currentComment"
-					placeholder="输入你的评论" 
-					:disabled="isSubmittingComment"
-				/>
-				<button 
-					class="submit-btn" 
-					@tap="submitComment"
-					:disabled="isSubmittingComment || !currentComment.trim()"
-				>
-					{{ isSubmittingComment ? '提交中...' : '提交' }}
-				</button>
-			</view>
+		<view class="bottom-input-bar" @tap.stop>
+			<input 
+				ref="inputRef"
+				class="input-field" 
+				v-model="currentAnswer"
+				:placeholder="replyingToComment ? `回复 ${replyingToComment.user.nickname}：` : replyingToAnswerDirect ? `回复 ${replyingToAnswerDirect.user.nickname}：` : '输入你的回答'" 
+				:disabled="isSubmitting"
+				:focus="replyingToComment !== null || replyingToAnswerDirect !== null"
+				@confirm="replyingToComment ? submitReply() : replyingToAnswerDirect ? submitReplyToAnswer() : submitAnswer()"
+				@tap.stop
+			/>
 		</view>
 	</view>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, nextTick } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { api } from '@/utils/api.js'
 
@@ -242,6 +170,10 @@ type Answer = {
 		name: string
 		breed: string
 	} | null
+	comments: Comment[]
+	newComment: string
+	showComments: boolean
+	expandedComments: number
 }
 
 type Comment = {
@@ -249,7 +181,7 @@ type Comment = {
 	content: string
 	likes: number
 	isLiked: boolean
-	createdAt: string
+	time: string
 	user: {
 		id: string
 		nickname: string
@@ -259,25 +191,14 @@ type Comment = {
 		name: string
 		breed: string
 	} | null
-	replies: Reply[]
+    replyTo?: {
+        commentId: string
+        userId: string | null
+        nickname: string | null
+    } | null
+    // 已移除评论内的回复展开逻辑
 }
 
-type Reply = {
-	id: string
-	content: string
-	likes: number
-	isLiked: boolean
-	createdAt: string
-	user: {
-		id: string
-		nickname: string
-		avatarUrl: string
-	}
-	pet?: {
-		name: string
-		breed: string
-	} | null
-}
 
 type QA = {
 	id: string
@@ -330,16 +251,12 @@ const qa = reactive<QA>({
 
 const currentAnswer = ref('')
 const isSubmitting = ref(false)
-const showCommentInput = ref(false)
-
-// 评论相关数据
-const comments = ref<Comment[]>([])
-const currentComment = ref('')
-const currentReply = ref('')
-const replyingToComment = ref<string | null>(null)
 const isSubmittingComment = ref(false)
-const isSubmittingReply = ref(false)
 const currentUserPet = ref<any>(null)
+const replyingToComment = ref<Comment | null>(null)
+const replyingToAnswer = ref<Answer | null>(null)
+const replyingToAnswerDirect = ref<Answer | null>(null)
+const inputRef = ref<any>(null)
 
 // 加载问答详情
 async function loadQuestionDetail(questionId: string) {
@@ -393,7 +310,11 @@ async function loadQuestionDetail(questionId: string) {
 			
 			return {
 				...answer,
-				time: answerTime
+				time: answerTime,
+				comments: [],
+				newComment: '',
+				showComments: false,
+				expandedComments: 0
 			}
 		})
 		
@@ -404,8 +325,10 @@ async function loadQuestionDetail(questionId: string) {
 			readCount: data.views || 0  // 确保阅读数正确映射
 		})
 		
-		// 加载评论
-		await loadComments()
+		// 为每个回答加载评论
+		for (const answer of qa.answers) {
+			await loadAnswerComments(answer.id)
+		}
 	} catch (error) {
 		console.error('加载问答详情失败:', error)
 		uni.showToast({
@@ -521,13 +444,23 @@ async function followQuestion() {
 }
 
 // 加载评论列表
-async function loadComments() {
+// 加载回答的评论
+async function loadAnswerComments(answerId: string) {
 	try {
-		const data = await api.getComments(qa.id)
-		comments.value = data.map((comment: any) => ({
-			...comment,
-			time: formatCommentTime(comment.createdAt)
-		}))
+		const data = await api.getComments(answerId)
+		console.log('加载评论数据:', data)
+		const answer = qa.answers.find(a => a.id === answerId)
+		if (answer) {
+			answer.comments = data.map((comment: any, index: number) => ({
+				...comment,
+				time: formatCommentTime(comment.createdAt),
+				replies: [],
+				replyCount: comment.replyCount || (index % 2 === 0 ? 5 : 0), // 临时测试：偶数索引的评论有5条回复
+				showReplies: false,
+				expandedReplies: 0
+			}))
+			console.log('更新后的回答评论:', answer.comments)
+		}
 	} catch (error) {
 		console.error('加载评论失败:', error)
 	}
@@ -565,52 +498,38 @@ function formatCommentTime(createdAt: string) {
 	}
 }
 
-// 提交评论
-async function submitComment() {
-	if (!currentComment.value.trim()) {
-		uni.showToast({
-			title: '请输入评论内容',
-			icon: 'none'
-		})
-		return
-	}
+// 开始回复评论
+function startReply(comment: Comment, answer: Answer) {
+	replyingToComment.value = comment
+	replyingToAnswer.value = answer
+	replyingToAnswerDirect.value = null
+	currentAnswer.value = ''
+}
+
+// 开始回复回答
+function startReplyToAnswer(answer: Answer) {
+	replyingToAnswerDirect.value = answer
+	replyingToComment.value = null
+	replyingToAnswer.value = null
+	currentAnswer.value = ''
+}
+
+// 取消回复（点击输入框外部时调用）
+function cancelReply() {
+	replyingToComment.value = null
+	replyingToAnswer.value = null
+	replyingToAnswerDirect.value = null
+	currentAnswer.value = ''
 	
-	if (isSubmittingComment.value) return
-	
-	try {
-		isSubmittingComment.value = true
-		
-		const result = await api.createComment(qa.id, {
-			content: currentComment.value.trim(),
-			petId: currentUserPet.value?.id || null
-		})
-		
-		// 添加到评论列表
-		comments.value.push({
-			...result,
-			time: formatCommentTime(result.createdAt)
-		})
-		
-		currentComment.value = ''
-		
-		uni.showToast({
-			title: '评论成功',
-			icon: 'success'
-		})
-	} catch (error) {
-		console.error('提交评论失败:', error)
-		uni.showToast({
-			title: '评论失败',
-			icon: 'none'
-		})
-	} finally {
-		isSubmittingComment.value = false
+	// 失焦输入框以隐藏键盘
+	if (inputRef.value) {
+		inputRef.value.blur()
 	}
 }
 
 // 提交回复
-async function submitReply(commentId: string) {
-	if (!currentReply.value.trim()) {
+async function submitReply() {
+	if (!currentAnswer.value.trim()) {
 		uni.showToast({
 			title: '请输入回复内容',
 			icon: 'none'
@@ -618,27 +537,35 @@ async function submitReply(commentId: string) {
 		return
 	}
 	
-	if (isSubmittingReply.value) return
+	if (!replyingToComment.value || !replyingToAnswer.value) return
+	
+	if (isSubmitting.value) return
 	
 	try {
-		isSubmittingReply.value = true
+		isSubmitting.value = true
 		
-		const result = await api.createReply(commentId, {
-			content: currentReply.value.trim(),
-			petId: currentUserPet.value?.id || null
+        const result = await api.createComment(replyingToAnswer.value.id, {
+            content: currentAnswer.value.trim(),
+            petId: currentUserPet.value?.id || null,
+            replyToCommentId: replyingToComment.value?.id || null
+        })
+		
+		// 添加到该回答的评论列表
+        replyingToAnswer.value.comments.unshift({
+			...result,
+			time: formatCommentTime(result.createdAt)
 		})
+		// 提交后自动展开并确保新评论可见
+		replyingToAnswer.value.showComments = true
+		replyingToAnswer.value.expandedComments = Math.min(
+			replyingToAnswer.value.comments.length,
+			Math.max(replyingToAnswer.value.expandedComments + 1, 3)
+		)
 		
-		// 找到对应的评论并添加回复
-		const commentIndex = comments.value.findIndex(c => c.id === commentId)
-		if (commentIndex !== -1) {
-			comments.value[commentIndex].replies.push({
-				...result,
-				time: formatCommentTime(result.createdAt)
-			})
-		}
-		
-		currentReply.value = ''
+		// 清空回复状态
 		replyingToComment.value = null
+		replyingToAnswer.value = null
+		currentAnswer.value = ''
 		
 		uni.showToast({
 			title: '回复成功',
@@ -651,9 +578,63 @@ async function submitReply(commentId: string) {
 			icon: 'none'
 		})
 	} finally {
-		isSubmittingReply.value = false
+		isSubmitting.value = false
 	}
 }
+
+// 提交对回答的回复
+async function submitReplyToAnswer() {
+	if (!currentAnswer.value.trim()) {
+		uni.showToast({
+			title: '请输入回复内容',
+			icon: 'none'
+		})
+		return
+	}
+	
+	if (!replyingToAnswerDirect.value) return
+	
+	if (isSubmitting.value) return
+	
+	try {
+		isSubmitting.value = true
+		
+		const result = await api.createComment(replyingToAnswerDirect.value.id, {
+			content: currentAnswer.value.trim(),
+			petId: currentUserPet.value?.id || null
+		})
+		
+		// 添加到该回答的评论列表
+		replyingToAnswerDirect.value.comments.unshift({
+			...result,
+			time: formatCommentTime(result.createdAt)
+		})
+		// 提交后自动展开并确保新评论可见
+		replyingToAnswerDirect.value.showComments = true
+		replyingToAnswerDirect.value.expandedComments = Math.min(
+			replyingToAnswerDirect.value.comments.length,
+			Math.max(replyingToAnswerDirect.value.expandedComments + 1, 3)
+		)
+		
+		// 清空回复状态
+		replyingToAnswerDirect.value = null
+		currentAnswer.value = ''
+		
+		uni.showToast({
+			title: '回复成功',
+			icon: 'success'
+		})
+	} catch (error) {
+		console.error('提交回复失败:', error)
+		uni.showToast({
+			title: '回复失败',
+			icon: 'none'
+		})
+	} finally {
+		isSubmitting.value = false
+	}
+}
+
 
 // 点赞评论
 async function likeComment(comment: Comment) {
@@ -678,40 +659,32 @@ async function likeComment(comment: Comment) {
 	}
 }
 
-// 点赞回复
-async function likeReply(reply: Reply) {
-	try {
-		const result = await api.likeReply(reply.id)
-		if (result) {
-			reply.likes = result.likes
-			reply.isLiked = result.isLiked
-			
-			uni.showToast({
-				title: reply.isLiked ? '已点赞' : '已取消点赞',
-				icon: 'none',
-				duration: 1000
-			})
-		}
-	} catch (error) {
-		console.error('点赞回复失败:', error)
-		uni.showToast({
-			title: '操作失败',
-			icon: 'none'
-		})
+// 切换回复展开/收起
+function toggleReplies(comment: Comment) {
+    // 已移除：评论级别的展开逻辑不再使用
+}
+
+// 切换回答评论展开/收起
+function toggleAnswerComments(answer: Answer) {
+	if (!answer.showComments) {
+		// 展开评论
+		answer.showComments = true
+		answer.expandedComments = Math.min(3, answer.comments.length) // 初始展开3条
+	} else if (answer.expandedComments >= answer.comments.length) {
+		// 收起所有评论
+		answer.showComments = false
+		answer.expandedComments = 0
+	} else {
+		// 展开更多，每次增加10条
+		answer.expandedComments = Math.min(answer.expandedComments + 10, answer.comments.length)
 	}
 }
 
-// 开始回复
-function startReply(commentId: string) {
-	replyingToComment.value = commentId
-	currentReply.value = ''
+// 加载评论的回复
+async function loadCommentReplies(comment: Comment) {
+    // 已移除：不再加载评论内的回复
 }
 
-// 取消回复
-function cancelReply() {
-	replyingToComment.value = null
-	currentReply.value = ''
-}
 
 // 接收列表页传值
 try {
@@ -943,6 +916,71 @@ onLoad(() => {
 	padding: 18rpx;
 }
 
+/* 回答的评论区域 */
+.answer-comments {
+	margin-top: 20rpx;
+	padding-top: 20rpx;
+	border-top: 1rpx solid #f0f0f0;
+}
+
+/* 回答评论展开/收起按钮 */
+.answer-reply-expand {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: 12rpx;
+    padding: 8rpx 0;
+    cursor: pointer;
+}
+
+/* 评论输入框 */
+.comment-input {
+	display: flex;
+	align-items: center;
+	margin-top: 20rpx;
+	padding: 16rpx;
+	background: #f8f8f8;
+	border-radius: 12rpx;
+}
+
+.comment-input-field {
+	flex: 1;
+	height: 60rpx;
+	padding: 0 16rpx;
+	background: #fff;
+	border: 1rpx solid #e0e0e0;
+	border-radius: 8rpx;
+	font-size: 28rpx;
+}
+
+.comment-submit-btn {
+	width: 120rpx;
+	height: 60rpx;
+	margin-left: 16rpx;
+	background: #4CAF50;
+	color: #fff;
+	border: none;
+	border-radius: 8rpx;
+	font-size: 26rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.cancel-btn {
+	width: 100rpx;
+	height: 60rpx;
+	background: #f5f5f5;
+	color: #666;
+	border: 1rpx solid #ddd;
+	border-radius: 8rpx;
+	font-size: 26rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: 16rpx;
+}
+
 .answer-card.empty {
 	text-align: center;
 	color: #aaa;
@@ -994,13 +1032,20 @@ onLoad(() => {
 .answer-actions {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	justify-content: flex-start;
 	margin-top: 8rpx;
+	gap: 16rpx;
 }
 
 .answer-time {
 	font-size: 22rpx;
 	color: #999;
+}
+
+.answer-reply {
+	font-size: 22rpx;
+	color: #999;
+	flex-shrink: 0;
 }
 
 .like-btn {
@@ -1010,6 +1055,8 @@ onLoad(() => {
 	padding: 8rpx 12rpx;
 	background: #f5f5f5;
 	border-radius: 20rpx;
+	flex-shrink: 0;
+	margin-left: auto;
 }
 
 .like-icon {
@@ -1148,8 +1195,9 @@ onLoad(() => {
 .c-actions {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	justify-content: flex-start;
 	margin-top: 8rpx;
+	gap: 16rpx;
 }
 
 .c-time {
@@ -1157,17 +1205,12 @@ onLoad(() => {
 	color: #999;
 }
 
-.c-action-buttons {
-	display: flex;
-	align-items: center;
-	gap: 12rpx;
+.c-reply {
+	font-size: 22rpx;
+	color: #999;
+	flex-shrink: 0;
 }
 
-.reply-btn {
-	color: #666;
-	font-size: 24rpx;
-	padding: 4rpx 8rpx;
-}
 
 .c-like-btn {
 	display: flex;
@@ -1176,6 +1219,8 @@ onLoad(() => {
 	padding: 8rpx 12rpx;
 	background: #f5f5f5;
 	border-radius: 20rpx;
+	flex-shrink: 0;
+	margin-left: auto;
 }
 
 .c-like-icon {
@@ -1188,36 +1233,59 @@ onLoad(() => {
 	color: #666;
 }
 
+/* 回复展开/收起按钮 */
+.reply-expand {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	margin-top: 12rpx;
+	padding: 8rpx 0;
+	cursor: pointer;
+}
+
+.expand-text {
+	font-size: 22rpx;
+	color: #007AFF;
+	margin-right: 8rpx;
+}
+
+.expand-arrow {
+	font-size: 20rpx;
+	color: #007AFF;
+	transition: transform 0.3s ease;
+}
+
+.expand-arrow.expanded {
+	transform: rotate(180deg);
+}
+
 /* 回复列表 */
 .reply-list {
 	margin-top: 16rpx;
-	padding-left: 76rpx; /* 与评论头像对齐 */
+	padding-left: 20rpx;
+	border-left: 2rpx solid #f0f0f0;
 }
 
 .reply-item {
 	background: #f8f8f8;
-	border: 2rpx solid #e0e0e0;
+	border: 1rpx solid #e9e9e9;
 	border-radius: 12rpx;
 	padding: 16rpx;
 	margin-bottom: 12rpx;
-}
-
-.reply-item:last-child {
-	margin-bottom: 0;
 }
 
 .reply-user {
 	display: flex;
 	align-items: center;
 	gap: 12rpx;
-	margin-bottom: 10rpx;
+	margin-bottom: 12rpx;
 }
 
 .r-avatar {
 	width: 48rpx;
 	height: 48rpx;
 	border-radius: 50%;
-	border: 2rpx solid #2c2c2c;
+	border: 1rpx solid #2c2c2c;
 	background: #f5f5f5;
 }
 
@@ -1246,7 +1314,7 @@ onLoad(() => {
 
 .r-role {
 	color: #777;
-	font-size: 22rpx;
+	font-size: 20rpx;
 }
 
 .r-text {
@@ -1260,13 +1328,19 @@ onLoad(() => {
 .r-actions {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	margin-top: 6rpx;
+	justify-content: flex-start;
+	gap: 12rpx;
 }
 
 .r-time {
 	font-size: 20rpx;
 	color: #999;
+}
+
+.r-reply {
+	font-size: 20rpx;
+	color: #999;
+	flex-shrink: 0;
 }
 
 .r-like-btn {
@@ -1276,11 +1350,13 @@ onLoad(() => {
 	padding: 6rpx 10rpx;
 	background: #f0f0f0;
 	border-radius: 16rpx;
+	flex-shrink: 0;
+	margin-left: auto;
 }
 
 .r-like-icon {
-	width: 18rpx;
-	height: 18rpx;
+	width: 16rpx;
+	height: 16rpx;
 }
 
 .r-like-count {
@@ -1288,103 +1364,22 @@ onLoad(() => {
 	color: #666;
 }
 
-/* 回复输入框 */
-.reply-input {
-	margin-top: 16rpx;
-	padding: 16rpx;
-	background: #f8f8f8;
-	border: 2rpx solid #e0e0e0;
-	border-radius: 12rpx;
-}
-
-.reply-input-field {
-	width: 100%;
-	height: 50rpx;
-	background: #fff;
-	border: 2rpx solid #2c2c2c;
-	border-radius: 25rpx;
-	padding: 0 16rpx;
-	font-size: 24rpx;
-	margin-bottom: 12rpx;
-	box-sizing: border-box;
-}
-
-.reply-input-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 12rpx;
-}
-
-.reply-cancel-btn {
-	background: #f5f5f5;
-	color: #666;
-	border: 2rpx solid #ddd;
-	border-radius: 16rpx;
-	padding: 8rpx 16rpx;
-	font-size: 22rpx;
-}
-
-.reply-submit-btn {
-	background: #2c2c2c;
-	color: #fff;
-	border: none;
-	border-radius: 16rpx;
-	padding: 8rpx 16rpx;
-	font-size: 22rpx;
-}
-
-.reply-submit-btn:disabled {
-	background: #ccc;
-	color: #999;
-}
 
 /* 底部输入条 */
 .bottom-input-bar {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: env(safe-area-inset-bottom);
-    bottom: calc(0rpx + env(safe-area-inset-bottom));
-    padding: 24rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+    bottom: 0;
+    padding: 24rpx;
+    padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
     background: #fff;
     border-top: 4rpx solid #2c2c2c;
     z-index: 100;
 }
 
-.input-tabs {
-	display: flex;
-	margin-bottom: 16rpx;
-	gap: 8rpx;
-}
-
-.tab-item {
-	flex: 1;
-	text-align: center;
-	padding: 12rpx;
-	background: #f5f5f5;
-	border: 2rpx solid #ddd;
-	border-radius: 8rpx;
-	font-size: 24rpx;
-	color: #666;
-}
-
-.tab-item.active {
-	background: #2c2c2c;
-	color: #fff;
-	border-color: #2c2c2c;
-}
-
-.input-content {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 16rpx;
-}
-
 .input-field {
-	display: block;
 	width: 100%;
-	max-width: 500rpx;
 	height: 60rpx;
 	background: #fff;
 	border: 4rpx solid #2c2c2c;
@@ -1392,21 +1387,6 @@ onLoad(() => {
 	padding: 14rpx 22rpx;
 	font-size: 26rpx;
 	box-sizing: border-box;
-}
-
-.submit-btn {
-	background: #2c2c2c;
-	color: #fff;
-	border: none;
-	border-radius: 20rpx;
-	padding: 12rpx 24rpx;
-	font-size: 24rpx;
-	margin-left: 12rpx;
-}
-
-.submit-btn:disabled {
-	background: #ccc;
-	color: #999;
 }
 
 /* 底部占位高度，与广场详情一致 */

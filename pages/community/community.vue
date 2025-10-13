@@ -139,7 +139,10 @@
 					</view>
 				</view>
 				<view class="qa-content" v-else-if="qa.hasAnswer">
-					<text class="no-answer">暂时还没有人回答</text>
+					<view class="view-all-answers" @tap.stop="goQADetail(qa)">
+						<text class="view-all-text">查看所有{{ qa.answerCount }}条回答</text>
+						<text class="arrow">→</text>
+					</view>
 				</view>
 				<view class="qa-content" v-else>
 					<text class="no-answer">暂时还没有人回答</text>
@@ -298,6 +301,9 @@ async function loadQuestions(params = {}) {
 		
 		// 处理问答数据
 		qaPosts.value = list.map(q => {
+			console.log('处理问答数据:', q)
+			console.log('topAnswer数据:', q.topAnswer)
+			
 			// 时间格式化
 			let time = '刚刚'
 			if (q.createdAt) {
@@ -322,7 +328,7 @@ async function loadQuestions(params = {}) {
 				}
 			}
 			
-			return {
+			const processedQ = {
 				id: q.id,
 				title: q.title,
 				isUrgent: q.isUrgent,
@@ -333,6 +339,9 @@ async function loadQuestions(params = {}) {
 				time: time,
 				tags: tags
 			}
+			
+			console.log('处理后的问答数据:', processedQ)
+			return processedQ
 		})
 	} catch (e) {
 		console.error('加载问答数据失败:', e)

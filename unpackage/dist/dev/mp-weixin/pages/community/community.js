@@ -25,7 +25,7 @@ const _sfc_main = {
         const userProfile = await utils_api.api.getProfile();
         currentUser.value = userProfile;
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:192", "获取用户信息失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:195", "获取用户信息失败:", e);
       }
       loadFeeds();
       loadQuestions();
@@ -125,6 +125,8 @@ const _sfc_main = {
         const res = await utils_api.api.getQuestions({ page: 1, limit: 20, ...params });
         const list = Array.isArray(res) ? res : res.questions || res.data || [];
         qaPosts.value = list.map((q) => {
+          common_vendor.index.__f__("log", "at pages/community/community.vue:304", "处理问答数据:", q);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:305", "topAnswer数据:", q.topAnswer);
           let time = "刚刚";
           if (q.createdAt) {
             const created = new Date(q.createdAt);
@@ -145,7 +147,7 @@ const _sfc_main = {
               tags = [];
             }
           }
-          return {
+          const processedQ = {
             id: q.id,
             title: q.title,
             isUrgent: q.isUrgent,
@@ -156,9 +158,11 @@ const _sfc_main = {
             time,
             tags
           };
+          common_vendor.index.__f__("log", "at pages/community/community.vue:343", "处理后的问答数据:", processedQ);
+          return processedQ;
         });
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:338", "加载问答数据失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:347", "加载问答数据失败:", e);
         qaPosts.value = [];
       }
     }
@@ -246,7 +250,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:433", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:442", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -274,7 +278,7 @@ const _sfc_main = {
                   posts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:464", "删除动态失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:473", "删除动态失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -284,7 +288,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:474", "删除动态失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:483", "删除动态失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"
@@ -320,7 +324,7 @@ const _sfc_main = {
       }, 500);
     }
     function clearSearch() {
-      common_vendor.index.__f__("log", "at pages/community/community.vue:518", "清除搜索被调用");
+      common_vendor.index.__f__("log", "at pages/community/community.vue:527", "清除搜索被调用");
       searchText.value = "";
       isSearching.value = false;
       if (topTab.value === "square") {
@@ -328,7 +332,7 @@ const _sfc_main = {
       } else if (topTab.value === "qa") {
         loadQuestions();
       }
-      common_vendor.index.__f__("log", "at pages/community/community.vue:526", "搜索文本已清除:", searchText.value);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:535", "搜索文本已清除:", searchText.value);
     }
     return (_ctx, _cache) => {
       return common_vendor.e({
@@ -455,12 +459,15 @@ const _sfc_main = {
             n: common_vendor.t(qa.topAnswer.content.length > 50 ? qa.topAnswer.content.substring(0, 50) + "..." : qa.topAnswer.content),
             o: common_vendor.t(qa.answerCount),
             p: common_vendor.o(($event) => goQADetail(qa), qa.id)
-          }) : qa.hasAnswer ? {} : {}, {
-            q: qa.hasAnswer,
+          }) : qa.hasAnswer ? {
             r: common_vendor.t(qa.answerCount),
-            s: common_vendor.t(qa.readCount),
-            t: qa.id,
-            v: common_vendor.o(($event) => goQADetail(qa), qa.id)
+            s: common_vendor.o(($event) => goQADetail(qa), qa.id)
+          } : {}, {
+            q: qa.hasAnswer,
+            t: common_vendor.t(qa.answerCount),
+            v: common_vendor.t(qa.readCount),
+            w: qa.id,
+            x: common_vendor.o(($event) => goQADetail(qa), qa.id)
           });
         })
       } : {}, {

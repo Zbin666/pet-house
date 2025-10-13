@@ -21,7 +21,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             currentUserPet.value = petsList[0];
           }
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:221", "获取宠物信息失败:", e);
+          common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:149", "获取宠物信息失败:", e);
         }
       } catch (e) {
         dynamicTopPadding.value = "";
@@ -51,14 +51,12 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     });
     const currentAnswer = common_vendor.ref("");
     const isSubmitting = common_vendor.ref(false);
-    const showCommentInput = common_vendor.ref(false);
-    const comments = common_vendor.ref([]);
-    const currentComment = common_vendor.ref("");
-    const currentReply = common_vendor.ref("");
-    const replyingToComment = common_vendor.ref(null);
-    const isSubmittingComment = common_vendor.ref(false);
-    const isSubmittingReply = common_vendor.ref(false);
+    common_vendor.ref(false);
     const currentUserPet = common_vendor.ref(null);
+    const replyingToComment = common_vendor.ref(null);
+    const replyingToAnswer = common_vendor.ref(null);
+    const replyingToAnswerDirect = common_vendor.ref(null);
+    const inputRef = common_vendor.ref(null);
     async function loadQuestionDetail(questionId) {
       try {
         const data = await utils_api.api.getQuestion(questionId);
@@ -100,7 +98,11 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
           return {
             ...answer,
-            time: answerTime
+            time: answerTime,
+            comments: [],
+            newComment: "",
+            showComments: false,
+            expandedComments: 0
           };
         });
         Object.assign(qa, {
@@ -110,9 +112,11 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           readCount: data.views || 0
           // 确保阅读数正确映射
         });
-        await loadComments();
+        for (const answer of qa.answers) {
+          await loadAnswerComments(answer.id);
+        }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:410", "加载问答详情失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:333", "加载问答详情失败:", error);
         common_vendor.index.showToast({
           title: "加载失败",
           icon: "none"
@@ -147,7 +151,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         } catch (e) {
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:455", "提交回答失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:378", "提交回答失败:", error);
         common_vendor.index.showToast({
           title: "提交失败",
           icon: "none"
@@ -173,7 +177,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:486", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:409", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -197,22 +201,32 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:515", "关注操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:438", "关注操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
         });
       }
     }
-    async function loadComments() {
+    async function loadAnswerComments(answerId) {
       try {
-        const data = await utils_api.api.getComments(qa.id);
-        comments.value = data.map((comment) => ({
-          ...comment,
-          time: formatCommentTime(comment.createdAt)
-        }));
+        const data = await utils_api.api.getComments(answerId);
+        common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:451", "加载评论数据:", data);
+        const answer = qa.answers.find((a) => a.id === answerId);
+        if (answer) {
+          answer.comments = data.map((comment, index) => ({
+            ...comment,
+            time: formatCommentTime(comment.createdAt),
+            replies: [],
+            replyCount: comment.replyCount || (index % 2 === 0 ? 5 : 0),
+            // 临时测试：偶数索引的评论有5条回复
+            showReplies: false,
+            expandedReplies: 0
+          }));
+          common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:462", "更新后的回答评论:", answer.comments);
+        }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:532", "加载评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:465", "加载评论失败:", error);
       }
     }
     function formatCommentTime(createdAt) {
@@ -240,80 +254,115 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         return `${month}/${date} ${hours}:${minutes}`;
       }
     }
-    async function submitComment() {
-      var _a2;
-      if (!currentComment.value.trim()) {
-        common_vendor.index.showToast({
-          title: "请输入评论内容",
-          icon: "none"
-        });
-        return;
-      }
-      if (isSubmittingComment.value)
-        return;
-      try {
-        isSubmittingComment.value = true;
-        const result = await utils_api.api.createComment(qa.id, {
-          content: currentComment.value.trim(),
-          petId: ((_a2 = currentUserPet.value) == null ? void 0 : _a2.id) || null
-        });
-        comments.value.push({
-          ...result,
-          time: formatCommentTime(result.createdAt)
-        });
-        currentComment.value = "";
-        common_vendor.index.showToast({
-          title: "评论成功",
-          icon: "success"
-        });
-      } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:601", "提交评论失败:", error);
-        common_vendor.index.showToast({
-          title: "评论失败",
-          icon: "none"
-        });
-      } finally {
-        isSubmittingComment.value = false;
+    function startReply(comment, answer) {
+      replyingToComment.value = comment;
+      replyingToAnswer.value = answer;
+      replyingToAnswerDirect.value = null;
+      currentAnswer.value = "";
+    }
+    function startReplyToAnswer(answer) {
+      replyingToAnswerDirect.value = answer;
+      replyingToComment.value = null;
+      replyingToAnswer.value = null;
+      currentAnswer.value = "";
+    }
+    function cancelReply() {
+      replyingToComment.value = null;
+      replyingToAnswer.value = null;
+      replyingToAnswerDirect.value = null;
+      currentAnswer.value = "";
+      if (inputRef.value) {
+        inputRef.value.blur();
       }
     }
-    async function submitReply(commentId) {
-      var _a2;
-      if (!currentReply.value.trim()) {
+    async function submitReply() {
+      var _a2, _b2;
+      if (!currentAnswer.value.trim()) {
         common_vendor.index.showToast({
           title: "请输入回复内容",
           icon: "none"
         });
         return;
       }
-      if (isSubmittingReply.value)
+      if (!replyingToComment.value || !replyingToAnswer.value)
+        return;
+      if (isSubmitting.value)
         return;
       try {
-        isSubmittingReply.value = true;
-        const result = await utils_api.api.createReply(commentId, {
-          content: currentReply.value.trim(),
-          petId: ((_a2 = currentUserPet.value) == null ? void 0 : _a2.id) || null
+        isSubmitting.value = true;
+        const result = await utils_api.api.createComment(replyingToAnswer.value.id, {
+          content: currentAnswer.value.trim(),
+          petId: ((_a2 = currentUserPet.value) == null ? void 0 : _a2.id) || null,
+          replyToCommentId: ((_b2 = replyingToComment.value) == null ? void 0 : _b2.id) || null
         });
-        const commentIndex = comments.value.findIndex((c) => c.id === commentId);
-        if (commentIndex !== -1) {
-          comments.value[commentIndex].replies.push({
-            ...result,
-            time: formatCommentTime(result.createdAt)
-          });
-        }
-        currentReply.value = "";
+        replyingToAnswer.value.comments.unshift({
+          ...result,
+          time: formatCommentTime(result.createdAt)
+        });
+        replyingToAnswer.value.showComments = true;
+        replyingToAnswer.value.expandedComments = Math.min(
+          replyingToAnswer.value.comments.length,
+          Math.max(replyingToAnswer.value.expandedComments + 1, 3)
+        );
         replyingToComment.value = null;
+        replyingToAnswer.value = null;
+        currentAnswer.value = "";
         common_vendor.index.showToast({
           title: "回复成功",
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:648", "提交回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:575", "提交回复失败:", error);
         common_vendor.index.showToast({
           title: "回复失败",
           icon: "none"
         });
       } finally {
-        isSubmittingReply.value = false;
+        isSubmitting.value = false;
+      }
+    }
+    async function submitReplyToAnswer() {
+      var _a2;
+      if (!currentAnswer.value.trim()) {
+        common_vendor.index.showToast({
+          title: "请输入回复内容",
+          icon: "none"
+        });
+        return;
+      }
+      if (!replyingToAnswerDirect.value)
+        return;
+      if (isSubmitting.value)
+        return;
+      try {
+        isSubmitting.value = true;
+        const result = await utils_api.api.createComment(replyingToAnswerDirect.value.id, {
+          content: currentAnswer.value.trim(),
+          petId: ((_a2 = currentUserPet.value) == null ? void 0 : _a2.id) || null
+        });
+        replyingToAnswerDirect.value.comments.unshift({
+          ...result,
+          time: formatCommentTime(result.createdAt)
+        });
+        replyingToAnswerDirect.value.showComments = true;
+        replyingToAnswerDirect.value.expandedComments = Math.min(
+          replyingToAnswerDirect.value.comments.length,
+          Math.max(replyingToAnswerDirect.value.expandedComments + 1, 3)
+        );
+        replyingToAnswerDirect.value = null;
+        currentAnswer.value = "";
+        common_vendor.index.showToast({
+          title: "回复成功",
+          icon: "success"
+        });
+      } catch (error) {
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:628", "提交回复失败:", error);
+        common_vendor.index.showToast({
+          title: "回复失败",
+          icon: "none"
+        });
+      } finally {
+        isSubmitting.value = false;
       }
     }
     async function likeComment(comment) {
@@ -329,40 +378,23 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:673", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:654", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
         });
       }
     }
-    async function likeReply(reply) {
-      try {
-        const result = await utils_api.api.likeReply(reply.id);
-        if (result) {
-          reply.likes = result.likes;
-          reply.isLiked = result.isLiked;
-          common_vendor.index.showToast({
-            title: reply.isLiked ? "已点赞" : "已取消点赞",
-            icon: "none",
-            duration: 1e3
-          });
-        }
-      } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:696", "点赞回复失败:", error);
-        common_vendor.index.showToast({
-          title: "操作失败",
-          icon: "none"
-        });
+    function toggleAnswerComments(answer) {
+      if (!answer.showComments) {
+        answer.showComments = true;
+        answer.expandedComments = Math.min(3, answer.comments.length);
+      } else if (answer.expandedComments >= answer.comments.length) {
+        answer.showComments = false;
+        answer.expandedComments = 0;
+      } else {
+        answer.expandedComments = Math.min(answer.expandedComments + 10, answer.comments.length);
       }
-    }
-    function startReply(commentId) {
-      replyingToComment.value = commentId;
-      currentReply.value = "";
-    }
-    function cancelReply() {
-      replyingToComment.value = null;
-      currentReply.value = "";
     }
     try {
       const ec = (_b = (_a = getCurrentPages().pop()) == null ? void 0 : _a.getOpenerEventChannel) == null ? void 0 : _b.call(_a);
@@ -411,91 +443,63 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           } : {}, {
             f: common_vendor.t(answer.content),
             g: common_vendor.t(answer.time),
-            h: answer.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-            i: common_vendor.t(answer.likes),
-            j: common_vendor.o(($event) => likeAnswer(answer), answer.id),
-            k: answer.id
+            h: common_vendor.o(($event) => startReplyToAnswer(answer), answer.id),
+            i: answer.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+            j: common_vendor.t(answer.likes),
+            k: common_vendor.o(($event) => likeAnswer(answer), answer.id),
+            l: answer.showComments && answer.comments && answer.comments.length
+          }, answer.showComments && answer.comments && answer.comments.length ? {
+            m: common_vendor.f(answer.comments.slice(0, answer.expandedComments), (comment, k1, i1) => {
+              return common_vendor.e({
+                a: comment.user.avatarUrl || "/static/logo.png",
+                b: common_vendor.t(comment.user.nickname),
+                c: comment.replyTo && comment.replyTo.nickname
+              }, comment.replyTo && comment.replyTo.nickname ? {
+                d: common_vendor.t(comment.replyTo.nickname)
+              } : {}, {
+                e: comment.pet && comment.pet.name
+              }, comment.pet && comment.pet.name ? {
+                f: common_vendor.t(comment.pet.name),
+                g: common_vendor.t(comment.pet.breed)
+              } : {}, {
+                h: common_vendor.t(comment.content),
+                i: common_vendor.t(comment.time),
+                j: common_vendor.o(($event) => startReply(comment, answer), comment.id),
+                k: comment.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+                l: comment.likes > 0
+              }, comment.likes > 0 ? {
+                m: common_vendor.t(comment.likes)
+              } : {}, {
+                n: common_vendor.o(($event) => likeComment(comment), comment.id),
+                o: comment.id
+              });
+            }),
+            n: common_vendor.o(() => {
+            }, answer.id)
+          } : {}, {
+            o: answer.comments && answer.comments.length > 0
+          }, answer.comments && answer.comments.length > 0 ? {
+            p: common_vendor.t(!answer.showComments ? `展开${answer.comments.length}条回复` : answer.expandedComments >= answer.comments.length ? "收起" : "展开更多"),
+            q: answer.showComments ? 1 : "",
+            r: common_vendor.o(($event) => toggleAnswerComments(answer), answer.id)
+          } : {}, {
+            s: answer.id
           });
         }),
         k: qa.answers.length === 0
       }, qa.answers.length === 0 ? {} : {}, {
-        l: common_vendor.f(comments.value, (comment, k0, i0) => {
-          return common_vendor.e({
-            a: comment.user.avatarUrl || "/static/logo.png",
-            b: common_vendor.t(comment.user.nickname),
-            c: comment.pet && comment.pet.name
-          }, comment.pet && comment.pet.name ? {
-            d: common_vendor.t(comment.pet.name),
-            e: common_vendor.t(comment.pet.breed)
-          } : {}, {
-            f: common_vendor.t(comment.content),
-            g: common_vendor.t(comment.time),
-            h: common_vendor.o(($event) => startReply(comment.id), comment.id),
-            i: comment.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-            j: comment.likes > 0
-          }, comment.likes > 0 ? {
-            k: common_vendor.t(comment.likes)
-          } : {}, {
-            l: common_vendor.o(($event) => likeComment(comment), comment.id),
-            m: comment.replies && comment.replies.length
-          }, comment.replies && comment.replies.length ? {
-            n: common_vendor.f(comment.replies, (reply, k1, i1) => {
-              return common_vendor.e({
-                a: reply.user.avatarUrl || "/static/logo.png",
-                b: common_vendor.t(reply.user.nickname),
-                c: reply.pet && reply.pet.name
-              }, reply.pet && reply.pet.name ? {
-                d: common_vendor.t(reply.pet.name),
-                e: common_vendor.t(reply.pet.breed)
-              } : {}, {
-                f: common_vendor.t(reply.content),
-                g: common_vendor.t(reply.time),
-                h: reply.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-                i: reply.likes > 0
-              }, reply.likes > 0 ? {
-                j: common_vendor.t(reply.likes)
-              } : {}, {
-                k: common_vendor.o(($event) => likeReply(reply), reply.id),
-                l: reply.id
-              });
-            })
-          } : {}, {
-            o: replyingToComment.value === comment.id
-          }, replyingToComment.value === comment.id ? {
-            p: isSubmittingReply.value,
-            q: currentReply.value,
-            r: common_vendor.o(($event) => currentReply.value = $event.detail.value, comment.id),
-            s: common_vendor.o(cancelReply, comment.id),
-            t: common_vendor.t(isSubmittingReply.value ? "提交中..." : "提交"),
-            v: common_vendor.o(($event) => submitReply(comment.id), comment.id),
-            w: isSubmittingReply.value || !currentReply.value.trim()
-          } : {}, {
-            x: comment.id
-          });
+        l: replyingToComment.value ? `回复 ${replyingToComment.value.user.nickname}：` : replyingToAnswerDirect.value ? `回复 ${replyingToAnswerDirect.value.user.nickname}：` : "输入你的回答",
+        m: isSubmitting.value,
+        n: replyingToComment.value !== null || replyingToAnswerDirect.value !== null,
+        o: common_vendor.o(($event) => replyingToComment.value ? submitReply() : replyingToAnswerDirect.value ? submitReplyToAnswer() : submitAnswer()),
+        p: common_vendor.o(() => {
         }),
-        m: comments.value.length === 0
-      }, comments.value.length === 0 ? {} : {}, {
-        n: !showCommentInput.value ? 1 : "",
-        o: common_vendor.o(($event) => showCommentInput.value = false),
-        p: showCommentInput.value ? 1 : "",
-        q: common_vendor.o(($event) => showCommentInput.value = true),
-        r: !showCommentInput.value
-      }, !showCommentInput.value ? {
-        s: isSubmitting.value,
-        t: currentAnswer.value,
-        v: common_vendor.o(($event) => currentAnswer.value = $event.detail.value),
-        w: common_vendor.t(isSubmitting.value ? "提交中..." : "提交"),
-        x: common_vendor.o(submitAnswer),
-        y: isSubmitting.value || !currentAnswer.value.trim()
-      } : {
-        z: isSubmittingComment.value,
-        A: currentComment.value,
-        B: common_vendor.o(($event) => currentComment.value = $event.detail.value),
-        C: common_vendor.t(isSubmittingComment.value ? "提交中..." : "提交"),
-        D: common_vendor.o(submitComment),
-        E: isSubmittingComment.value || !currentComment.value.trim()
-      }, {
-        F: common_vendor.s(dynamicTopPadding.value)
+        q: currentAnswer.value,
+        r: common_vendor.o(($event) => currentAnswer.value = $event.detail.value),
+        s: common_vendor.o(() => {
+        }),
+        t: common_vendor.s(dynamicTopPadding.value),
+        v: common_vendor.o(cancelReply)
       });
     };
   }
