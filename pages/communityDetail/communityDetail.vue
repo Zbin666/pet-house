@@ -26,7 +26,9 @@
 					<text>{{ comments.length }}</text>
 				</view>
 				<view class="ft-item" @tap.stop="likePost">
-					<image class="ft-icon" :src="post.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
+					<image class="ft-icon"
+						:src="post.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'"
+						mode="widthFix" />
 					<text>{{ post.likes }}</text>
 				</view>
 			</view>
@@ -39,42 +41,113 @@
 				<view class="comments-card-body">
 					<!-- 评论标题 -->
 					<view class="comment-header">
-						<view class="comment-tag">
-							<text class="comment-title">全部评论</text>
-							<text class="comment-count">{{ comments.length }}</text>
-						</view>
+                        <view class="comment-tag">
+                            <text class="comment-title">全部评论</text>
+                            <text class="comment-count">{{ totalComments }}</text>
+                        </view>
 					</view>
 
 					<!-- 评论列表 -->
 					<view class="comment-list">
-						<view class="comment-item" v-for="c in comments" :key="c.id">
+						<view class="comment-item" v-for="comment in comments" :key="comment.id">
 							<view class="comment-user">
-								<image class="c-avatar" :src="c.avatar" mode="aspectFill" />
+								<image class="c-avatar" :src="comment.avatar" mode="aspectFill" />
 								<view class="c-info">
 									<view class="c-row">
 										<view class="c-column">
-											<text class="c-name">{{ c.user }}</text>
-											<text class="c-role" v-if="c.petName">{{ c.petName }}｜{{ c.petBreed }}</text>
-										</view>
+											<text class="c-name">{{ comment.user }}</text>
+											<text class="c-role" v-if="comment.petName">{{ comment.petName }}｜{{
+												comment.petBreed }}</text>
 									</view>
 								</view>
 							</view>
-							<text class="c-text">{{ c.text }}</text>
+								</view>
+							<text class="c-text">{{ comment.text }}</text>
 							<view class="c-actions">
-								<text class="c-time">{{ c.time }}</text>
-								<view class="c-like-btn" @tap.stop="likeComment(c)">
-									<image class="c-like-icon" :src="c.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
-									<text class="c-like-count" v-if="c.likes > 0">{{ c.likes }}</text>
+								<view class="c-actions-left">
+									<text class="c-time">{{ comment.time }}</text>
+									<text class="c-reply" @tap.stop="startReply(comment)">回复</text>
+							</view>
+                                <view class="c-actions-right">
+                                    <view class="c-like-btn" @tap.stop="likeComment(comment)">
+										<image class="c-like-icon"
+											:src="comment.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'"
+											mode="widthFix" />
+										<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
+                                    </view>
+                                    <view v-if="comment.isSelf" class="c-delete-btn" @tap.stop="confirmDeleteComment(comment)">
+                                        <image class="c-delete-icon" src="/static/user/delete.png" mode="widthFix" />
+                                    </view>
 								</view>
 							</view>
-							<view class="reply-box" v-if="c.replies && c.replies.length">
-								<view class="reply-row" v-for="(r, ri) in c.replies" :key="ri">
-									<text class="r-name">{{ r.user }}：</text>
-									<text class="r-text">{{ r.text }}</text>
+
+							<!-- 回复列表（按评论单独展开/收起） -->
+							<view class="reply-list"
+								v-if="comment.showReplies && comment.replies && comment.replies.length > 0">
+								<view class="reply-item"
+									v-for="reply in comment.replies.slice(0, comment.expandedReplies || 0)"
+									:key="reply.id">
+									<view class="reply-user">
+										<image class="r-avatar" :src="reply.avatar" mode="aspectFill" />
+										<view class="r-info">
+											<view class="r-row">
+												<view class="r-column">
+													<text class="r-name">
+														{{ reply.user }}
+														<text v-if="reply.replyToUser"
+															style="color:#999; font-size:22rpx; margin-left:8rpx;">▶ {{
+																reply.replyToUser }}</text>
+													</text>
+													<text class="r-role" v-if="reply.petName">{{ reply.petName }}｜{{
+														reply.petBreed }}</text>
+												</view>
+											</view>
+										</view>
+									</view>
+									<text class="r-text">{{ reply.content }}</text>
+									<view class="r-actions">
+										<view class="r-actions-left">
+											<text class="r-time">{{ reply.time }}</text>
+											<text class="r-reply"
+												@tap.stop="startReplyToReply(comment, reply)">回复</text>
+                                        </view>
+										<view class="r-actions-right">
+											<view class="r-like-btn" @tap.stop="likeCommentReply(reply)">
+												<image class="r-like-icon"
+													:src="reply.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'"
+													mode="widthFix" />
+												<text class="r-like-count" v-if="reply.likes > 0">{{ reply.likes
+													}}</text>
+											</view>
+                                            <view v-if="reply.userId === currentUserId" class="c-delete-btn" @tap.stop="confirmDeleteReply(comment, reply)">
+                                                <image class="c-delete-icon" src="/static/user/delete.png" mode="widthFix" />
+                                            </view>
+										</view>
+									</view>
 								</view>
-								<text class="view-all">查看全部回复</text>
+
+							</view>
+
+							<!-- 回复展开/收起按钮（每条评论独立，放在回复列表外以便收起后仍可见） -->
+							<view class="reply-expand" v-if="comment.replies && comment.replies.length > 0">
+								<view v-if="!comment.showReplies" class="expand-btn" @tap="toggleReplies(comment)">
+									<text class="expand-text">展开{{ comment.replies.length }}条回复</text>
+									<text class="expand-arrow">↓</text>
+								</view>
+								<view v-else class="expand-buttons">
+									<view v-if="(comment.expandedReplies || 0) < comment.replies.length"
+										class="expand-more-btn" @tap="expandMoreReplies(comment)">
+										<text class="expand-text">展开更多</text>
+										<text class="expand-arrow">↓</text>
+									</view>
+									<view class="collapse-btn" @tap="collapseReplies(comment)">
+										<text class="expand-text">收起</text>
+										<text class="expand-arrow">↑</text>
+									</view>
+								</view>
 							</view>
 						</view>
+
 					</view>
 				</view>
 			</view>
@@ -84,31 +157,30 @@
 		<view class="bottom-safe-spacer"></view>
 
 		<!-- 底部操作栏 -->
-		<view class="bottom-bar" style="padding: 24rpx 24rpx !important; padding-bottom: calc(24rpx + env(safe-area-inset-bottom)) !important; padding-bottom: calc(24rpx + constant(safe-area-inset-bottom)) !important;">
+		<view class="bottom-bar"
+			style="padding: 24rpx 24rpx !important; padding-bottom: calc(24rpx + env(safe-area-inset-bottom)) !important; padding-bottom: calc(24rpx + constant(safe-area-inset-bottom)) !important;">
 			<view class="action-buttons">
 				<view class="action-btn" @tap="sharePost">
 					<image class="action-icon" src="/static/community/share.png" mode="widthFix" />
 				</view>
 			<view class="action-btn" @tap="likePost">
-				<image class="action-icon" :src="post.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
+					<image class="action-icon"
+						:src="post.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'"
+						mode="widthFix" />
 			</view>
 			</view>
-			<view class="comment-input">
-				<input 
-					class="input-field" 
-					type="text" 
-					placeholder="输入你的回答" 
-					placeholder-class="input-placeholder"
-					v-model="commentText"
-					@confirm="submitComment"
-				/>
+			<view class="comment-input" @tap.stop>
+				<input class="input-field" type="text" :placeholder="getInputPlaceholder()"
+					placeholder-class="input-placeholder" v-model="commentText"
+					:focus="replyingToComment !== null || replyingToReply !== null" @confirm="submitComment"
+					ref="inputRef" />
 			</view>
 		</view>
 	</view>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, nextTick, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { api } from '@/utils/api.js'
 
@@ -122,8 +194,12 @@ onMounted(async () => {
 		const rpxToPx = (rpx) => (rpx * screenW) / 750
 		const topPx = 15
 		dynamicTopPadding.value = `padding-top:${topPx}px;`
-		
-		// 加载当前用户的宠物信息
+
+		// 加载当前用户信息与宠物信息
+		try {
+			const profile = await api.getProfile()
+			if (profile && profile.id) currentUserId.value = profile.id
+		} catch (e) { }
 		try {
 			const pets = await api.getPets()
 			const petsList = Array.isArray(pets) ? pets : (pets.data || [])
@@ -141,7 +217,20 @@ onMounted(async () => {
 const post = reactive({ id: '', user: '昵称', text: '这是一条圈子动态内容。', cover: '/static/logo.png', likes: 0, avatar: '/static/logo.png', pet: '', breed: '', images: [], shares: 0, isLiked: false, time: '' })
 const commentText = ref('')
 const comments = reactive([])
+const currentUserId = ref('') // 当前登录用户ID
+// 顶层评论 + 各评论的回复总数
+const totalComments = computed(() => {
+    try {
+        return comments.reduce((sum, c) => sum + 1 + ((c.replies && c.replies.length) || 0), 0)
+    } catch (_) {
+        return comments.length
+    }
+})
 const currentUserPet = ref(null) // 当前用户的宠物信息
+const replyingToComment = ref(null) // 正在回复的评论
+const replyingToReply = ref(null) // 正在回复的回复
+// 取消全局评论展开/收起，按评论单独控制
+const inputRef = ref(null) // 输入框引用
 
 async function loadDetail(id) {
 	try {
@@ -159,7 +248,6 @@ async function loadDetail(id) {
 		post.likes = f.likes || 0
 		post.shares = f.shares || 0
 		post.isLiked = f.isLiked || false // 添加点赞状态
-		
 		// 提取标题（从tags字段中获取第一个标签作为标题）
 		let title = ''
 		if (f.tags && Array.isArray(f.tags) && f.tags.length > 0) {
@@ -181,7 +269,6 @@ async function loadDetail(id) {
 			const now = new Date()
 			const timeDiff = now.getTime() - created.getTime()
 			const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-			
 			if (minutesDiff < 1) {
 				post.time = '刚刚'
 			} else if (minutesDiff < 60) {
@@ -191,51 +278,19 @@ async function loadDetail(id) {
 				post.time = `${hoursDiff}小时前`
 			} else {
 				// 超过24小时显示具体时间
-				post.time = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
+				post.time = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
 			}
 		} else {
 			post.time = ''
 		}
-		comments.splice(0, comments.length, ...((f.Comments || []).map((c) => {
-			// 处理评论时间显示
-			let commentTime = ''
-			if (c.createdAt) {
-				const created = new Date(c.createdAt)
-				const now = new Date()
-				const timeDiff = now.getTime() - created.getTime()
-				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-				
-				if (minutesDiff < 1) {
-					commentTime = '刚刚'
-				} else if (minutesDiff < 60) {
-					commentTime = `${minutesDiff}分钟前`
-				} else if (minutesDiff < 1440) { // 24小时
-					const hoursDiff = Math.floor(minutesDiff / 60)
-					commentTime = `${hoursDiff}小时前`
-				} else {
-					commentTime = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
-				}
-			}
-			
-			return {
-				id: c.id,
-				user: c.User?.nickname || '用户',
-				petName: c.Pet?.name || '',
-				petBreed: c.Pet?.breed || '',
-				time: commentTime,
-				avatar: c.User?.avatarUrl || '/static/logo.png',
-				text: c.text,
-				likes: c.likes || 0,
-				isLiked: c.isLiked || false,
-				replies: []
-			}
-		})))
+		// 加载评论数据
+		await loadComments(id)
 	} catch (e) {
 		uni.showToast({ title: '加载失败', icon: 'none' })
 	}
 }
 
-onLoad(() => {
+onLoad((query) => {
 	const eventChannel = getCurrentPages().pop()?.getOpenerEventChannel?.()
 	let incoming = null
 	try {
@@ -243,8 +298,8 @@ onLoad(() => {
 	} catch (e) { }
 	// 如果带有 id 则请求详情，否则用事件数据填充
 	setTimeout(() => {
-		if (incoming && incoming.id) {
-			loadDetail(incoming.id)
+		if ((query && query.id) || (incoming && incoming.id)) {
+			loadDetail((query && query.id) || incoming.id)
 		} else if (incoming) {
 			post.id = incoming.id || ''
 			post.user = incoming.user || '昵称'
@@ -267,6 +322,36 @@ function sharePost() {
 		icon: 'none'
 	})
 }
+// 删除评论
+async function confirmDeleteComment(comment) {
+    try {
+        await new Promise((resolve, reject) => {
+            uni.showModal({
+                title: '删除确认',
+                content: '确定要删除这条评论及其回复吗？',
+                confirmText: '删除',
+                confirmColor: '#e64340',
+                success: async (res) => {
+                    if (res.confirm) {
+                        try {
+                            await api.deleteComment(comment.id)
+                            const idx = comments.findIndex(c => c.id === comment.id)
+                            if (idx !== -1) comments.splice(idx, 1)
+                            try { if (post && typeof post.shares !== 'undefined') {} } catch(_) {}
+                            uni.showToast({ title: '已删除', icon: 'success' })
+                            resolve(true)
+                        } catch (e) {
+                            uni.showToast({ title: '删除失败', icon: 'none' })
+                            reject(e)
+                        }
+                    } else {
+                        resolve(false)
+                    }
+                }
+            })
+        })
+    } catch (_) {}
+}
 
 // 点赞动态
 async function likePost() {
@@ -276,7 +361,7 @@ async function likePost() {
 			// 更新点赞数量和状态
 			post.likes = result.likes
 			post.isLiked = result.isLiked
-			
+
 			uni.showToast({
 				title: post.isLiked ? '已点赞' : '已取消点赞',
 				icon: 'none',
@@ -292,6 +377,145 @@ async function likePost() {
 	}
 }
 
+// 加载评论数据
+async function loadComments(feedId) {
+	try {
+		const commentsData = await api.getComments(feedId)
+		comments.splice(0, comments.length, ...commentsData.map((c) => {
+			// 处理评论时间显示
+			let commentTime = ''
+			if (c.createdAt) {
+				const created = new Date(c.createdAt)
+				const now = new Date()
+				const timeDiff = now.getTime() - created.getTime()
+				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
+				if (minutesDiff < 1) {
+					commentTime = '刚刚'
+				} else if (minutesDiff < 60) {
+					commentTime = `${minutesDiff}分钟前`
+				} else if (minutesDiff < 1440) { // 24小时
+					const hoursDiff = Math.floor(minutesDiff / 60)
+					commentTime = `${hoursDiff}小时前`
+				} else {
+					commentTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
+				}
+			}
+			// 处理回复数据
+			const replies = (c.replies || []).map((r) => {
+				let replyTime = ''
+				if (r.createdAt) {
+					const created = new Date(r.createdAt)
+					const now = new Date()
+					const timeDiff = now.getTime() - created.getTime()
+					const minutesDiff = Math.floor(timeDiff / (1000 * 60))
+					if (minutesDiff < 1) {
+						replyTime = '刚刚'
+					} else if (minutesDiff < 60) {
+						replyTime = `${minutesDiff}分钟前`
+					} else if (minutesDiff < 1440) {
+						const hoursDiff = Math.floor(minutesDiff / 60)
+						replyTime = `${hoursDiff}小时前`
+					} else {
+						replyTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
+					}
+				}
+				return {
+					id: r.id,
+					userId: r.userId,
+					user: r.User?.nickname || '用户',
+					petName: r.Pet?.name || '',
+					petBreed: r.Pet?.breed || '',
+					time: replyTime,
+					avatar: r.User?.avatarUrl || '/static/logo.png',
+					content: r.content,
+					likes: r.likes || 0,
+					isLiked: r.isLiked || false,
+					replyToUser: r.replyToUser || '',
+					showReplies: false,
+					expandedReplies: 3
+				}
+			})
+			return {
+				id: c.id,
+				userId: c.userId,
+				user: c.User?.nickname || '用户',
+				petName: c.Pet?.name || '',
+				petBreed: c.Pet?.breed || '',
+				time: commentTime,
+				avatar: c.User?.avatarUrl || '/static/logo.png',
+				text: c.text,
+				likes: c.likes || 0,
+				isLiked: c.isLiked || false,
+				isSelf: currentUserId.value ? (c.userId === currentUserId.value) : false,
+				replies: replies,
+				showReplies: false,
+				expandedReplies: 0
+			}
+		}))
+		// 如果存在上次回复的评论ID，则自动展开该条评论的回复区
+		try {
+			const lastId = uni.getStorageSync('lastRepliedCommentId')
+			if (lastId) {
+				const target = comments.find(c => c.id === lastId)
+				if (target) {
+					target.showReplies = true
+					target.expandedReplies = Math.min(Math.max(target.expandedReplies || 0, 3), target.replies.length)
+				}
+				uni.removeStorageSync('lastRepliedCommentId')
+			}
+		} catch (_) { }
+	} catch (e) {
+		console.error('加载评论失败:', e)
+	}
+}
+
+// 开始回复评论
+function startReply(comment) {
+	replyingToComment.value = comment
+	replyingToReply.value = null
+	commentText.value = ''
+	// 聚焦输入框
+	nextTick(() => {
+		if (inputRef.value) {
+			inputRef.value.focus()
+		}
+	})
+}
+
+// 开始回复回复
+function startReplyToReply(comment, reply) {
+	replyingToComment.value = comment
+	replyingToReply.value = reply
+	commentText.value = ''
+	// 聚焦输入框
+	nextTick(() => {
+		if (inputRef.value) {
+			inputRef.value.focus()
+		}
+	})
+}
+
+// 取消回复
+function cancelReply() {
+	replyingToComment.value = null
+	replyingToReply.value = null
+	commentText.value = ''
+	if (inputRef.value) {
+		inputRef.value.blur()
+	}
+}
+
+// 获取输入框占位符
+function getInputPlaceholder() {
+	if (replyingToReply.value) {
+		return `回复 ${replyingToReply.value.user}：`
+	} else if (replyingToComment.value) {
+		return `回复 ${replyingToComment.value.user}：`
+	} else {
+		return '输入你的评论'
+	}
+}
+
 // 提交评论
 async function submitComment() {
 	if (!commentText.value.trim()) {
@@ -299,44 +523,115 @@ async function submitComment() {
 		return
 	}
 	try {
-		const c = await api.createComment(post.id, { text: commentText.value.trim() })
-		// 处理新评论的时间格式，与动态时间格式保持一致
-		let commentTime = '刚刚'
-		if (c.createdAt) {
-			const created = new Date(c.createdAt)
-			const now = new Date()
-			const timeDiff = now.getTime() - created.getTime()
-			const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-			
-			if (minutesDiff < 1) {
-				commentTime = '刚刚'
-			} else if (minutesDiff < 60) {
-				commentTime = `${minutesDiff}分钟前`
-			} else if (minutesDiff < 1440) { // 24小时
-				const hoursDiff = Math.floor(minutesDiff / 60)
-				commentTime = `${hoursDiff}小时前`
-			} else {
-				// 超过24小时显示具体时间
-				commentTime = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
+		// 如果是回复评论或回复回复，创建回复
+		if (replyingToComment.value) {
+			const replyData = {
+				text: commentText.value.trim(),
+				petId: currentUserPet.value?.id || null,
+				replyToUserId: replyingToReply.value ? replyingToReply.value.userId : (replyingToComment.value ? replyingToComment.value.userId : null)
 			}
-		}
-		
-		comments.push({
+
+			const r = await api.createCommentReply(replyingToComment.value.id, replyData)
+
+			// 处理新回复的时间格式
+			let replyTime = '刚刚'
+			if (r.createdAt) {
+				const created = new Date(r.createdAt)
+				const now = new Date()
+				const timeDiff = now.getTime() - created.getTime()
+				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
+
+				if (minutesDiff < 1) {
+					replyTime = '刚刚'
+				} else if (minutesDiff < 60) {
+					replyTime = `${minutesDiff}分钟前`
+				} else if (minutesDiff < 1440) {
+					const hoursDiff = Math.floor(minutesDiff / 60)
+					replyTime = `${hoursDiff}小时前`
+				} else {
+					replyTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
+				}
+			}
+
+			const newReply = {
+				id: r.id,
+				user: r.User?.nickname || '我',
+				petName: r.Pet?.name || '',
+				petBreed: r.Pet?.breed || '',
+				time: replyTime,
+				avatar: r.User?.avatarUrl || '/static/logo.png',
+				content: r.content,
+				likes: 0,
+				isLiked: false,
+				replyToUser: r.replyToUser || (replyingToReply.value ? replyingToReply.value.user : (replyingToComment.value ? replyingToComment.value.user : '')),
+				showReplies: false,
+				expandedReplies: 3
+			}
+
+			// 将新回复添加到对应评论的回复列表中
+			const comment = comments.find(c => c.id === replyingToComment.value.id)
+			if (comment) {
+				comment.replies.unshift(newReply)
+				// 新回复后自动展开该评论的回复区域，并保证至少显示3条
+				comment.showReplies = true
+				comment.expandedReplies = Math.min(Math.max((comment.expandedReplies || 0), 3) + 1, comment.replies.length)
+				try { uni.setStorageSync('lastRepliedCommentId', comment.id) } catch (_) { }
+			}
+
+			commentText.value = ''
+			replyingToComment.value = null
+			replyingToReply.value = null
+			uni.showToast({ title: '回复提交成功', icon: 'success' })
+		} else {
+			// 创建主评论
+			const commentData = {
+				text: commentText.value.trim(),
+				petId: currentUserPet.value?.id || null
+			}
+
+			const c = await api.createComment(post.id, commentData)
+
+			// 处理新评论的时间格式
+			let commentTime = '刚刚'
+			if (c.createdAt) {
+				const created = new Date(c.createdAt)
+				const now = new Date()
+				const timeDiff = now.getTime() - created.getTime()
+				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
+
+				if (minutesDiff < 1) {
+					commentTime = '刚刚'
+				} else if (minutesDiff < 60) {
+					commentTime = `${minutesDiff}分钟前`
+				} else if (minutesDiff < 1440) { // 24小时
+					const hoursDiff = Math.floor(minutesDiff / 60)
+					commentTime = `${hoursDiff}小时前`
+				} else {
+					commentTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
+				}
+			}
+
+			const newComment = {
 			id: c.id,
 			user: c.User?.nickname || '我',
-			petName: currentUserPet.value?.name || '',
-			petBreed: currentUserPet.value?.breed || '',
-			time: commentTime,
+				petName: c.Pet?.name || '',
+				petBreed: c.Pet?.breed || '',
+				time: commentTime,
 			avatar: c.User?.avatarUrl || '/static/logo.png',
 			text: c.text,
-			likes: 0,
-			isLiked: false,
-			replies: []
-		})
+				likes: 0,
+				isLiked: false,
+				replies: [],
+				showReplies: false,
+				expandedReplies: 3
+			}
+
+			comments.push(newComment)
 		commentText.value = ''
 		uni.showToast({ title: '评论提交成功', icon: 'success' })
+		}
 	} catch (e) {
-		uni.showToast({ title: '评论失败', icon: 'none' })
+		uni.showToast({ title: '提交失败', icon: 'none' })
 	}
 }
 
@@ -348,7 +643,7 @@ async function likeComment(comment) {
 			// 更新评论的点赞数量和状态
 			comment.likes = result.likes
 			comment.isLiked = result.isLiked
-			
+
 			uni.showToast({
 				title: comment.isLiked ? '已点赞' : '已取消点赞',
 				icon: 'none',
@@ -363,13 +658,101 @@ async function likeComment(comment) {
 		})
 	}
 }
+
+// 展开评论
+function toggleComments() {
+	showComments.value = true
+	expandedComments.value = Math.min(3, comments.length)
+}
+
+// 展开更多评论
+function expandMoreComments() {
+	expandedComments.value = Math.min(expandedComments.value + 10, comments.length)
+}
+
+// 收起评论
+function collapseComments() {
+	showComments.value = false
+	expandedComments.value = 0
+}
+
+// 点赞评论回复
+async function likeCommentReply(reply) {
+	try {
+		const result = await api.likeCommentReply(reply.id)
+		if (result) {
+			// 更新回复的点赞数量和状态
+			reply.likes = result.likes
+			reply.isLiked = result.isLiked
+
+			uni.showToast({
+				title: reply.isLiked ? '已点赞' : '已取消点赞',
+				icon: 'none',
+				duration: 1000
+			})
+		}
+	} catch (error) {
+		console.error('点赞回复失败:', error)
+		uni.showToast({
+			title: '操作失败',
+			icon: 'none'
+		})
+	}
+}
+
+// 删除回复
+async function confirmDeleteReply(comment, reply) {
+    try {
+        await new Promise((resolve, reject) => {
+            uni.showModal({
+                title: '删除确认',
+                content: '确定要删除这条回复吗？',
+                confirmText: '删除',
+                confirmColor: '#e64340',
+                success: async (res) => {
+                    if (res.confirm) {
+                        try {
+                            await api.deleteCommentReply(reply.id)
+                            const idx = comment.replies.findIndex(r => r.id === reply.id)
+                            if (idx !== -1) comment.replies.splice(idx, 1)
+                            uni.showToast({ title: '已删除', icon: 'success' })
+                            resolve(true)
+                        } catch (e) {
+                            uni.showToast({ title: '删除失败', icon: 'none' })
+                            reject(e)
+                        }
+                    } else {
+                        resolve(false)
+                    }
+                }
+            })
+        })
+    } catch (_) {}
+}
+// 展开回复
+function toggleReplies(comment) {
+	comment.showReplies = true
+	comment.expandedReplies = Math.min(3, comment.replies.length)
+}
+
+// 展开更多回复
+function expandMoreReplies(comment) {
+	comment.expandedReplies = Math.min((comment.expandedReplies || 0) + 10, comment.replies.length)
+}
+
+// 收起回复
+function collapseReplies(comment) {
+	comment.showReplies = false
+	comment.expandedReplies = 0
+}
 </script>
 
 <style scoped>
 .page {
 	padding: 24rpx;
 	/* 动态计算顶部间距，避免真机调试时env不生效 */
-	padding-bottom: 36rpx; /* 改为基础内边距，具体高度由占位视图控制 */
+	padding-bottom: 36rpx;
+	/* 改为基础内边距，具体高度由占位视图控制 */
 	min-height: 100vh;
 	background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%);
 }
@@ -523,8 +906,9 @@ async function likeComment(comment) {
 	display: flex;
 	align-items: flex-start;
 	margin-bottom: 20rpx;
-	padding-bottom: 16rpx;
-	border-bottom: 2rpx solid #e9e9e9;
+	padding-bottom: 0;
+	border-bottom: none;
+	/* top: -20rpx; */
 }
 
 .comment-tag {
@@ -583,17 +967,18 @@ async function likeComment(comment) {
 	display: flex;
 	flex-direction: column;
 	gap: 20rpx;
-	padding: 0 20rpx;
 }
 
 .comment-item {
-	padding-bottom: 16rpx;
-	border-bottom: 1rpx solid #f0f0f0;
+	width: 590rpx;
+	border: 1rpx solid #e9e9e9;
+	border-radius: 12rpx;
+	padding: 16rpx;
+	margin-bottom: 12rpx;
 }
 
 .comment-item:last-child {
-	border-bottom: none;
-	padding-bottom: 0;
+	margin-bottom: 0;
 }
 
 .comment-user {
@@ -647,6 +1032,24 @@ async function likeComment(comment) {
 	margin-top: 6rpx;
 }
 
+.c-actions-left {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
+}
+
+.c-actions-right {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
+}
+
+.c-reply {
+	font-size: 22rpx;
+	color: #999;
+	flex-shrink: 0;
+}
+
 .c-like-btn {
 	display: flex;
 	align-items: center;
@@ -654,6 +1057,20 @@ async function likeComment(comment) {
 	padding: 8rpx 12rpx;
 	background: #f5f5f5;
 	border-radius: 20rpx;
+}
+
+.c-delete-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48rpx;
+    height: 48rpx;
+    margin-left: 8rpx;
+}
+
+.c-delete-icon {
+    width: 28rpx;
+    height: 28rpx;
 }
 
 .c-like-icon {
@@ -711,6 +1128,173 @@ async function likeComment(comment) {
 	margin-top: 6rpx;
 	font-size: 24rpx;
 	text-align: center;
+}
+
+/* 评论展开/收起按钮 */
+.comment-expand {
+	margin-top: 20rpx;
+	display: flex;
+	justify-content: center;
+}
+
+.expand-btn,
+.expand-more-btn,
+.collapse-btn {
+	display: flex;
+	align-items: center;
+	gap: 8rpx;
+	padding: 0;
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	margin: 0 8rpx;
+}
+
+.expand-buttons {
+	display: flex;
+	gap: 16rpx;
+}
+
+.expand-text {
+	font-size: 24rpx;
+	color: #666;
+}
+
+.expand-arrow {
+	font-size: 20rpx;
+	color: #999;
+}
+
+/* 回复列表样式 */
+.reply-list {
+	margin-top: 18rpx;
+	padding-left: 32rpx;
+	border-left: none;
+	gap: 16rpx;
+}
+
+.reply-item {
+	margin-top: 12rpx;
+	padding-top: 12rpx;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+.reply-item:last-child {
+	border-bottom: none;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+.reply-user {
+	display: flex;
+	gap: 10rpx;
+	margin-bottom: 8rpx;
+}
+
+.r-avatar {
+	width: 48rpx;
+	height: 48rpx;
+	border-radius: 50%;
+	border: 2rpx solid #2c2c2c;
+	background: #f5f5f5;
+}
+
+.r-info {
+	flex: 1;
+}
+
+.r-row {
+	display: flex;
+	align-items: center;
+	gap: 6rpx;
+}
+
+.r-column {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	margin-left: 8rpx;
+}
+
+.r-name {
+	font-weight: 600;
+	color: #2c2c2c;
+	font-size: 24rpx;
+}
+
+.r-role {
+	display: block;
+	color: #7a7a7a;
+	font-size: 20rpx;
+	margin-top: 2rpx;
+}
+
+.r-text {
+	display: block;
+	margin-bottom: 8rpx;
+	color: #1a1a1a;
+	line-height: 1.6;
+	font-size: 24rpx;
+}
+
+.r-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 4rpx;
+}
+
+.r-actions-left {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+
+.r-actions-right {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+
+.r-reply {
+	font-size: 20rpx;
+	color: #999;
+	flex-shrink: 0;
+}
+
+.r-like-btn {
+	display: flex;
+	align-items: center;
+	gap: 4rpx;
+	padding: 6rpx 10rpx;
+	background: #f5f5f5;
+	border-radius: 16rpx;
+}
+
+.r-like-icon {
+	width: 18rpx;
+	height: 18rpx;
+}
+
+.r-like-count {
+	font-size: 20rpx;
+	color: #666;
+}
+
+.r-time {
+	color: #777;
+	font-size: 20rpx;
+}
+
+/* 回复展开/收起按钮 */
+.reply-expand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12rpx;
+    padding: 8rpx 0;
+    cursor: pointer;
 }
 
 /* 底部操作栏 */

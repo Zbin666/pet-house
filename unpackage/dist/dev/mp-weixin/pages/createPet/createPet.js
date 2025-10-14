@@ -231,7 +231,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         w: common_vendor.t(form.startTogether || "选择日期"),
         x: form.startTogether,
         y: common_vendor.o(onStartTogetherChange),
-        z: common_assets._imports_1$5,
+        z: common_assets._imports_1$4,
         A: form.neutered,
         B: common_vendor.o((e) => form.neutered = e.detail.value),
         C: common_vendor.f(vaccineOptions.value, (option, k0, i0) => {
@@ -245,7 +245,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         D: common_vendor.o(onVaccinesChange),
         E: form.temperament,
         F: common_vendor.o(($event) => form.temperament = $event.detail.value),
-        G: common_assets._imports_1$5,
+        G: common_assets._imports_1$4,
         H: common_vendor.f(form.gallery, (photo, index, i0) => {
           return {
             a: photo,

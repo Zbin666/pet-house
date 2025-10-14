@@ -643,13 +643,13 @@ const _sfc_main = {
             aH: record.type.key === "abnormal",
             aU: record.type.key === "medicine"
           }, !editMode.value ? {
-            bl: common_assets._imports_0$8,
+            bl: common_assets._imports_0$9,
             bm: common_vendor.o(startEdit, index)
           } : {
             bn: common_vendor.o(cancelEdit, index),
             bo: common_vendor.o(saveEdit, index)
           }, !editMode.value ? {
-            bp: common_assets._imports_1$1,
+            bp: common_assets._imports_0$4,
             bq: common_vendor.o(deleteRecord, index)
           } : {}, {
             br: index

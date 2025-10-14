@@ -91,7 +91,7 @@ const _sfc_main = {
             a: common_vendor.t(d.day),
             b: isSelected(d)
           }, isSelected(d) ? {
-            c: common_assets._imports_0$4
+            c: common_assets._imports_0$5
           } : {}, {
             d: i,
             e: common_vendor.n(d.inMonth ? "in" : "out"),

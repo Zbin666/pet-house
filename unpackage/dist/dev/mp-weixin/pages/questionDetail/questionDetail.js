@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const common_assets = require("../../common/assets.js");
 const utils_api = require("../../utils/api.js");
 const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
   __name: "questionDetail",
@@ -21,7 +22,12 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             currentUserPet.value = petsList[0];
           }
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:149", "获取宠物信息失败:", e);
+          common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:167", "获取宠物信息失败:", e);
+        }
+        try {
+          const profile = await utils_api.api.getProfile();
+          currentUserId.value = (profile == null ? void 0 : profile.id) || (profile == null ? void 0 : profile.userId) || "";
+        } catch (e) {
         }
       } catch (e) {
         dynamicTopPadding.value = "";
@@ -57,6 +63,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     const replyingToAnswer = common_vendor.ref(null);
     const replyingToAnswerDirect = common_vendor.ref(null);
     const inputRef = common_vendor.ref(null);
+    const currentUserId = common_vendor.ref("");
     async function loadQuestionDetail(questionId) {
       try {
         const data = await utils_api.api.getQuestion(questionId);
@@ -116,7 +123,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           await loadAnswerComments(answer.id);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:333", "加载问答详情失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:358", "加载问答详情失败:", error);
         common_vendor.index.showToast({
           title: "加载失败",
           icon: "none"
@@ -151,7 +158,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         } catch (e) {
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:378", "提交回答失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:403", "提交回答失败:", error);
         common_vendor.index.showToast({
           title: "提交失败",
           icon: "none"
@@ -177,7 +184,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:409", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:434", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -201,7 +208,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:438", "关注操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:463", "关注操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -210,8 +217,8 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     }
     async function loadAnswerComments(answerId) {
       try {
-        const data = await utils_api.api.getComments(answerId);
-        common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:451", "加载评论数据:", data);
+        const data = await utils_api.api.getAnswerComments(answerId);
+        common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:476", "加载评论数据:", data);
         const answer = qa.answers.find((a) => a.id === answerId);
         if (answer) {
           answer.comments = data.map((comment, index) => ({
@@ -223,10 +230,10 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             showReplies: false,
             expandedReplies: 0
           }));
-          common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:462", "更新后的回答评论:", answer.comments);
+          common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:487", "更新后的回答评论:", answer.comments);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:465", "加载评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:490", "加载评论失败:", error);
       }
     }
     function formatCommentTime(createdAt) {
@@ -290,7 +297,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         return;
       try {
         isSubmitting.value = true;
-        const result = await utils_api.api.createComment(replyingToAnswer.value.id, {
+        const result = await utils_api.api.createAnswerComment(replyingToAnswer.value.id, {
           content: currentAnswer.value.trim(),
           petId: ((_a2 = currentUserPet.value) == null ? void 0 : _a2.id) || null,
           replyToCommentId: ((_b2 = replyingToComment.value) == null ? void 0 : _b2.id) || null
@@ -312,7 +319,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:575", "提交回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:600", "提交回复失败:", error);
         common_vendor.index.showToast({
           title: "回复失败",
           icon: "none"
@@ -336,7 +343,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         return;
       try {
         isSubmitting.value = true;
-        const result = await utils_api.api.createComment(replyingToAnswerDirect.value.id, {
+        const result = await utils_api.api.createAnswerComment(replyingToAnswerDirect.value.id, {
           content: currentAnswer.value.trim(),
           petId: ((_a2 = currentUserPet.value) == null ? void 0 : _a2.id) || null
         });
@@ -356,7 +363,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:628", "提交回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:653", "提交回复失败:", error);
         common_vendor.index.showToast({
           title: "回复失败",
           icon: "none"
@@ -367,7 +374,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     }
     async function likeComment(comment) {
       try {
-        const result = await utils_api.api.likeComment(comment.id);
+        const result = await utils_api.api.likeAnswerComment(comment.id);
         if (result) {
           comment.likes = result.likes;
           comment.isLiked = result.isLiked;
@@ -378,23 +385,88 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:654", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:679", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
         });
       }
     }
-    function toggleAnswerComments(answer) {
-      if (!answer.showComments) {
-        answer.showComments = true;
-        answer.expandedComments = Math.min(3, answer.comments.length);
-      } else if (answer.expandedComments >= answer.comments.length) {
-        answer.showComments = false;
-        answer.expandedComments = 0;
-      } else {
-        answer.expandedComments = Math.min(answer.expandedComments + 10, answer.comments.length);
+    async function confirmDeleteAnswerComment(answer, comment) {
+      try {
+        await new Promise((resolve, reject) => {
+          common_vendor.index.showModal({
+            title: "删除确认",
+            content: "确定要删除这条评论吗？",
+            confirmText: "删除",
+            confirmColor: "#e64340",
+            success: async (res) => {
+              if (res.confirm) {
+                try {
+                  await utils_api.api.deleteAnswerComment(comment.id);
+                  const idx = answer.comments.findIndex((c) => c.id === comment.id);
+                  if (idx !== -1) {
+                    answer.comments.splice(idx, 1);
+                    if (answer.expandedComments > answer.comments.length) {
+                      answer.expandedComments = answer.comments.length;
+                    }
+                  }
+                  common_vendor.index.showToast({ title: "已删除", icon: "success" });
+                  resolve(true);
+                } catch (e) {
+                  common_vendor.index.showToast({ title: "删除失败", icon: "none" });
+                  reject(e);
+                }
+              } else {
+                resolve(false);
+              }
+            }
+          });
+        });
+      } catch (_) {
       }
+    }
+    async function confirmDeleteAnswer(answer) {
+      try {
+        await new Promise((resolve, reject) => {
+          common_vendor.index.showModal({
+            title: "删除确认",
+            content: "确定要删除这条回答吗？",
+            confirmText: "删除",
+            confirmColor: "#e64340",
+            success: async (res) => {
+              if (res.confirm) {
+                try {
+                  await utils_api.api.deleteAnswer(answer.id);
+                  const idx = qa.answers.findIndex((a) => a.id === answer.id);
+                  if (idx !== -1) {
+                    qa.answers.splice(idx, 1);
+                  }
+                  common_vendor.index.showToast({ title: "已删除", icon: "success" });
+                  resolve(true);
+                } catch (e) {
+                  common_vendor.index.showToast({ title: "删除失败", icon: "none" });
+                  reject(e);
+                }
+              } else {
+                resolve(false);
+              }
+            }
+          });
+        });
+      } catch (_) {
+      }
+    }
+    function toggleAnswerComments(answer) {
+      answer.showComments = true;
+      answer.expandedComments = Math.min(3, answer.comments.length);
+    }
+    function expandMoreComments(answer) {
+      answer.expandedComments = Math.min(answer.expandedComments + 10, answer.comments.length);
+    }
+    function collapseComments(answer) {
+      answer.showComments = false;
+      answer.expandedComments = 0;
     }
     try {
       const ec = (_b = (_a = getCurrentPages().pop()) == null ? void 0 : _a.getOpenerEventChannel) == null ? void 0 : _b.call(_a);
@@ -433,6 +505,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         h: common_vendor.t(qa.user.nickname || "用户"),
         i: common_vendor.t(qa.time),
         j: common_vendor.f(qa.answers, (answer, k0, i0) => {
+          var _a2, _b2;
           return common_vendor.e({
             a: answer.user.avatarUrl || "/static/logo.png",
             b: common_vendor.t(answer.user.nickname),
@@ -447,9 +520,15 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             i: answer.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
             j: common_vendor.t(answer.likes),
             k: common_vendor.o(($event) => likeAnswer(answer), answer.id),
-            l: answer.showComments && answer.comments && answer.comments.length
+            l: ((_a2 = answer.user) == null ? void 0 : _a2.id) === currentUserId.value
+          }, ((_b2 = answer.user) == null ? void 0 : _b2.id) === currentUserId.value ? {
+            m: common_assets._imports_0$4,
+            n: common_vendor.o(($event) => confirmDeleteAnswer(answer), answer.id)
+          } : {}, {
+            o: answer.showComments && answer.comments && answer.comments.length
           }, answer.showComments && answer.comments && answer.comments.length ? {
-            m: common_vendor.f(answer.comments.slice(0, answer.expandedComments), (comment, k1, i1) => {
+            p: common_vendor.f(answer.comments.slice(0, answer.expandedComments), (comment, k1, i1) => {
+              var _a3, _b3;
               return common_vendor.e({
                 a: comment.user.avatarUrl || "/static/logo.png",
                 b: common_vendor.t(comment.user.nickname),
@@ -471,35 +550,47 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
                 m: common_vendor.t(comment.likes)
               } : {}, {
                 n: common_vendor.o(($event) => likeComment(comment), comment.id),
-                o: comment.id
+                o: ((_a3 = comment.user) == null ? void 0 : _a3.id) === currentUserId.value
+              }, ((_b3 = comment.user) == null ? void 0 : _b3.id) === currentUserId.value ? {
+                p: common_assets._imports_0$4,
+                q: common_vendor.o(($event) => confirmDeleteAnswerComment(answer, comment), comment.id)
+              } : {}, {
+                r: comment.id
               });
             }),
-            n: common_vendor.o(() => {
+            q: common_vendor.o(() => {
             }, answer.id)
           } : {}, {
-            o: answer.comments && answer.comments.length > 0
-          }, answer.comments && answer.comments.length > 0 ? {
-            p: common_vendor.t(!answer.showComments ? `展开${answer.comments.length}条回复` : answer.expandedComments >= answer.comments.length ? "收起" : "展开更多"),
-            q: answer.showComments ? 1 : "",
-            r: common_vendor.o(($event) => toggleAnswerComments(answer), answer.id)
+            r: answer.comments && answer.comments.length > 0
+          }, answer.comments && answer.comments.length > 0 ? common_vendor.e({
+            s: !answer.showComments
+          }, !answer.showComments ? {
+            t: common_vendor.t(answer.comments.length),
+            v: common_vendor.o(($event) => toggleAnswerComments(answer), answer.id)
+          } : common_vendor.e({
+            w: answer.expandedComments < answer.comments.length
+          }, answer.expandedComments < answer.comments.length ? {
+            x: common_vendor.o(($event) => expandMoreComments(answer), answer.id)
           } : {}, {
-            s: answer.id
+            y: common_vendor.o(($event) => collapseComments(answer), answer.id)
+          })) : {}, {
+            z: answer.id
           });
         }),
         k: qa.answers.length === 0
       }, qa.answers.length === 0 ? {} : {}, {
-        l: replyingToComment.value ? `回复 ${replyingToComment.value.user.nickname}：` : replyingToAnswerDirect.value ? `回复 ${replyingToAnswerDirect.value.user.nickname}：` : "输入你的回答",
-        m: isSubmitting.value,
-        n: replyingToComment.value !== null || replyingToAnswerDirect.value !== null,
-        o: common_vendor.o(($event) => replyingToComment.value ? submitReply() : replyingToAnswerDirect.value ? submitReplyToAnswer() : submitAnswer()),
-        p: common_vendor.o(() => {
+        l: common_vendor.o(cancelReply),
+        m: replyingToComment.value ? `回复 ${replyingToComment.value.user.nickname}：` : replyingToAnswerDirect.value ? `回复 ${replyingToAnswerDirect.value.user.nickname}：` : "输入你的回答",
+        n: isSubmitting.value,
+        o: replyingToComment.value !== null || replyingToAnswerDirect.value !== null,
+        p: common_vendor.o(($event) => replyingToComment.value ? submitReply() : replyingToAnswerDirect.value ? submitReplyToAnswer() : submitAnswer()),
+        q: common_vendor.o(() => {
         }),
-        q: currentAnswer.value,
-        r: common_vendor.o(($event) => currentAnswer.value = $event.detail.value),
-        s: common_vendor.o(() => {
+        r: currentAnswer.value,
+        s: common_vendor.o(($event) => currentAnswer.value = $event.detail.value),
+        t: common_vendor.o(() => {
         }),
-        t: common_vendor.s(dynamicTopPadding.value),
-        v: common_vendor.o(cancelReply)
+        v: common_vendor.s(dynamicTopPadding.value)
       });
     };
   }

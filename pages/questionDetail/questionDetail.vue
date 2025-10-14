@@ -1,5 +1,5 @@
 <template>
-	<view class="page" :style="dynamicTopPadding" @tap="cancelReply">
+	<view class="page" :style="dynamicTopPadding">
 		<!-- 问题卡片 -->
 		<view class="qa-card">
 			<view class="qa-header">
@@ -28,7 +28,7 @@
 		</view>
 
 		<!-- 答案区域（叠卡容器） -->
-		<view class="answers-section">
+		<view class="answers-section" @tap="cancelReply">
 			<view class="answers-card">
 				<view class="answers-card-bg bg1"></view>
 				<view class="answers-card-body">
@@ -50,6 +50,9 @@
 								<view class="like-btn" @tap="likeAnswer(answer)">
 									<image class="like-icon" :src="answer.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
 									<text class="like-count">{{ answer.likes }}</text>
+								</view>
+								<view v-if="answer.user?.id === currentUserId" class="answer-delete-btn" @tap.stop="confirmDeleteAnswer(answer)">
+									<image class="delete-icon" src="/static/user/delete.png" mode="widthFix" />
 								</view>
 							</view>
 							
@@ -80,18 +83,33 @@
 											<image class="c-like-icon" :src="comment.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
 											<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
 										</view>
+							<view v-if="comment.user?.id === currentUserId" class="c-delete-btn" @tap.stop="confirmDeleteAnswerComment(answer, comment)">
+								<image class="delete-icon" src="/static/user/delete.png" mode="widthFix" />
+							</view>
 									</view>
 									
 									<!-- 此处不再显示评论内的回复展开/列表 -->
 								</view>
 							</view>
 							<!-- 回答的评论展开/收起按钮（放在回答+评论整体底部） -->
-							<view class="answer-reply-expand" v-if="answer.comments && answer.comments.length > 0" @tap.stop="toggleAnswerComments(answer)">
-								<text class="expand-text">
-									{{ !answer.showComments ? `展开${answer.comments.length}条回复` : 
-									   answer.expandedComments >= answer.comments.length ? '收起' : '展开更多' }}
-								</text>
-								<text class="expand-arrow" :class="{ 'expanded': answer.showComments }">↓</text>
+							<view class="answer-reply-expand" v-if="answer.comments && answer.comments.length > 0">
+								<!-- 初始状态：显示展开按钮 -->
+								<view v-if="!answer.showComments" @tap.stop="toggleAnswerComments(answer)">
+									<text class="expand-text">展开{{ answer.comments.length }}条回复</text>
+									<text class="expand-arrow">↓</text>
+								</view>
+								
+								<!-- 展开状态：同时显示展开更多和收起按钮 -->
+								<view v-else class="expand-buttons">
+									<view v-if="answer.expandedComments < answer.comments.length" @tap.stop="expandMoreComments(answer)" class="expand-more-btn">
+										<text class="expand-text">展开更多</text>
+										<text class="expand-arrow">↓</text>
+									</view>
+									<view @tap.stop="collapseComments(answer)" class="collapse-btn">
+										<text class="expand-text">收起</text>
+										<text class="expand-arrow">↑</text>
+									</view>
+								</view>
 							</view>
 						</view>
 						<view class="answer-card empty" v-if="qa.answers.length === 0">
@@ -148,6 +166,12 @@ onMounted(async () => {
 		} catch (e) {
 			console.error('获取宠物信息失败:', e)
 		}
+
+		// 获取当前用户信息
+		try {
+			const profile = await api.getProfile()
+			currentUserId.value = profile?.id || profile?.userId || ''
+		} catch (e) {}
 	} catch (e) {
 		dynamicTopPadding.value = ''
 	}
@@ -257,6 +281,7 @@ const replyingToComment = ref<Comment | null>(null)
 const replyingToAnswer = ref<Answer | null>(null)
 const replyingToAnswerDirect = ref<Answer | null>(null)
 const inputRef = ref<any>(null)
+const currentUserId = ref('')
 
 // 加载问答详情
 async function loadQuestionDetail(questionId: string) {
@@ -447,7 +472,7 @@ async function followQuestion() {
 // 加载回答的评论
 async function loadAnswerComments(answerId: string) {
 	try {
-		const data = await api.getComments(answerId)
+		const data = await api.getAnswerComments(answerId)
 		console.log('加载评论数据:', data)
 		const answer = qa.answers.find(a => a.id === answerId)
 		if (answer) {
@@ -544,7 +569,7 @@ async function submitReply() {
 	try {
 		isSubmitting.value = true
 		
-        const result = await api.createComment(replyingToAnswer.value.id, {
+        const result = await api.createAnswerComment(replyingToAnswer.value.id, {
             content: currentAnswer.value.trim(),
             petId: currentUserPet.value?.id || null,
             replyToCommentId: replyingToComment.value?.id || null
@@ -599,7 +624,7 @@ async function submitReplyToAnswer() {
 	try {
 		isSubmitting.value = true
 		
-		const result = await api.createComment(replyingToAnswerDirect.value.id, {
+		const result = await api.createAnswerComment(replyingToAnswerDirect.value.id, {
 			content: currentAnswer.value.trim(),
 			petId: currentUserPet.value?.id || null
 		})
@@ -639,7 +664,7 @@ async function submitReplyToAnswer() {
 // 点赞评论
 async function likeComment(comment: Comment) {
 	try {
-		const result = await api.likeComment(comment.id)
+		const result = await api.likeAnswerComment(comment.id)
 		if (result) {
 			comment.likes = result.likes
 			comment.isLiked = result.isLiked
@@ -659,25 +684,93 @@ async function likeComment(comment: Comment) {
 	}
 }
 
+// 删除自己的评论
+async function confirmDeleteAnswerComment(answer: Answer, comment: Comment) {
+	try {
+		await new Promise((resolve, reject) => {
+			uni.showModal({
+				title: '删除确认',
+				content: '确定要删除这条评论吗？',
+				confirmText: '删除',
+				confirmColor: '#e64340',
+				success: async (res) => {
+					if (res.confirm) {
+						try {
+							await api.deleteAnswerComment(comment.id)
+							const idx = answer.comments.findIndex(c => c.id === comment.id)
+							if (idx !== -1) {
+								answer.comments.splice(idx, 1)
+								if (answer.expandedComments > answer.comments.length) {
+									answer.expandedComments = answer.comments.length
+								}
+							}
+							uni.showToast({ title: '已删除', icon: 'success' })
+							resolve(true)
+						} catch (e) {
+							uni.showToast({ title: '删除失败', icon: 'none' })
+							reject(e)
+						}
+					} else {
+						resolve(false)
+					}
+				}
+			})
+		})
+	} catch (_) {}
+}
+
+// 删除自己的回答
+async function confirmDeleteAnswer(answer: Answer) {
+	try {
+		await new Promise((resolve, reject) => {
+			uni.showModal({
+				title: '删除确认',
+				content: '确定要删除这条回答吗？',
+				confirmText: '删除',
+				confirmColor: '#e64340',
+				success: async (res) => {
+					if (res.confirm) {
+						try {
+							await api.deleteAnswer(answer.id)
+							const idx = qa.answers.findIndex(a => a.id === answer.id)
+							if (idx !== -1) {
+								qa.answers.splice(idx, 1)
+							}
+							uni.showToast({ title: '已删除', icon: 'success' })
+							resolve(true)
+						} catch (e) {
+							uni.showToast({ title: '删除失败', icon: 'none' })
+							reject(e)
+						}
+					} else {
+						resolve(false)
+					}
+				}
+			})
+		})
+	} catch (_) {}
+}
+
 // 切换回复展开/收起
 function toggleReplies(comment: Comment) {
     // 已移除：评论级别的展开逻辑不再使用
 }
 
-// 切换回答评论展开/收起
+// 初始展开评论
 function toggleAnswerComments(answer: Answer) {
-	if (!answer.showComments) {
-		// 展开评论
-		answer.showComments = true
-		answer.expandedComments = Math.min(3, answer.comments.length) // 初始展开3条
-	} else if (answer.expandedComments >= answer.comments.length) {
-		// 收起所有评论
-		answer.showComments = false
-		answer.expandedComments = 0
-	} else {
-		// 展开更多，每次增加10条
-		answer.expandedComments = Math.min(answer.expandedComments + 10, answer.comments.length)
-	}
+	answer.showComments = true
+	answer.expandedComments = Math.min(3, answer.comments.length) // 初始展开3条
+}
+
+// 展开更多评论
+function expandMoreComments(answer: Answer) {
+	answer.expandedComments = Math.min(answer.expandedComments + 10, answer.comments.length)
+}
+
+// 收起所有评论
+function collapseComments(answer: Answer) {
+	answer.showComments = false
+	answer.expandedComments = 0
 }
 
 // 加载评论的回复
@@ -918,19 +1011,44 @@ onLoad(() => {
 
 /* 回答的评论区域 */
 .answer-comments {
-	margin-top: 20rpx;
-	padding-top: 20rpx;
-	border-top: 1rpx solid #f0f0f0;
+	margin-top: 12rpx;
+	padding-top: 12rpx;
 }
 
 /* 回答评论展开/收起按钮 */
 .answer-reply-expand {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     margin-top: 12rpx;
     padding: 8rpx 0;
     cursor: pointer;
+}
+
+/* 与圈子详情统一的展开/收起样式 */
+.expand-buttons {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+}
+
+.expand-more-btn,
+.collapse-btn {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.expand-text {
+    font-size: 22rpx;
+    color: #666;
+    margin-right: 8rpx;
+}
+
+.expand-arrow {
+    font-size: 20rpx;
+    color: #666;
+    transition: transform 0.3s ease;
 }
 
 /* 评论输入框 */
@@ -1126,14 +1244,14 @@ onLoad(() => {
 .comment-list {
 	display: flex;
 	flex-direction: column;
-	gap: 16rpx;
+	gap: 6rpx;
 }
 
 .comment-item {
 	background: #fff;
-	border: 2rpx solid #e9e9e9;
 	border-radius: 16rpx;
-	padding: 18rpx;
+	padding: 12rpx;
+	margin-left: 20rpx;
 }
 
 .comment-item.empty {
@@ -1144,13 +1262,13 @@ onLoad(() => {
 .comment-user {
 	display: flex;
 	align-items: center;
-	gap: 12rpx;
-	margin-bottom: 14rpx;
+	gap: 8rpx;
+	margin-bottom: 10rpx;
 }
 
 .c-avatar {
-	width: 64rpx;
-	height: 64rpx;
+	width: 48rpx;
+	height: 48rpx;
 	border-radius: 50%;
 	border: 2rpx solid #2c2c2c;
 	background: #f5f5f5;
@@ -1170,18 +1288,18 @@ onLoad(() => {
 	display: flex;
 	flex-direction: column;
 	flex: 1;
-	margin-left: 14rpx;
+	margin-left: 8rpx;
 }
 
 .c-name {
 	font-weight: 700;
 	color: #2c2c2c;
-	font-size: 28rpx;
+	font-size: 24rpx;
 }
 
 .c-role {
 	color: #777;
-	font-size: 24rpx;
+	font-size: 20rpx;
 }
 
 .c-text {
@@ -1233,6 +1351,33 @@ onLoad(() => {
 	color: #666;
 }
 
+.c-delete-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48rpx;
+	height: 48rpx;
+	border-radius: 50%;
+	background: #f5f5f5;
+	margin-left: 8rpx;
+}
+
+.delete-icon {
+	width: 20rpx;
+	height: 20rpx;
+}
+
+.answer-delete-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48rpx;
+	height: 48rpx;
+	border-radius: 50%;
+	background: #f5f5f5;
+	margin-left: 8rpx;
+}
+
 /* 回复展开/收起按钮 */
 .reply-expand {
 	display: flex;
@@ -1243,9 +1388,22 @@ onLoad(() => {
 	cursor: pointer;
 }
 
+.expand-buttons {
+	display: flex;
+	align-items: center;
+	gap: 24rpx;
+}
+
+.expand-more-btn,
+.collapse-btn {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+}
+
 .expand-text {
 	font-size: 22rpx;
-	color: #007AFF;
+    color: #666;
 	margin-right: 8rpx;
 }
 

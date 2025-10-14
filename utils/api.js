@@ -1,5 +1,5 @@
 // API 基础配置（真机调试使用本机 WLAN IP）
-const BASE_URL = 'http://10.161.26.136:3000/api'
+const BASE_URL = 'http://10.161.196.67:3000/api'
 
 // 请求拦截器
 const request = (options) => {
@@ -201,10 +201,36 @@ export const api = {
     method: 'DELETE'
   }),
   
+  getComments: (id) => request({
+    url: `/feeds/${id}/comments`,
+    method: 'GET'
+  }),
+  
   createComment: (id, data) => request({
     url: `/feeds/${id}/comments`,
     method: 'POST',
     data
+  }),
+
+  deleteComment: (commentId) => request({
+    url: `/feeds/comments/${commentId}`,
+    method: 'DELETE'
+  }),
+  
+  createCommentReply: (commentId, data) => request({
+    url: `/feeds/comments/${commentId}/replies`,
+    method: 'POST',
+    data
+  }),
+  
+  likeCommentReply: (replyId) => request({
+    url: `/feeds/comment-replies/${replyId}/like`,
+    method: 'POST'
+  }),
+
+  deleteCommentReply: (replyId) => request({
+    url: `/feeds/comment-replies/${replyId}`,
+    method: 'DELETE'
   }),
   
   // 问答功能
@@ -239,6 +265,11 @@ export const api = {
   likeAnswer: (id) => request({
     url: `/questions/answers/${id}/like`,
     method: 'POST'
+  }),
+
+  deleteAnswer: (id) => request({
+    url: `/questions/answers/${id}`,
+    method: 'DELETE'
   }),
   
   // 科普文章
@@ -295,21 +326,26 @@ export const api = {
     method: 'POST'
   }),
 
-  // 评论相关API
-  getComments: (answerId) => request({
+  // 问答评论相关API
+  getAnswerComments: (answerId) => request({
     url: `/questions/answers/${answerId}/comments`,
     method: 'GET'
   }),
 
-  createComment: (answerId, data) => request({
+  createAnswerComment: (answerId, data) => request({
     url: `/questions/answers/${answerId}/comments`,
     method: 'POST',
     data
   }),
 
-  likeComment: (commentId) => request({
+  likeAnswerComment: (commentId) => request({
     url: `/questions/comments/${commentId}/like`,
     method: 'POST'
+  }),
+
+  deleteAnswerComment: (commentId) => request({
+    url: `/questions/comments/${commentId}`,
+    method: 'DELETE'
   })
 }
 

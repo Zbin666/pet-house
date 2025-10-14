@@ -212,15 +212,15 @@ const _sfc_main = {
       }, {
         B: !editMode.value
       }, !editMode.value ? {
-        C: common_assets._imports_0$8,
+        C: common_assets._imports_0$9,
         D: common_vendor.o(startEdit),
-        E: common_assets._imports_1$1,
+        E: common_assets._imports_0$4,
         F: common_vendor.o(deletePet)
       } : {
         G: common_vendor.o(cancelEdit),
         H: common_vendor.o(saveEdit)
       }, {
-        I: common_assets._imports_1$5,
+        I: common_assets._imports_1$4,
         J: !editMode.value
       }, !editMode.value ? {
         K: common_vendor.t(pet.value.neutered ? "已绝育" : "未绝育")
@@ -228,7 +228,7 @@ const _sfc_main = {
         L: form.neutered,
         M: common_vendor.o((e) => form.neutered = e.detail.value)
       }, {
-        N: common_assets._imports_1$5,
+        N: common_assets._imports_1$4,
         O: !editMode.value
       }, !editMode.value ? {
         P: common_vendor.f(vaccines.value, (v, i, i0) => {
@@ -248,7 +248,7 @@ const _sfc_main = {
         }),
         R: common_vendor.o(onVaccinesChange)
       }, {
-        S: common_assets._imports_1$5,
+        S: common_assets._imports_1$4,
         T: !editMode.value
       }, !editMode.value ? {
         U: common_vendor.t(temperament.value)
@@ -256,7 +256,7 @@ const _sfc_main = {
         V: form.temperament,
         W: common_vendor.o(($event) => form.temperament = $event.detail.value)
       }, {
-        X: common_assets._imports_1$5,
+        X: common_assets._imports_1$4,
         Y: common_vendor.f(editMode.value ? form.gallery : gallery.value, (g, i, i0) => {
           return common_vendor.e({
             a: g,

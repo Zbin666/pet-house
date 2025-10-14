@@ -383,14 +383,14 @@ function switchTab(tab) {
 }
 
 function goDetail(post) {
-	uni.navigateTo({
-		url: '/pages/communityDetail/communityDetail',
-		success: (res) => {
-			try {
-				res.eventChannel.emit('post', post)
-			} catch (e) { }
-		}
-	})
+    uni.navigateTo({
+        url: `/pages/communityDetail/communityDetail?id=${post.id}`,
+        success: (res) => {
+            try {
+                res.eventChannel.emit('post', post)
+            } catch (e) { }
+        }
+    })
 }
 function goQADetail(qa) {
 	uni.navigateTo({

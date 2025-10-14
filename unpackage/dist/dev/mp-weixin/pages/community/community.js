@@ -194,7 +194,7 @@ const _sfc_main = {
     }
     function goDetail(post) {
       common_vendor.index.navigateTo({
-        url: "/pages/communityDetail/communityDetail",
+        url: `/pages/communityDetail/communityDetail?id=${post.id}`,
         success: (res) => {
           try {
             res.eventChannel.emit("post", post);
@@ -338,23 +338,23 @@ const _sfc_main = {
       return common_vendor.e({
         a: topTab.value === "square"
       }, topTab.value === "square" ? {
-        b: common_assets._imports_0$6
+        b: common_assets._imports_0$7
       } : {}, {
         c: common_vendor.n(topTab.value === "square" ? "active" : ""),
         d: common_vendor.o(($event) => switchTab("square")),
         e: topTab.value === "qa"
       }, topTab.value === "qa" ? {
-        f: common_assets._imports_0$6
+        f: common_assets._imports_0$7
       } : {}, {
         g: common_vendor.n(topTab.value === "qa" ? "active" : ""),
         h: common_vendor.o(($event) => switchTab("qa")),
         i: topTab.value === "science"
       }, topTab.value === "science" ? {
-        j: common_assets._imports_0$6
+        j: common_assets._imports_0$7
       } : {}, {
         k: common_vendor.n(topTab.value === "science" ? "active" : ""),
         l: common_vendor.o(($event) => switchTab("science")),
-        m: common_assets._imports_1$3,
+        m: common_assets._imports_1$2,
         n: common_vendor.o(handleSearch),
         o: common_vendor.o([($event) => searchText.value = $event.detail.value, handleSearchInput]),
         p: searchText.value,
@@ -403,7 +403,7 @@ const _sfc_main = {
             o: common_vendor.o(($event) => toggleLike(post), post.id),
             p: post.isOwner
           }, post.isOwner ? {
-            q: common_assets._imports_1$1,
+            q: common_assets._imports_0$4,
             r: common_vendor.o(($event) => deletePost(post), post.id)
           } : {}, {
             s: common_vendor.o(noop, post.id),
@@ -411,8 +411,8 @@ const _sfc_main = {
             v: common_vendor.o(($event) => goDetail(post), post.id)
           });
         }),
-        x: common_assets._imports_0$5,
-        y: common_assets._imports_1$2
+        x: common_assets._imports_0$6,
+        y: common_assets._imports_1$1
       } : {}, {
         z: topTab.value === "science"
       }, topTab.value === "science" ? {

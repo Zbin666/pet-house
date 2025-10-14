@@ -89,14 +89,14 @@ const _sfc_main = {
     return (_ctx, _cache) => {
       var _a, _b;
       return {
-        a: common_assets._imports_0$7,
+        a: common_assets._imports_0$8,
         b: ((_a = userInfo.value) == null ? void 0 : _a.avatarUrl) || "/static/logo.png",
         c: common_vendor.t(((_b = userInfo.value) == null ? void 0 : _b.nickname) || "用户"),
         d: genderIcon.value,
         e: common_vendor.t(stats.value.feeds || 0),
         f: common_vendor.t(stats.value.likes || 0),
         g: common_vendor.o(openSetting),
-        h: common_assets._imports_1$4,
+        h: common_assets._imports_1$3,
         i: common_vendor.t(maxTogetherDays.value),
         j: common_vendor.f(pets.value, (p, k0, i0) => {
           return {
