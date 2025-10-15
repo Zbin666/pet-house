@@ -13,7 +13,8 @@
 			<view class="pet-top-decoration">
 				<image class="decoration-img" src="/static/index/longCircle.svg" mode="widthFix" />
 			</view>
-			<view v-if="hasPet" class="pet-content" @tap="goPetDetail">
+			<!-- 单只宠物：沿用原样式 -->
+			<view v-if="hasPet && pets.length === 1" class="pet-content" @tap="goPetDetail(currentPet)">
 				<view class="pet-left">
 					<view class="pet-avatar">
 						<image 
@@ -43,6 +44,41 @@
 					</view>
 				</view>
 			</view>
+
+			<!-- 多只宠物：横向滑动 -->
+			<scroll-view v-else-if="hasPet && pets.length > 1" class="pet-scroll" scroll-x="true" show-scrollbar="false">
+				<view class="pet-item" v-for="pet in pets" :key="pet.id" @tap="goPetDetail(pet)">
+					<view class="pet-container">
+						<view class="pet-left">
+								<view class="pet-avatar">
+									<image 
+										v-if="pet?.avatarUrl" 
+										:src="pet.avatarUrl" 
+										class="pet-avatar-inner" 
+										mode="aspectFill" 
+									/>
+									<image 
+										v-else 
+										:src="getDefaultPetAvatar()" 
+										class="pet-avatar-inner" 
+										mode="aspectFill" 
+									/>
+								</view>
+							</view>
+							<view class="pet-right">
+								<view class="pet-title-row">
+									<text class="pet-name">{{ pet?.name || '我的宠物' }}</text>
+									<text class="pet-edit">✎</text>
+								</view>
+								<text class="pet-meta">{{ getPetMeta(pet) }}</text>
+								<view class="pet-tags" v-if="getPetTags(pet).length">
+									<text v-for="(tag, i) in getPetTags(pet)" :key="i" class="tag">{{ tag }}</text>
+								</view>
+							</view>
+						
+					</view>
+				</view>
+			</scroll-view>
 			<view v-else class="pet-empty" @tap="goAddPet">
 				<image class="add-icon" src="/static/index/add.png" mode="widthFix" />
 				<text class="add-text">添加我的宠物</text>
@@ -132,6 +168,22 @@ const petTags = computed(() => {
   if (Array.isArray(temperament)) return temperament
   return String(temperament).split(/[，,\s]+/).filter(Boolean).slice(0, 3)
 })
+
+// 多宠物卡片的 meta 与 tags 计算
+function getPetMeta(pet) {
+  if (!pet) return ''
+  const months = pet.months ? `${pet.months}个月` : ''
+  const weight = pet.weight ? `${pet.weight}kg` : ''
+  return [months, weight].filter(Boolean).join(' | ')
+}
+
+function getPetTags(pet) {
+  if (!pet) return []
+  const temperament = pet.temperament || ''
+  if (!temperament) return []
+  if (Array.isArray(temperament)) return temperament.slice(0, 3)
+  return String(temperament).split(/[，,\s]+/).filter(Boolean).slice(0, 3)
+}
 
 // 初始化页面
 onMounted(async () => {
@@ -306,8 +358,8 @@ function onImageError(e) {
   }
 }
 
-function goPetDetail() {
-  const pet = currentPet.value
+function goPetDetail(pet) {
+  pet = pet || currentPet.value
   console.log('=== 首页跳转宠物详情调试信息 ===');
   console.log('当前宠物数据:', pet);
   console.log('宠物头像URL:', pet?.avatarUrl);
@@ -363,7 +415,7 @@ function goPetDetail() {
 .pet-card {
 	width: 100%;
 	max-width: 704rpx;
-	height: 320rpx;
+	height: 336rpx;
 	display: flex;
 	flex-direction: column;
 	background: #ffffff;
@@ -428,16 +480,49 @@ function goPetDetail() {
 
 .pet-content {
 	display: flex;
-	padding-top: 28rpx;
+	padding: 24rpx 18rpx 0 18rpx;
+	border: 1rpx solid yellow;
+}
+
+/* 多宠物横滑容器 */
+.pet-scroll {
+	white-space: nowrap;
+	width: 100%;
+	height: 240rpx;
+}
+
+.pet-scroll::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
+
+.pet-item {
+	display: inline-flex;
+	align-items: stretch;
+	width: 100%;
+	height: 220rpx;
+	background: transparent;
+	border-radius: 0;
+	/* padding: 24rpx 18rpx 0 18rpx; */
+	margin-right: 0;
+	/* border: 1rpx solid green; */
+}
+
+.pet-container {
+	width: 94%;
+	display: flex;
+	padding: 24rpx 0rpx 0 18rpx;
+	/* border: 1rpx solid yellow; */
 }
 
 .pet-left {
-	margin-right: 16rpx;
+	margin-right: 32rpx;
 }
 
 .pet-avatar {
-	width: 220rpx;
-	height: 180rpx;
+	width: 210rpx;
+	height: 210rpx;
 	border-radius: 20rpx;
 	background: #fff7d6;
 	display: flex;
@@ -455,6 +540,9 @@ function goPetDetail() {
 
 .pet-right {
 	flex: 1;
+	height: 210rpx;
+	justify-content: space-between;
+	/* border: 1rpx solid red; */
 }
 
 .pet-title-row {
@@ -472,9 +560,11 @@ function goPetDetail() {
 .pet-edit {
 	color: #888;
 	font-size: 28rpx;
+	padding-right: 20rpx;
 }
 
 .pet-meta {
+	font-size: 28rpx;
 	display: block;
 	margin-top: 8rpx;
 	color: #6b6b6b;

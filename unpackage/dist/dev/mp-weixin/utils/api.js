@@ -1,6 +1,6 @@
 "use strict";
 const common_vendor = require("../common/vendor.js");
-const BASE_URL = "http://10.161.196.67:3000/api";
+const BASE_URL = "http://10.154.16.76:3000/api";
 const request = (options) => {
   return new Promise((resolve, reject) => {
     const token = common_vendor.index.getStorageSync("token");

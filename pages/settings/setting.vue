@@ -95,17 +95,19 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { api } from '@/utils/api.js'
 
 defineOptions({ name: 'SettingsIndex' })
 
-// 用户信息
+// 用户信息（由后端填充）
 const userInfo = ref({
-	name: '宠物爱好者',
-	desc: '热爱小动物的铲屎官',
-	phone: '138****8888',
-	email: 'user@example.com',
-	avatar: '/static/user/user.png',
-	registerTime: '2024年1月1日'
+    id: '',
+    name: '',
+    desc: '', // 映射到用户设置中的 bio
+    phone: '',
+    email: '',
+    avatar: '/static/user/user.png',
+    registerTime: ''
 })
 
 // 编辑模式
@@ -134,6 +136,8 @@ onLoad(() => {
 		const keys = uni.getStorageInfoSync().keys || []
 		cacheSize.value = `${keys.length} 项`
 	} catch (e) { cacheSize.value = '—' }
+    // 加载用户资料与设置
+    loadProfileAndSettings()
 })
 
 // 编辑功能
@@ -152,20 +156,35 @@ function cancelEdit() {
 	editMode.value = false
 }
 
-function saveEdit() {
-	userInfo.value = {
-		...userInfo.value,
-		name: form.name,
-		desc: form.desc,
-		phone: form.phone,
-		email: form.email,
-		avatar: form.avatar || userInfo.value.avatar
-	}
-	editMode.value = false
-	uni.showToast({
-		title: '保存成功',
-		icon: 'success'
-	})
+async function saveEdit() {
+    try {
+        // 更新用户基本资料（昵称/邮箱/手机/头像/简介bio）
+        const profilePayload = {
+            nickname: form.name,
+            email: form.email,
+            phone: form.phone,
+            bio: form.desc,
+            avatarUrl: form.avatar && form.avatar.startsWith('http') ? form.avatar : undefined
+        }
+        // 过滤空值，避免覆盖
+        Object.keys(profilePayload).forEach((k) => profilePayload[k] === undefined && delete profilePayload[k])
+
+        await api.updateProfile(profilePayload)
+
+        // 本地同步
+        userInfo.value = {
+            ...userInfo.value,
+            name: form.name,
+            desc: form.desc,
+            phone: form.phone,
+            email: form.email,
+            avatar: form.avatar || userInfo.value.avatar
+        }
+        editMode.value = false
+        uni.showToast({ title: '保存成功', icon: 'success' })
+    } catch (e) {
+        uni.showToast({ title: '保存失败', icon: 'none' })
+    }
 }
 
 function pickAvatar() {
@@ -196,6 +215,48 @@ function clearCache() {
 			}
 		}
 	})
+}
+
+// 工具与数据加载
+function formatRegisterTime(iso) {
+    if (!iso) return ''
+    try {
+        const d = new Date(iso)
+        const y = d.getFullYear()
+        const m = `${d.getMonth() + 1}`.padStart(2, '0')
+        const day = `${d.getDate()}`.padStart(2, '0')
+        return `${y}-${m}-${day}`
+    } catch (_) { return '' }
+}
+
+async function loadProfileAndSettings() {
+    try {
+        const [profile, userSettings] = await Promise.all([
+            api.getProfile(),
+            api.getSettings().catch(() => ({}))
+        ])
+
+        userInfo.value = {
+            id: profile?.id || '',
+            name: profile?.nickname || '新用户',
+            desc: profile?.bio || '',
+            phone: profile?.phone || '',
+            email: profile?.email || '',
+            avatar: profile?.avatarUrl || '/static/user/user.png',
+            registerTime: formatRegisterTime(profile?.createdAt)
+        }
+    } catch (e) {
+        // 降级为默认占位
+        userInfo.value = {
+            id: '',
+            name: '新用户',
+            desc: '',
+            phone: '',
+            email: '',
+            avatar: '/static/user/user.png',
+            registerTime: ''
+        }
+    }
 }
 </script>
 

@@ -31,6 +31,9 @@
 						mode="widthFix" />
 					<text>{{ post.likes }}</text>
 				</view>
+				<view v-if="post.userId === currentUserId" class="ft-delete-btn" @tap.stop="confirmDeletePost">
+					<image class="ft-delete-icon" src="/static/user/delete.png" mode="widthFix" />
+				</view>
 			</view>
 		</view>
 
@@ -41,10 +44,10 @@
 				<view class="comments-card-body">
 					<!-- 评论标题 -->
 					<view class="comment-header">
-                        <view class="comment-tag">
-                            <text class="comment-title">全部评论</text>
+						<view class="comment-tag">
+							<text class="comment-title">全部评论</text>
                             <text class="comment-count">{{ totalComments }}</text>
-                        </view>
+						</view>
 					</view>
 
 					<!-- 评论列表 -->
@@ -74,7 +77,7 @@
 											:src="comment.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'"
 											mode="widthFix" />
 										<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
-                                    </view>
+						</view>
                                     <view v-if="comment.isSelf" class="c-delete-btn" @tap.stop="confirmDeleteComment(comment)">
                                         <image class="c-delete-icon" src="/static/user/delete.png" mode="widthFix" />
                                     </view>
@@ -238,6 +241,7 @@ async function loadDetail(id) {
 		const user = f.User || {}
 		const pet = f.Pet || {}
 		post.id = f.id
+		post.userId = f.userId || f.User?.id || ''
 		post.user = user.nickname || '昵称'
 		post.pet = pet.name || ''
 		post.breed = pet.breed || ''
@@ -322,6 +326,38 @@ function sharePost() {
 		icon: 'none'
 	})
 }
+// 删除动态
+async function confirmDeletePost() {
+    try {
+        await new Promise((resolve, reject) => {
+            uni.showModal({
+                title: '删除确认',
+                content: '确定要删除这条动态吗？删除后将无法恢复。',
+                confirmText: '删除',
+                confirmColor: '#e64340',
+                success: async (res) => {
+                    if (res.confirm) {
+                        try {
+                            await api.deleteFeed(post.id)
+                            uni.showToast({ title: '已删除', icon: 'success' })
+                            // 返回上一页
+                            setTimeout(() => {
+                                uni.navigateBack()
+                            }, 1500)
+                            resolve(true)
+                        } catch (e) {
+                            uni.showToast({ title: '删除失败', icon: 'none' })
+                            reject(e)
+                        }
+                    } else {
+                        resolve(false)
+                    }
+                }
+            })
+        })
+    } catch (_) {}
+}
+
 // 删除评论
 async function confirmDeleteComment(comment) {
     try {
@@ -857,6 +893,21 @@ function collapseReplies(comment) {
 }
 
 .ft-icon {
+	width: 24rpx;
+	height: 24rpx;
+}
+
+.ft-delete-btn {
+	background: #fff;
+	padding: 8rpx 16rpx;
+	border-radius: 999rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: 8rpx;
+}
+
+.ft-delete-icon {
 	width: 24rpx;
 	height: 24rpx;
 }

@@ -314,6 +314,24 @@
 	padding: 24rpx;
 	box-shadow: 0 6rpx 0 #2c2c2c;
 }
+.qa-delete-btn.data-v-a6ef5318 {
+	position: absolute;
+	top: 16rpx;
+	right: 16rpx;
+	width: 48rpx;
+	height: 48rpx;
+	background: #ffebee;
+	border: 2rpx solid #ffcdd2;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10;
+}
+.qa-delete-icon.data-v-a6ef5318 {
+	width: 20rpx;
+	height: 20rpx;
+}
 
 /* 左右装饰圆点（与分隔线对齐） */
 .qa-card.data-v-a6ef5318::before,

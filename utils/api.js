@@ -1,5 +1,5 @@
 // API 基础配置（真机调试使用本机 WLAN IP）
-const BASE_URL = 'http://10.161.196.67:3000/api'
+const BASE_URL = 'http://10.154.16.76:3000/api'
 
 // 请求拦截器
 const request = (options) => {

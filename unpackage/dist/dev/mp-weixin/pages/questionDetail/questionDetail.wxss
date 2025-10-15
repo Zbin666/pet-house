@@ -117,6 +117,20 @@
 	font-size: 24rpx;
 	color: #999;
 }
+.qa-delete-btn.data-v-f887a9d3 {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48rpx;
+	height: 48rpx;
+	border-radius: 50%;
+	background: #f5f5f5;
+	margin-left: 8rpx;
+}
+.qa-delete-icon.data-v-f887a9d3 {
+	width: 20rpx;
+	height: 20rpx;
+}
 .answers-section.data-v-f887a9d3 {
 	margin-top: 36rpx;
 	position: relative;
@@ -208,11 +222,7 @@
     color: #666;
     margin-right: 8rpx;
 }
-.expand-arrow.data-v-f887a9d3 {
-    font-size: 20rpx;
-    color: #666;
-    transition: transform 0.3s ease;
-}
+
 
 /* 评论输入框 */
 .comment-input.data-v-f887a9d3 {
@@ -524,7 +534,7 @@
 }
 .expand-arrow.data-v-f887a9d3 {
 	font-size: 20rpx;
-	color: #007AFF;
+	color: #666;
 	transition: transform 0.3s ease;
 }
 .expand-arrow.expanded.data-v-f887a9d3 {

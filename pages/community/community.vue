@@ -100,6 +100,11 @@
 		<!-- 问答列表 -->
 		<view class="qa-feed" v-if="topTab === 'qa'">
 			<view class="qa-card" v-for="qa in qaPosts" :key="qa.id" @tap="goQADetail(qa)">
+				<!-- 删除按钮 -->
+				<view v-if="qa.isOwner" class="qa-delete-btn" @tap.stop="deleteQuestion(qa)">
+					<image class="qa-delete-icon" src="/static/user/delete.png" mode="widthFix" />
+				</view>
+				
 				<!-- 问题标题 -->
 				<view class="qa-header">
 					<view class="urgent-tag" v-if="qa.isUrgent">
@@ -197,7 +202,7 @@ onMounted(async () => {
 	
 	// 初次进入加载广场数据
 	loadFeeds()
-	// 加载问答数据
+	// 加载问答数据（在用户信息加载完成后）
 	loadQuestions()
 	// 监听刷新事件
 	try { uni.$on('feeds:refresh', () => { if (topTab.value === 'square') loadFeeds() }) } catch (e) {}
@@ -301,8 +306,6 @@ async function loadQuestions(params = {}) {
 		
 		// 处理问答数据
 		qaPosts.value = list.map(q => {
-			console.log('处理问答数据:', q)
-			console.log('topAnswer数据:', q.topAnswer)
 			
 			// 时间格式化
 			let time = '刚刚'
@@ -330,19 +333,60 @@ async function loadQuestions(params = {}) {
 			
 			const processedQ = {
 				id: q.id,
+				userId: q.user?.id || q.userId, // 从user对象中获取userId
 				title: q.title,
 				isUrgent: q.isUrgent,
 				hasAnswer: q.answerCount > 0,
-				topAnswer: q.topAnswer || null,
+				topAnswer: q.topAnswerId ? {
+					id: q.topAnswerId,
+					content: q.topAnswerContent,
+					likes: q.topAnswerLikes || 0,
+					isTopLiked: true,
+					user: q.topAnswerUserId ? {
+						id: q.topAnswerUserId,
+						nickname: q.topAnswerUserNickname,
+						avatarUrl: q.topAnswerUserAvatar
+					} : null,
+					pet: q.topAnswerPetName ? {
+						name: q.topAnswerPetName,
+						breed: q.topAnswerPetBreed
+					} : null
+				} : null,
 				answerCount: q.answerCount || 0,
 				readCount: q.views || 0,
 				time: time,
-				tags: tags
+				tags: tags,
+				isOwner: currentUser.value && (q.user?.id || q.userId) === currentUser.value.id // 判断是否为作者
 			}
 			
-			console.log('处理后的问答数据:', processedQ)
 			return processedQ
 		})
+
+		// 懒加载补齐：有回答但缺少置顶回答详情时，拉取问题详情填充
+		for (const qa of qaPosts.value) {
+			if (!qa.topAnswer) {
+				try {
+					const detail = await api.getQuestion(qa.id)
+					if (detail && Array.isArray(detail.answers) && detail.answers.length > 0) {
+						const top = [...detail.answers].sort((a, b) => (b.likes - a.likes) || (new Date(a.createdAt) - new Date(b.createdAt)))[0]
+						qa.topAnswer = {
+							id: top.id,
+							content: top.content,
+							likes: top.likes || 0,
+							isTopLiked: true,
+							user: top.user || null,
+							pet: top.pet || null
+						}
+					} else {
+						// 无回答，不进行填充
+					}
+				} catch (err) {
+					// 忽略填充错误，保持原数据
+				}
+			}
+		}
+		// 触发视图更新
+		qaPosts.value = qaPosts.value.slice()
 	} catch (e) {
 		console.error('加载问答数据失败:', e)
 		qaPosts.value = []
@@ -488,6 +532,47 @@ async function deletePost(post) {
 	}
 }
 
+// 删除问答
+async function deleteQuestion(qa) {
+	try {
+		uni.showModal({
+			title: '确认删除',
+			content: '确定要删除这个问答吗？删除后无法恢复。',
+			confirmText: '删除',
+			cancelText: '取消',
+			confirmColor: '#ff4757',
+			success: async (res) => {
+				if (res.confirm) {
+					try {
+						await api.deleteQuestion(qa.id)
+						uni.showToast({
+							title: '删除成功',
+							icon: 'success'
+						})
+						// 从列表中移除已删除的问答
+						const index = qaPosts.value.findIndex(q => q.id === qa.id)
+						if (index > -1) {
+							qaPosts.value.splice(index, 1)
+						}
+					} catch (error) {
+						console.error('删除问答失败:', error)
+						uni.showToast({
+							title: '删除失败',
+							icon: 'none'
+						})
+					}
+				}
+			}
+		})
+	} catch (error) {
+		console.error('删除问答失败:', error)
+		uni.showToast({
+			title: '删除失败',
+			icon: 'none'
+		})
+	}
+}
+
 // 搜索处理
 function handleSearch() {
 	if (!searchText.value.trim()) return
@@ -524,7 +609,6 @@ function handleSearchInput() {
 
 // 清除搜索
 function clearSearch() {
-	console.log('清除搜索被调用')
 	searchText.value = ''
 	isSearching.value = false
 	if (topTab.value === 'square') {
@@ -532,7 +616,6 @@ function clearSearch() {
 	} else if (topTab.value === 'qa') {
 		loadQuestions()
 	}
-	console.log('搜索文本已清除:', searchText.value)
 }
 </script>
 
@@ -892,6 +975,26 @@ function clearSearch() {
 	border: 4rpx solid #2c2c2c;
 	padding: 24rpx;
 	box-shadow: 0 6rpx 0 #2c2c2c;
+}
+
+.qa-delete-btn {
+	position: absolute;
+	top: 16rpx;
+	right: 16rpx;
+	width: 48rpx;
+	height: 48rpx;
+	background: #ffebee;
+	border: 2rpx solid #ffcdd2;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10;
+}
+
+.qa-delete-icon {
+	width: 20rpx;
+	height: 20rpx;
 }
 
 /* 左右装饰圆点（与分隔线对齐） */

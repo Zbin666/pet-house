@@ -24,6 +24,9 @@
 				<image class="qa-user-avatar" :src="qa.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
 				<text class="qa-user-name">{{ qa.user.nickname || '用户' }}</text>
 				<text class="qa-time">{{ qa.time }}</text>
+				<view v-if="qa.user.id === currentUserId" class="qa-delete-btn" @tap.stop="confirmDeleteQuestion">
+					<image class="qa-delete-icon" src="/static/user/delete.png" mode="widthFix" />
+				</view>
 			</view>
 		</view>
 
@@ -380,7 +383,7 @@ async function submitAnswer() {
 		
 		await api.createAnswer(qa.id, {
 			content: currentAnswer.value.trim(),
-			petId: qa.pet?.id || null
+			petId: currentUserPet.value?.id || null
 		})
 		
 		uni.showToast({
@@ -751,6 +754,38 @@ async function confirmDeleteAnswer(answer: Answer) {
 	} catch (_) {}
 }
 
+// 删除自己的问答
+async function confirmDeleteQuestion() {
+	try {
+		await new Promise((resolve, reject) => {
+			uni.showModal({
+				title: '删除确认',
+				content: '确定要删除这个问答吗？删除后将无法恢复。',
+				confirmText: '删除',
+				confirmColor: '#e64340',
+				success: async (res) => {
+					if (res.confirm) {
+						try {
+							await api.deleteQuestion(qa.id)
+							uni.showToast({ title: '已删除', icon: 'success' })
+							// 返回上一页
+							setTimeout(() => {
+								uni.navigateBack()
+							}, 1500)
+							resolve(true)
+						} catch (e) {
+							uni.showToast({ title: '删除失败', icon: 'none' })
+							reject(e)
+						}
+					} else {
+						resolve(false)
+					}
+				}
+			})
+		})
+	} catch (_) {}
+}
+
 // 切换回复展开/收起
 function toggleReplies(comment: Comment) {
     // 已移除：评论级别的展开逻辑不再使用
@@ -943,6 +978,22 @@ onLoad(() => {
 	color: #999;
 }
 
+.qa-delete-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48rpx;
+	height: 48rpx;
+	border-radius: 50%;
+	background: #f5f5f5;
+	margin-left: 8rpx;
+}
+
+.qa-delete-icon {
+	width: 20rpx;
+	height: 20rpx;
+}
+
 .answers-section {
 	margin-top: 36rpx;
 	position: relative;
@@ -1045,11 +1096,6 @@ onLoad(() => {
     margin-right: 8rpx;
 }
 
-.expand-arrow {
-    font-size: 20rpx;
-    color: #666;
-    transition: transform 0.3s ease;
-}
 
 /* 评论输入框 */
 .comment-input {
@@ -1409,7 +1455,7 @@ onLoad(() => {
 
 .expand-arrow {
 	font-size: 20rpx;
-	color: #007AFF;
+	color: #666;
 	transition: transform 0.3s ease;
 }
 

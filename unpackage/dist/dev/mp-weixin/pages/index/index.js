@@ -14,7 +14,7 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
     const currentPet = common_vendor.computed(() => {
       var _a;
       const pet = ((_a = pets.value) == null ? void 0 : _a[0]) || null;
-      common_vendor.index.__f__("log", "at pages/index/index.vue:118", "currentPet computed:", pet);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:154", "currentPet computed:", pet);
       return pet;
     });
     const petMeta = common_vendor.computed(() => {
@@ -34,6 +34,23 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
         return temperament;
       return String(temperament).split(/[，,\s]+/).filter(Boolean).slice(0, 3);
     });
+    function getPetMeta(pet) {
+      if (!pet)
+        return "";
+      const months = pet.months ? `${pet.months}个月` : "";
+      const weight = pet.weight ? `${pet.weight}kg` : "";
+      return [months, weight].filter(Boolean).join(" | ");
+    }
+    function getPetTags(pet) {
+      if (!pet)
+        return [];
+      const temperament = pet.temperament || "";
+      if (!temperament)
+        return [];
+      if (Array.isArray(temperament))
+        return temperament.slice(0, 3);
+      return String(temperament).split(/[，,\s]+/).filter(Boolean).slice(0, 3);
+    }
     common_vendor.onMounted(async () => {
       const state = utils_store.initState();
       userInfo.value = state.userInfo;
@@ -72,28 +89,28 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
     async function loadPets() {
       var _a, _b;
       try {
-        common_vendor.index.__f__("log", "at pages/index/index.vue:195", "=== 首页加载宠物数据调试信息 ===");
+        common_vendor.index.__f__("log", "at pages/index/index.vue:247", "=== 首页加载宠物数据调试信息 ===");
         const result = await utils_api.api.getPets();
-        common_vendor.index.__f__("log", "at pages/index/index.vue:197", "API返回结果:", result);
+        common_vendor.index.__f__("log", "at pages/index/index.vue:249", "API返回结果:", result);
         pets.value = Array.isArray(result) ? result : result.data || [];
         pets.value = pets.value.map((pet) => ({
           ...pet,
           avatarUrl: processImageUrl(pet.avatarUrl)
         }));
-        common_vendor.index.__f__("log", "at pages/index/index.vue:208", "处理后的宠物数据:", pets.value);
-        common_vendor.index.__f__("log", "at pages/index/index.vue:209", "第一个宠物的头像URL:", (_a = pets.value[0]) == null ? void 0 : _a.avatarUrl);
-        common_vendor.index.__f__("log", "at pages/index/index.vue:210", "第一个宠物的完整数据:", pets.value[0]);
+        common_vendor.index.__f__("log", "at pages/index/index.vue:260", "处理后的宠物数据:", pets.value);
+        common_vendor.index.__f__("log", "at pages/index/index.vue:261", "第一个宠物的头像URL:", (_a = pets.value[0]) == null ? void 0 : _a.avatarUrl);
+        common_vendor.index.__f__("log", "at pages/index/index.vue:262", "第一个宠物的完整数据:", pets.value[0]);
         hasPet.value = pets.value.length > 0;
-        common_vendor.index.__f__("log", "at pages/index/index.vue:213", "是否有宠物:", hasPet.value);
+        common_vendor.index.__f__("log", "at pages/index/index.vue:265", "是否有宠物:", hasPet.value);
         if ((_b = pets.value[0]) == null ? void 0 : _b.avatarUrl) {
-          common_vendor.index.__f__("log", "at pages/index/index.vue:217", "头像URL详情:", {
+          common_vendor.index.__f__("log", "at pages/index/index.vue:269", "头像URL详情:", {
             url: pets.value[0].avatarUrl,
             type: typeof pets.value[0].avatarUrl,
             length: pets.value[0].avatarUrl.length
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/index/index.vue:224", "加载宠物数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/index/index.vue:276", "加载宠物数据失败:", error);
       }
     }
     async function loadTodayReminders() {
@@ -152,26 +169,26 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
       common_vendor.index.switchTab({ url: "/pages/record/record" });
     }
     function onImageLoad(e) {
-      common_vendor.index.__f__("log", "at pages/index/index.vue:296", "图片加载成功:", e);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:348", "图片加载成功:", e);
     }
     function onImageError(e) {
       var _a;
-      common_vendor.index.__f__("error", "at pages/index/index.vue:300", "图片加载失败:", e);
-      common_vendor.index.__f__("error", "at pages/index/index.vue:301", "失败的图片URL:", (_a = currentPet.value) == null ? void 0 : _a.avatarUrl);
+      common_vendor.index.__f__("error", "at pages/index/index.vue:352", "图片加载失败:", e);
+      common_vendor.index.__f__("error", "at pages/index/index.vue:353", "失败的图片URL:", (_a = currentPet.value) == null ? void 0 : _a.avatarUrl);
       if (currentPet.value) {
         currentPet.value.avatarUrl = getDefaultPetAvatar();
       }
     }
-    function goPetDetail() {
-      const pet = currentPet.value;
-      common_vendor.index.__f__("log", "at pages/index/index.vue:311", "=== 首页跳转宠物详情调试信息 ===");
-      common_vendor.index.__f__("log", "at pages/index/index.vue:312", "当前宠物数据:", pet);
-      common_vendor.index.__f__("log", "at pages/index/index.vue:313", "宠物头像URL:", pet == null ? void 0 : pet.avatarUrl);
+    function goPetDetail(pet) {
+      pet = pet || currentPet.value;
+      common_vendor.index.__f__("log", "at pages/index/index.vue:363", "=== 首页跳转宠物详情调试信息 ===");
+      common_vendor.index.__f__("log", "at pages/index/index.vue:364", "当前宠物数据:", pet);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:365", "宠物头像URL:", pet == null ? void 0 : pet.avatarUrl);
       if (!pet || !pet.id)
         return;
       const q = encodeURIComponent(JSON.stringify(pet));
-      common_vendor.index.__f__("log", "at pages/index/index.vue:317", "编码后的数据:", q);
-      common_vendor.index.__f__("log", "at pages/index/index.vue:318", "跳转URL:", `/pages/petDetail/petDetail?pet=${q}`);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:369", "编码后的数据:", q);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:370", "跳转URL:", `/pages/petDetail/petDetail?pet=${q}`);
       common_vendor.index.navigateTo({ url: `/pages/petDetail/petDetail?pet=${q}` });
     }
     return (_ctx, _cache) => {
@@ -180,8 +197,8 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
         a: common_vendor.t(((_a = userInfo.value) == null ? void 0 : _a.nickname) || "用户"),
         b: common_vendor.t(getGreeting()),
         c: common_assets._imports_0$2,
-        d: hasPet.value
-      }, hasPet.value ? common_vendor.e({
+        d: hasPet.value && pets.value.length === 1
+      }, hasPet.value && pets.value.length === 1 ? common_vendor.e({
         e: (_b = currentPet.value) == null ? void 0 : _b.avatarUrl
       }, ((_c = currentPet.value) == null ? void 0 : _c.avatarUrl) ? {
         f: currentPet.value.avatarUrl,
@@ -201,28 +218,53 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
           };
         })
       } : {}, {
-        n: common_vendor.o(goPetDetail)
-      }) : {
-        o: common_assets._imports_0$1,
-        p: common_vendor.o(goAddPet)
+        n: common_vendor.o(($event) => goPetDetail(currentPet.value))
+      }) : hasPet.value && pets.value.length > 1 ? {
+        p: common_vendor.f(pets.value, (pet, k0, i0) => {
+          return common_vendor.e({
+            a: pet == null ? void 0 : pet.avatarUrl
+          }, (pet == null ? void 0 : pet.avatarUrl) ? {
+            b: pet.avatarUrl
+          } : {
+            c: getDefaultPetAvatar()
+          }, {
+            d: common_vendor.t((pet == null ? void 0 : pet.name) || "我的宠物"),
+            e: common_vendor.t(getPetMeta(pet)),
+            f: getPetTags(pet).length
+          }, getPetTags(pet).length ? {
+            g: common_vendor.f(getPetTags(pet), (tag, i, i1) => {
+              return {
+                a: common_vendor.t(tag),
+                b: i
+              };
+            })
+          } : {}, {
+            h: pet.id,
+            i: common_vendor.o(($event) => goPetDetail(pet), pet.id)
+          });
+        })
+      } : {
+        q: common_assets._imports_0$1,
+        r: common_vendor.o(goAddPet)
       }, {
-        q: homeReminders.value.length === 0
+        o: hasPet.value && pets.value.length > 1,
+        s: homeReminders.value.length === 0
       }, homeReminders.value.length === 0 ? {} : {
-        r: common_vendor.f(homeReminders.value, (r, k0, i0) => {
+        t: common_vendor.f(homeReminders.value, (r, k0, i0) => {
           return {
             a: common_vendor.t(r.title),
             b: r.id
           };
         })
       }, {
-        s: common_assets._imports_2$1,
-        t: common_vendor.o(($event) => goToRecord("calendar")),
-        v: common_assets._imports_3,
-        w: common_vendor.o(($event) => goToRecord("stats")),
-        x: common_vendor.t(((_e = dailyScience.value) == null ? void 0 : _e.title) ? `【${dailyScience.value.title}】` : "【今日小知识】"),
-        y: common_vendor.t(((_f = dailyScience.value) == null ? void 0 : _f.content) || "每日为你推荐一条宠物健康小知识～"),
-        z: common_assets._imports_4,
-        A: common_assets._imports_5
+        v: common_assets._imports_2$1,
+        w: common_vendor.o(($event) => goToRecord("calendar")),
+        x: common_assets._imports_3,
+        y: common_vendor.o(($event) => goToRecord("stats")),
+        z: common_vendor.t(((_e = dailyScience.value) == null ? void 0 : _e.title) ? `【${dailyScience.value.title}】` : "【今日小知识】"),
+        A: common_vendor.t(((_f = dailyScience.value) == null ? void 0 : _f.content) || "每日为你推荐一条宠物健康小知识～"),
+        B: common_assets._imports_4,
+        C: common_assets._imports_5
       });
     };
   }

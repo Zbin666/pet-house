@@ -27,7 +27,7 @@ const _sfc_main = {
             currentUserPet.value = petsList[0];
           }
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:210", "获取宠物信息失败:", e);
+          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:213", "获取宠物信息失败:", e);
         }
       } catch (e) {
         dynamicTopPadding.value = "";
@@ -49,11 +49,13 @@ const _sfc_main = {
     const replyingToReply = common_vendor.ref(null);
     const inputRef = common_vendor.ref(null);
     async function loadDetail(id) {
+      var _a;
       try {
         const f = await utils_api.api.getFeed(id);
         const user = f.User || {};
         const pet = f.Pet || {};
         post.id = f.id;
+        post.userId = f.userId || ((_a = f.User) == null ? void 0 : _a.id) || "";
         post.user = user.nickname || "昵称";
         post.pet = pet.name || "";
         post.breed = pet.breed || "";
@@ -133,6 +135,36 @@ const _sfc_main = {
         icon: "none"
       });
     }
+    async function confirmDeletePost() {
+      try {
+        await new Promise((resolve, reject) => {
+          common_vendor.index.showModal({
+            title: "删除确认",
+            content: "确定要删除这条动态吗？删除后将无法恢复。",
+            confirmText: "删除",
+            confirmColor: "#e64340",
+            success: async (res) => {
+              if (res.confirm) {
+                try {
+                  await utils_api.api.deleteFeed(post.id);
+                  common_vendor.index.showToast({ title: "已删除", icon: "success" });
+                  setTimeout(() => {
+                    common_vendor.index.navigateBack();
+                  }, 1500);
+                  resolve(true);
+                } catch (e) {
+                  common_vendor.index.showToast({ title: "删除失败", icon: "none" });
+                  reject(e);
+                }
+              } else {
+                resolve(false);
+              }
+            }
+          });
+        });
+      } catch (_) {
+      }
+    }
     async function confirmDeleteComment(comment) {
       try {
         await new Promise((resolve, reject) => {
@@ -181,7 +213,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:372", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:408", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -275,7 +307,7 @@ const _sfc_main = {
         } catch (_) {
         }
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:468", "加载评论失败:", e);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:504", "加载评论失败:", e);
       }
     }
     function startReply(comment) {
@@ -424,7 +456,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:654", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:690", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -444,7 +476,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:695", "点赞回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:731", "点赞回复失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -520,8 +552,13 @@ const _sfc_main = {
         o: post.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
         p: common_vendor.t(post.likes),
         q: common_vendor.o(likePost),
-        r: common_vendor.t(totalComments.value),
-        s: common_vendor.f(comments, (comment, k0, i0) => {
+        r: post.userId === currentUserId.value
+      }, post.userId === currentUserId.value ? {
+        s: common_assets._imports_0$4,
+        t: common_vendor.o(confirmDeletePost)
+      } : {}, {
+        v: common_vendor.t(totalComments.value),
+        w: common_vendor.f(comments, (comment, k0, i0) => {
           return common_vendor.e({
             a: comment.avatar,
             b: common_vendor.t(comment.user),
@@ -593,18 +630,18 @@ const _sfc_main = {
             z: comment.id
           });
         }),
-        t: common_assets._imports_0$6,
-        v: common_vendor.o(sharePost),
-        w: post.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-        x: common_vendor.o(likePost),
-        y: getInputPlaceholder(),
-        z: replyingToComment.value !== null || replyingToReply.value !== null,
-        A: common_vendor.o(submitComment),
-        B: commentText.value,
-        C: common_vendor.o(($event) => commentText.value = $event.detail.value),
-        D: common_vendor.o(() => {
+        x: common_assets._imports_0$6,
+        y: common_vendor.o(sharePost),
+        z: post.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+        A: common_vendor.o(likePost),
+        B: getInputPlaceholder(),
+        C: replyingToComment.value !== null || replyingToReply.value !== null,
+        D: common_vendor.o(submitComment),
+        E: commentText.value,
+        F: common_vendor.o(($event) => commentText.value = $event.detail.value),
+        G: common_vendor.o(() => {
         }),
-        E: common_vendor.s(dynamicTopPadding.value)
+        H: common_vendor.s(dynamicTopPadding.value)
       });
     };
   }

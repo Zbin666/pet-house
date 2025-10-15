@@ -96,6 +96,19 @@
 	width: 24rpx;
 	height: 24rpx;
 }
+.ft-delete-btn.data-v-6818b03b {
+	background: #fff;
+	padding: 8rpx 16rpx;
+	border-radius: 999rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: 8rpx;
+}
+.ft-delete-icon.data-v-6818b03b {
+	width: 24rpx;
+	height: 24rpx;
+}
 
 /* 评论区域 - 叠卡效果 */
 .comments-section.data-v-6818b03b {

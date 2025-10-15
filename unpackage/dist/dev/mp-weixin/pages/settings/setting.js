@@ -1,16 +1,19 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const common_assets = require("../../common/assets.js");
+const utils_api = require("../../utils/api.js");
 const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
   __name: "setting",
   setup(__props) {
     const userInfo = common_vendor.ref({
-      name: "宠物爱好者",
-      desc: "热爱小动物的铲屎官",
-      phone: "138****8888",
-      email: "user@example.com",
+      id: "",
+      name: "",
+      desc: "",
+      // 映射到用户设置中的 bio
+      phone: "",
+      email: "",
       avatar: "/static/user/user.png",
-      registerTime: "2024年1月1日"
+      registerTime: ""
     });
     const editMode = common_vendor.ref(false);
     const form = common_vendor.reactive({
@@ -34,6 +37,7 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
       } catch (e) {
         cacheSize.value = "—";
       }
+      loadProfileAndSettings();
     });
     function startEdit() {
       editMode.value = true;
@@ -48,20 +52,30 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
     function cancelEdit() {
       editMode.value = false;
     }
-    function saveEdit() {
-      userInfo.value = {
-        ...userInfo.value,
-        name: form.name,
-        desc: form.desc,
-        phone: form.phone,
-        email: form.email,
-        avatar: form.avatar || userInfo.value.avatar
-      };
-      editMode.value = false;
-      common_vendor.index.showToast({
-        title: "保存成功",
-        icon: "success"
-      });
+    async function saveEdit() {
+      try {
+        const profilePayload = {
+          nickname: form.name,
+          email: form.email,
+          phone: form.phone,
+          bio: form.desc,
+          avatarUrl: form.avatar && form.avatar.startsWith("http") ? form.avatar : void 0
+        };
+        Object.keys(profilePayload).forEach((k) => profilePayload[k] === void 0 && delete profilePayload[k]);
+        await utils_api.api.updateProfile(profilePayload);
+        userInfo.value = {
+          ...userInfo.value,
+          name: form.name,
+          desc: form.desc,
+          phone: form.phone,
+          email: form.email,
+          avatar: form.avatar || userInfo.value.avatar
+        };
+        editMode.value = false;
+        common_vendor.index.showToast({ title: "保存成功", icon: "success" });
+      } catch (e) {
+        common_vendor.index.showToast({ title: "保存失败", icon: "none" });
+      }
     }
     function pickAvatar() {
       common_vendor.index.chooseImage({
@@ -91,6 +105,46 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
           }
         }
       });
+    }
+    function formatRegisterTime(iso) {
+      if (!iso)
+        return "";
+      try {
+        const d = new Date(iso);
+        const y = d.getFullYear();
+        const m = `${d.getMonth() + 1}`.padStart(2, "0");
+        const day = `${d.getDate()}`.padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      } catch (_) {
+        return "";
+      }
+    }
+    async function loadProfileAndSettings() {
+      try {
+        const [profile, userSettings] = await Promise.all([
+          utils_api.api.getProfile(),
+          utils_api.api.getSettings().catch(() => ({}))
+        ]);
+        userInfo.value = {
+          id: (profile == null ? void 0 : profile.id) || "",
+          name: (profile == null ? void 0 : profile.nickname) || "新用户",
+          desc: (profile == null ? void 0 : profile.bio) || "",
+          phone: (profile == null ? void 0 : profile.phone) || "",
+          email: (profile == null ? void 0 : profile.email) || "",
+          avatar: (profile == null ? void 0 : profile.avatarUrl) || "/static/user/user.png",
+          registerTime: formatRegisterTime(profile == null ? void 0 : profile.createdAt)
+        };
+      } catch (e) {
+        userInfo.value = {
+          id: "",
+          name: "新用户",
+          desc: "",
+          phone: "",
+          email: "",
+          avatar: "/static/user/user.png",
+          registerTime: ""
+        };
+      }
     }
     return (_ctx, _cache) => {
       return common_vendor.e({
