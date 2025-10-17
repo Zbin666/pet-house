@@ -21,10 +21,10 @@ async function uploadImage(filePath, type = "gallery") {
     common_vendor.index.__f__("log", "at utils/upload.js:33", "=== 前端图片上传调试信息 ===");
     common_vendor.index.__f__("log", "at utils/upload.js:34", "文件路径:", filePath);
     common_vendor.index.__f__("log", "at utils/upload.js:35", "上传类型:", type);
-    common_vendor.index.__f__("log", "at utils/upload.js:36", "上传URL:", "http://10.161.196.67:3000/api/media/upload");
+    common_vendor.index.__f__("log", "at utils/upload.js:36", "上传URL:", "http://pet-api.zbinli.cn/api/media/upload");
     common_vendor.index.__f__("log", "at utils/upload.js:37", "Token:", common_vendor.index.getStorageSync("token"));
     const uploadTask = common_vendor.index.uploadFile({
-      url: "http://10.161.196.67:3000/api/media/upload",
+      url: "http://pet-api.zbinli.cn/api/media/upload",
       filePath,
       name: "file",
       formData: {
@@ -44,7 +44,7 @@ async function uploadImage(filePath, type = "gallery") {
           const data = JSON.parse(res.data);
           common_vendor.index.__f__("log", "at utils/upload.js:61", "📋 解析后的数据:", data);
           if (data.success) {
-            const imageUrl = `http://10.161.196.67:3000/uploads/${data.filename}`;
+            const imageUrl = `http://pet-api.zbinli.cn/uploads/${data.filename}`;
             common_vendor.index.__f__("log", "at utils/upload.js:66", "✅ 图片上传成功:");
             common_vendor.index.__f__("log", "at utils/upload.js:67", "- 文件名:", data.filename);
             common_vendor.index.__f__("log", "at utils/upload.js:68", "- 相对URL:", data.url);

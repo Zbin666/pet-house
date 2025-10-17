@@ -31,7 +31,7 @@ const _sfc_main = {
               }
             });
             const filename = data.avatarUrl.split("/").pop();
-            const testUrl = `http://10.161.196.67:3000/api/test-image/${filename}`;
+            const testUrl = `http://pet-api.zbinli.cn/api/test-image/${filename}`;
             common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:160", "🧪 测试API路由:", testUrl);
             common_vendor.index.request({
               url: testUrl,

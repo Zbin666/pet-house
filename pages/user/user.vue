@@ -57,16 +57,6 @@
 				<text class="mtext">设置</text>
 				<text class="arrow">›</text>
 			</view>
-			<view class="menu-item" @tap="openPrivacy">
-				<image class="micon" src="/static/user/private.png"></image>
-				<text class="mtext">隐私中心</text>
-				<text class="arrow">›</text>
-			</view>
-			<view class="menu-item" @tap="openFeedback">
-				<image class="micon" src="/static/user/question.png"></image>
-				<text class="mtext">问题反馈</text>
-				<text class="arrow">›</text>
-			</view>
 			<view class="menu-item" @tap="logoutAction">
 				<image class="micon" src="/static/user/setting.png"></image>
 				<text class="mtext">退出登录</text>
@@ -151,8 +141,6 @@ async function loadData() {
 
 function goEdit() { uni.navigateTo({ url: '/pages/createPet/createPet' }) }
 function openSetting() { uni.navigateTo({ url: '/pages/settings/setting' }) }
-function openPrivacy() { uni.showToast({ title: '打开隐私中心', icon: 'none' }) }
-function openFeedback() { uni.showToast({ title: '打开问题反馈', icon: 'none' }) }
 function goPetDetail(p) {
     const payload = encodeURIComponent(JSON.stringify(p))
     uni.navigateTo({ url: `/pages/petDetail/petDetail?pet=${payload}` })

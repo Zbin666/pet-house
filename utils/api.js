@@ -1,5 +1,5 @@
-// API 基础配置（真机调试使用本机 WLAN IP）
-const BASE_URL = 'http://10.154.16.76:3000/api'
+// API 基础配置（部署域名）
+const BASE_URL = 'http://pet-api.zbinli.cn/api'
 
 // 请求拦截器
 const request = (options) => {

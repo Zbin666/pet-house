@@ -229,11 +229,11 @@ function processImageUrl(url) {
   
   // 如果是相对路径，添加基础URL
   if (url.startsWith('/')) {
-    return `http://10.161.196.67:3000${url}`
+    return `http://pet-api.zbinli.cn${url}`
   }
   
   // 如果不是以/开头，添加基础URL和/
-  return `http://10.161.196.67:3000/${url}`
+  return `http://pet-api.zbinli.cn/${url}`
 }
 
 // 获取默认宠物头像

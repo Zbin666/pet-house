@@ -156,7 +156,7 @@ onLoad(async (query) => {
                 
                 // 测试API路由
                 const filename = data.avatarUrl.split('/').pop();
-                const testUrl = `http://10.161.196.67:3000/api/test-image/${filename}`;
+                const testUrl = `http://pet-api.zbinli.cn/api/test-image/${filename}`;
                 console.log('🧪 测试API路由:', testUrl);
                 
                 uni.request({

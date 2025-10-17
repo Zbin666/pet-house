@@ -79,9 +79,9 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
         return url;
       }
       if (url.startsWith("/")) {
-        return `http://10.161.196.67:3000${url}`;
+        return `http://pet-api.zbinli.cn${url}`;
       }
-      return `http://10.161.196.67:3000/${url}`;
+      return `http://pet-api.zbinli.cn/${url}`;
     }
     function getDefaultPetAvatar() {
       return "/static/index/add.png";

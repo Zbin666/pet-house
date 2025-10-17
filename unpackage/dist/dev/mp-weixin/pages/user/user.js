@@ -51,7 +51,7 @@ const _sfc_main = {
           return Math.max(max, days);
         }, 0);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/user/user.vue:148", "加载数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/user/user.vue:138", "加载数据失败:", error);
       }
     }
     function goEdit() {
@@ -59,12 +59,6 @@ const _sfc_main = {
     }
     function openSetting() {
       common_vendor.index.navigateTo({ url: "/pages/settings/setting" });
-    }
-    function openPrivacy() {
-      common_vendor.index.showToast({ title: "打开隐私中心", icon: "none" });
-    }
-    function openFeedback() {
-      common_vendor.index.showToast({ title: "打开问题反馈", icon: "none" });
     }
     function goPetDetail(p) {
       const payload = encodeURIComponent(JSON.stringify(p));
@@ -112,13 +106,9 @@ const _sfc_main = {
         l: common_vendor.o(goEdit),
         m: common_assets._imports_3$3,
         n: common_vendor.o(openSetting),
-        o: common_assets._imports_4$1,
-        p: common_vendor.o(openPrivacy),
-        q: common_assets._imports_5$2,
-        r: common_vendor.o(openFeedback),
-        s: common_assets._imports_3$3,
-        t: common_vendor.o(logoutAction),
-        v: common_vendor.s(dynamicTopPadding.value)
+        o: common_assets._imports_3$3,
+        p: common_vendor.o(logoutAction),
+        q: common_vendor.s(dynamicTopPadding.value)
       };
     };
   }
