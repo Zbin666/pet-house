@@ -119,7 +119,7 @@
 		</view>
 
 		<!-- Popular science -->
-		<view class="science">
+		<view class="science" @tap="goScienceDetail">
 			<view class="science-hd">
 				<view class="science-title">
 					<text>今日科普</text>
@@ -295,27 +295,46 @@ async function loadTodayReminders() {
   }
 }
 
-// 加载“今日科普”：从后端取 science 类别文章，按固定顺序与当日索引选一条
+// 加载"今日科普"：固定获取第一篇article文章
 async function loadDailyScience() {
   try {
-    const res = await api.getArticles({ category: 'science', page: 1, limit: 200 })
+    console.log('🔍 开始加载今日科普...')
+    const res = await api.getArticles({ page: 1, limit: 1 })
+    console.log('📡 科普API返回:', res)
+    
     const list = Array.isArray(res) ? res : (res.articles || res.data || [])
+    console.log('📋 科普文章列表:', list)
+    
     if (!list.length) {
+      console.log('⚠️ 没有找到科普文章')
       dailyScience.value = null
       return
     }
-    // 以天为周期的稳定索引
-    const dayIndex = Math.floor(Date.now() / 86400000)
-    const idx = dayIndex % list.length
-    // 后端已按创建时间倒序/无序时，这里再稳定排序：createdAt asc, id asc
-    const stable = list.slice().sort((a, b) => {
-      const at = new Date(a.createdAt || 0).getTime()
-      const bt = new Date(b.createdAt || 0).getTime()
-      if (at !== bt) return at - bt
-      return String(a.id).localeCompare(String(b.id))
-    })
-    dailyScience.value = stable[idx]
+    
+    // 固定获取第一篇文章
+    const selectedArticle = list[0]
+    console.log('✅ 选中的科普文章（第一篇）:', selectedArticle)
+    
+    // 处理内容截断和null值
+    if (selectedArticle) {
+      if (!selectedArticle.content || selectedArticle.content === null) {
+        // 如果content为null，使用title作为内容
+        selectedArticle.content = selectedArticle.title || '暂无内容'
+        console.log('⚠️ 文章content为null，使用title作为内容:', selectedArticle.content)
+      } else {
+        const maxLength = 120 // 最大显示字符数
+        const content = selectedArticle.content
+        if (content.length > maxLength) {
+          selectedArticle.content = content.substring(0, maxLength) + '...'
+          console.log('✂️ 内容已截断:', selectedArticle.content)
+        }
+      }
+    }
+    
+    dailyScience.value = selectedArticle
+    console.log('🎯 最终科普数据:', dailyScience.value)
   } catch (e) {
+    console.error('❌ 加载今日科普失败:', e)
     dailyScience.value = null
   }
 }
@@ -370,6 +389,33 @@ function goPetDetail(pet) {
   console.log('跳转URL:', `/pages/petDetail/petDetail?pet=${q}`);
   
   uni.navigateTo({ url: `/pages/petDetail/petDetail?pet=${q}` })
+}
+
+// 跳转到科普详情页
+function goScienceDetail() {
+  if (!dailyScience.value || !dailyScience.value.id) {
+    console.log('⚠️ 没有科普内容可跳转')
+    return
+  }
+  
+  console.log('🔍 跳转科普详情:', dailyScience.value)
+  
+  // 跳转到科普详情页
+  uni.navigateTo({
+    url: `/pages/scienceDetail/scienceDetail?id=${dailyScience.value.id}`,
+    success: (res) => {
+      console.log('✅ 科普详情页跳转成功')
+      try {
+        res.eventChannel.emit('science', dailyScience.value)
+        console.log('📤 已发送科普数据到详情页:', dailyScience.value)
+      } catch (e) {
+        console.error('❌ 发送科普数据失败:', e)
+      }
+    },
+    fail: (err) => {
+      console.error('❌ 科普详情页跳转失败:', err)
+    }
+  })
 }
 </script>
 
@@ -716,6 +762,7 @@ function goPetDetail(pet) {
 }
 
 .science-title {
+	width: 28%;
 	position: relative;
 	display: inline-flex;
 	align-items: center;
@@ -744,6 +791,7 @@ function goPetDetail(pet) {
 	color: #1a1a1a;
 	margin-left: 8rpx;
 	font-weight: 700;
+	font-size: 30rpx;
 }
 
 .science-text {
@@ -754,7 +802,12 @@ function goPetDetail(pet) {
 	line-height: 1.8;
 	margin: 12rpx 0 16rpx;
 	width: 60%;
-	/* 文本占左侧60%宽度 */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 5; /* 最多显示4行 */
+	-webkit-box-orient: vertical;
+	word-break: break-word;
 }
 
 .science-illust {

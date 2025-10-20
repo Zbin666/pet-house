@@ -305,6 +305,7 @@
 	/* 收紧标题与正文的距离 */
 }
 .science-title {
+	width: 28%;
 	position: relative;
 	display: inline-flex;
 	align-items: center;
@@ -330,6 +331,7 @@
 	color: #1a1a1a;
 	margin-left: 8rpx;
 	font-weight: 700;
+	font-size: 30rpx;
 }
 .science-text {
 	font-size: 24rpx;
@@ -339,7 +341,12 @@
 	line-height: 1.8;
 	margin: 12rpx 0 16rpx;
 	width: 60%;
-	/* 文本占左侧60%宽度 */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 5; /* 最多显示4行 */
+	-webkit-box-orient: vertical;
+	word-break: break-word;
 }
 .science-illust {
 	position: absolute;

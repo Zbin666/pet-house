@@ -159,7 +159,12 @@ async function publish() {
 				try { uni.$emit('questions:refresh') } catch (e) {}
 			}, 800)
 		} catch (e) {
-			uni.showToast({ title: '发布失败', icon: 'none' })
+			console.error('发布问答失败:', e)
+			uni.showToast({ 
+				title: e.message || '发布失败，请检查网络连接', 
+				icon: 'none',
+				duration: 3000
+			})
 		}
 	} else {
 		// 发布动态
@@ -182,7 +187,12 @@ async function publish() {
 				try { uni.$emit('feeds:refresh') } catch (e) {}
 			}, 800)
 		} catch (e) {
-			uni.showToast({ title: '发布失败', icon: 'none' })
+			console.error('发布动态失败:', e)
+			uni.showToast({ 
+				title: e.message || '发布失败，请检查网络连接', 
+				icon: 'none',
+				duration: 3000
+			})
 		}
 	}
 }

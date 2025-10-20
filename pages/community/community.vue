@@ -87,7 +87,13 @@
 			<view class="science-item" v-for="a in sciencePosts" :key="a.id" @tap="goScienceDetail(a)">
 				<view class="s-card">
 					<view class="s-thumb">
-						<image class="s-thumb-img" :src="a.cover" mode="aspectFill" />
+					<image 
+						class="s-thumb-img" 
+						:src="getImageSrc(a)" 
+						mode="scaleToFill" 
+						@error="handleImageError"
+						@load="handleImageLoad"
+					/>
 					</view>
 					<view class="s-content">
 						<text class="s-title">{{ a.title }}</text>
@@ -219,6 +225,10 @@ onShow(() => {
 	// 如果当前在广场标签页，刷新动态数据
 	else if (topTab.value === 'square') {
 		loadFeeds()
+	}
+	// 如果当前在科普标签页，刷新科普数据
+	else if (topTab.value === 'science') {
+		loadArticles()
 	}
 })
 const categories = ref([
@@ -397,16 +407,98 @@ async function loadQuestions(params = {}) {
 const qaPosts = ref([])
 
 // 科普数据
-const sciencePosts = ref([
-	{ id: 's1', title: '猫咪的20种肢体语言～快来速查🔎 终于知道猫猫心里在想什么了', reads: 50, cover: '/static/logo.png' },
-	{ id: 's2', title: '狗狗防暑保命清单', reads: 36, cover: '/static/logo.png' },
-	{ id: 's3', title: '如何训练猫咪使用猫砂盆？新手铲屎官必看指南', reads: 28, cover: '/static/logo.png' },
-	{ id: 's4', title: '狗狗疫苗时间表：从幼犬到成年的完整接种计划', reads: 42, cover: '/static/logo.png' },
-	{ id: 's5', title: '猫咪发情期护理：如何安全度过发情季节', reads: 33, cover: '/static/logo.png' },
-	{ id: 's6', title: '狗狗皮肤病预防与治疗：常见皮肤病识别手册', reads: 67, cover: '/static/logo.png' },
-	{ id: 's7', title: '猫咪营养需求分析：不同年龄阶段的饮食搭配', reads: 45, cover: '/static/logo.png' },
-	{ id: 's8', title: '狗狗行为训练：从基础指令到高级技巧', reads: 39, cover: '/static/logo.png' }
-])
+const sciencePosts = ref([])
+
+// 加载科普文章数据
+async function loadArticles(params = {}) {
+	try {
+		console.log('开始加载科普文章，参数:', params)
+		const res = await api.getArticles({ page: 1, limit: 20, ...params })
+		console.log('API返回数据:', res)
+		
+		const list = Array.isArray(res) ? res : (res.articles || res.data || [])
+		console.log('处理后的文章列表:', list)
+
+		sciencePosts.value = list.map(article => {
+			console.log('处理文章:', article.title, '图片URL:', article.cover)
+			return {
+				id: article.id,
+				title: article.title || '无标题',
+				reads: article.reads || 0,
+				cover: article.cover || '/static/logo.png',
+				// 添加用于下载的原始URL
+				originalCover: article.cover
+			}
+		})
+		
+		console.log('最终科普文章数据:', sciencePosts.value)
+	} catch (e) {
+		console.error('加载科普文章失败:', e)
+		sciencePosts.value = []
+	}
+}
+
+// 图片缓存，避免重复下载
+const imageCache = new Map()
+
+// 获取图片源，借鉴todoList的下载机制
+function getImageSrc(article) {
+	const originalUrl = article.originalCover
+	if (!originalUrl) {
+		return '/static/logo.png'
+	}
+	
+	// 如果是本地路径，直接返回
+	if (originalUrl.startsWith('/static/') || originalUrl.startsWith('wxfile://')) {
+		return originalUrl
+	}
+	
+	// 检查缓存
+	if (imageCache.has(originalUrl)) {
+		return imageCache.get(originalUrl)
+	}
+	
+	// 网络图片，先下载到本地临时文件
+	uni.downloadFile({
+		url: originalUrl,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				// 缓存临时文件路径
+				imageCache.set(originalUrl, res.tempFilePath)
+				// 触发响应式更新
+				sciencePosts.value = [...sciencePosts.value]
+			} else {
+				console.warn('图片下载失败:', originalUrl, res.statusCode)
+				imageCache.set(originalUrl, '/static/404.png')
+				sciencePosts.value = [...sciencePosts.value]
+			}
+		},
+		fail: (err) => {
+			console.error('图片下载失败:', originalUrl, err)
+			imageCache.set(originalUrl, '/static/404.png')
+			sciencePosts.value = [...sciencePosts.value]
+		}
+	})
+	
+	// 返回默认图片，下载完成后会自动更新
+	return '/static/logo.png'
+}
+
+// 图片加载错误处理
+function handleImageError(e) {
+	console.error('图片加载失败:', e)
+	console.error('图片URL:', e.target.src)
+	console.error('错误详情:', e.detail)
+	
+	// 设置默认图片
+	e.target.src = '/static/404.png'
+	console.log('已设置默认图片:', e.target.src)
+}
+
+// 图片加载成功处理
+function handleImageLoad(e) {
+	console.log('图片加载成功:', e.target.src)
+}
 
 function selectCategory(key) { 
 	currentCategory.value = key 
@@ -423,6 +515,8 @@ function switchTab(tab) {
 		loadFeeds()
 	} else if (tab === 'qa' && qaPosts.value.length === 0) {
 		loadQuestions()
+	} else if (tab === 'science' && sciencePosts.value.length === 0) {
+		loadArticles()
 	}
 }
 
@@ -446,13 +540,52 @@ function goQADetail(qa) {
 		}
 	})
 }
-function goScienceDetail(article) {
+async function goScienceDetail(article) {
+	try {
+		console.log('🔍 点击科普文章:', article)
+		console.log('🔍 当前阅读数:', article.reads)
+		
+		// 增加阅读数
+		console.log('📡 开始调用增加阅读数API...')
+		const result = await api.incrementArticleReads(article.id)
+		console.log('📡 API返回结果:', result)
+		
+		if (result && result.success) {
+			console.log('✅ 阅读数增加成功，新阅读数:', result.reads)
+			// 更新本地数据中的阅读数
+			const index = sciencePosts.value.findIndex(a => a.id === article.id)
+			console.log('🔍 找到文章索引:', index)
+			
+			if (index > -1) {
+				console.log('🔄 更新前本地阅读数:', sciencePosts.value[index].reads)
+				sciencePosts.value[index].reads = result.reads
+				console.log('🔄 更新后本地阅读数:', sciencePosts.value[index].reads)
+			}
+			// 同时更新传入详情页的数据
+			article.reads = result.reads
+			console.log('🔄 更新传入详情页的阅读数:', article.reads)
+		} else {
+			console.warn('⚠️ API返回失败或格式不正确:', result)
+		}
+	} catch (error) {
+		console.error('❌ 增加阅读数失败:', error)
+		// 即使增加阅读数失败，也继续跳转到详情页
+	}
+	
+	console.log('🚀 准备跳转到详情页，文章数据:', article)
 	uni.navigateTo({
-		url: '/pages/scienceDetail/scienceDetail',
+		url: `/pages/scienceDetail/scienceDetail?id=${article.id}`,
 		success: (res) => {
+			console.log('✅ 页面跳转成功')
 			try {
 				res.eventChannel.emit('science', article)
-			} catch (e) { }
+				console.log('📤 已发送文章数据到详情页:', article)
+			} catch (e) {
+				console.error('❌ 发送数据到详情页失败:', e)
+			}
+		},
+		fail: (err) => {
+			console.error('❌ 页面跳转失败:', err)
 		}
 	})
 }
@@ -582,6 +715,8 @@ function handleSearch() {
 		loadFeeds({ search: searchText.value.trim() })
 	} else if (topTab.value === 'qa') {
 		loadQuestions({ search: searchText.value.trim() })
+	} else if (topTab.value === 'science') {
+		loadArticles({ search: searchText.value.trim() })
 	}
 }
 
@@ -601,6 +736,8 @@ function handleSearchInput() {
 				loadFeeds()
 			} else if (topTab.value === 'qa') {
 				loadQuestions()
+			} else if (topTab.value === 'science') {
+				loadArticles()
 			}
 			isSearching.value = false
 		}
@@ -615,6 +752,8 @@ function clearSearch() {
 		loadFeeds()
 	} else if (topTab.value === 'qa') {
 		loadQuestions()
+	} else if (topTab.value === 'science') {
+		loadArticles()
 	}
 }
 </script>
@@ -1221,9 +1360,9 @@ function clearSearch() {
 
 .s-thumb {
 	position: absolute;
-	left: -30rpx;
+	left: -40rpx;
 	top: -24rpx;
-	width: 180rpx;
+	width: 210rpx;
 	height: 180rpx;
 	border: 4rpx solid #2c2c2c;
 	border-radius: 12rpx;
@@ -1236,6 +1375,7 @@ function clearSearch() {
 .s-thumb-img {
 	width: 100%;
 	height: 100%;
+	object-fit: fill;
 }
 
 .s-content {

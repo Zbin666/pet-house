@@ -38,7 +38,12 @@ const _sfc_main = {
             }
           }, 800);
         } catch (e) {
-          common_vendor.index.showToast({ title: "发布失败", icon: "none" });
+          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:162", "发布问答失败:", e);
+          common_vendor.index.showToast({
+            title: e.message || "发布失败，请检查网络连接",
+            icon: "none",
+            duration: 3e3
+          });
         }
       } else {
         if (!content.value.trim() && images.value.length === 0) {
@@ -62,7 +67,12 @@ const _sfc_main = {
             }
           }, 800);
         } catch (e) {
-          common_vendor.index.showToast({ title: "发布失败", icon: "none" });
+          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:190", "发布动态失败:", e);
+          common_vendor.index.showToast({
+            title: e.message || "发布失败，请检查网络连接",
+            icon: "none",
+            duration: 3e3
+          });
         }
       }
     }
@@ -98,7 +108,7 @@ const _sfc_main = {
           currentPet.value = pets[0];
         }
       } catch (e) {
-        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:229", "Failed to load user/pet info:", e);
+        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:239", "Failed to load user/pet info:", e);
       }
     }
     common_vendor.onMounted(() => {

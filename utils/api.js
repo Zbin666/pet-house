@@ -284,6 +284,14 @@ export const api = {
     method: 'GET'
   }),
   
+  incrementArticleReads: (id) => {
+    console.log('🌐 调用API增加阅读数，文章ID:', id);
+    return request({
+      url: `/articles/${id}/read`,
+      method: 'POST'
+    });
+  },
+  
   // 媒体管理
   getUploadPolicy: (type) => request({
     url: '/media/policy',

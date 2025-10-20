@@ -131,23 +131,35 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
     }
     async function loadDailyScience() {
       try {
-        const res = await utils_api.api.getArticles({ category: "science", page: 1, limit: 200 });
+        common_vendor.index.__f__("log", "at pages/index/index.vue:301", "🔍 开始加载今日科普...");
+        const res = await utils_api.api.getArticles({ page: 1, limit: 1 });
+        common_vendor.index.__f__("log", "at pages/index/index.vue:303", "📡 科普API返回:", res);
         const list = Array.isArray(res) ? res : res.articles || res.data || [];
+        common_vendor.index.__f__("log", "at pages/index/index.vue:306", "📋 科普文章列表:", list);
         if (!list.length) {
+          common_vendor.index.__f__("log", "at pages/index/index.vue:309", "⚠️ 没有找到科普文章");
           dailyScience.value = null;
           return;
         }
-        const dayIndex = Math.floor(Date.now() / 864e5);
-        const idx = dayIndex % list.length;
-        const stable = list.slice().sort((a, b) => {
-          const at = new Date(a.createdAt || 0).getTime();
-          const bt = new Date(b.createdAt || 0).getTime();
-          if (at !== bt)
-            return at - bt;
-          return String(a.id).localeCompare(String(b.id));
-        });
-        dailyScience.value = stable[idx];
+        const selectedArticle = list[0];
+        common_vendor.index.__f__("log", "at pages/index/index.vue:316", "✅ 选中的科普文章（第一篇）:", selectedArticle);
+        if (selectedArticle) {
+          if (!selectedArticle.content || selectedArticle.content === null) {
+            selectedArticle.content = selectedArticle.title || "暂无内容";
+            common_vendor.index.__f__("log", "at pages/index/index.vue:323", "⚠️ 文章content为null，使用title作为内容:", selectedArticle.content);
+          } else {
+            const maxLength = 120;
+            const content = selectedArticle.content;
+            if (content.length > maxLength) {
+              selectedArticle.content = content.substring(0, maxLength) + "...";
+              common_vendor.index.__f__("log", "at pages/index/index.vue:329", "✂️ 内容已截断:", selectedArticle.content);
+            }
+          }
+        }
+        dailyScience.value = selectedArticle;
+        common_vendor.index.__f__("log", "at pages/index/index.vue:335", "🎯 最终科普数据:", dailyScience.value);
       } catch (e) {
+        common_vendor.index.__f__("error", "at pages/index/index.vue:337", "❌ 加载今日科普失败:", e);
         dailyScience.value = null;
       }
     }
@@ -169,27 +181,49 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
       common_vendor.index.switchTab({ url: "/pages/record/record" });
     }
     function onImageLoad(e) {
-      common_vendor.index.__f__("log", "at pages/index/index.vue:348", "图片加载成功:", e);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:367", "图片加载成功:", e);
     }
     function onImageError(e) {
       var _a;
-      common_vendor.index.__f__("error", "at pages/index/index.vue:352", "图片加载失败:", e);
-      common_vendor.index.__f__("error", "at pages/index/index.vue:353", "失败的图片URL:", (_a = currentPet.value) == null ? void 0 : _a.avatarUrl);
+      common_vendor.index.__f__("error", "at pages/index/index.vue:371", "图片加载失败:", e);
+      common_vendor.index.__f__("error", "at pages/index/index.vue:372", "失败的图片URL:", (_a = currentPet.value) == null ? void 0 : _a.avatarUrl);
       if (currentPet.value) {
         currentPet.value.avatarUrl = getDefaultPetAvatar();
       }
     }
     function goPetDetail(pet) {
       pet = pet || currentPet.value;
-      common_vendor.index.__f__("log", "at pages/index/index.vue:363", "=== 首页跳转宠物详情调试信息 ===");
-      common_vendor.index.__f__("log", "at pages/index/index.vue:364", "当前宠物数据:", pet);
-      common_vendor.index.__f__("log", "at pages/index/index.vue:365", "宠物头像URL:", pet == null ? void 0 : pet.avatarUrl);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:382", "=== 首页跳转宠物详情调试信息 ===");
+      common_vendor.index.__f__("log", "at pages/index/index.vue:383", "当前宠物数据:", pet);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:384", "宠物头像URL:", pet == null ? void 0 : pet.avatarUrl);
       if (!pet || !pet.id)
         return;
       const q = encodeURIComponent(JSON.stringify(pet));
-      common_vendor.index.__f__("log", "at pages/index/index.vue:369", "编码后的数据:", q);
-      common_vendor.index.__f__("log", "at pages/index/index.vue:370", "跳转URL:", `/pages/petDetail/petDetail?pet=${q}`);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:388", "编码后的数据:", q);
+      common_vendor.index.__f__("log", "at pages/index/index.vue:389", "跳转URL:", `/pages/petDetail/petDetail?pet=${q}`);
       common_vendor.index.navigateTo({ url: `/pages/petDetail/petDetail?pet=${q}` });
+    }
+    function goScienceDetail() {
+      if (!dailyScience.value || !dailyScience.value.id) {
+        common_vendor.index.__f__("log", "at pages/index/index.vue:397", "⚠️ 没有科普内容可跳转");
+        return;
+      }
+      common_vendor.index.__f__("log", "at pages/index/index.vue:401", "🔍 跳转科普详情:", dailyScience.value);
+      common_vendor.index.navigateTo({
+        url: `/pages/scienceDetail/scienceDetail?id=${dailyScience.value.id}`,
+        success: (res) => {
+          common_vendor.index.__f__("log", "at pages/index/index.vue:407", "✅ 科普详情页跳转成功");
+          try {
+            res.eventChannel.emit("science", dailyScience.value);
+            common_vendor.index.__f__("log", "at pages/index/index.vue:410", "📤 已发送科普数据到详情页:", dailyScience.value);
+          } catch (e) {
+            common_vendor.index.__f__("error", "at pages/index/index.vue:412", "❌ 发送科普数据失败:", e);
+          }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/index/index.vue:416", "❌ 科普详情页跳转失败:", err);
+        }
+      });
     }
     return (_ctx, _cache) => {
       var _a, _b, _c, _d, _e, _f;
@@ -264,7 +298,8 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
         z: common_vendor.t(((_e = dailyScience.value) == null ? void 0 : _e.title) ? `【${dailyScience.value.title}】` : "【今日小知识】"),
         A: common_vendor.t(((_f = dailyScience.value) == null ? void 0 : _f.content) || "每日为你推荐一条宠物健康小知识～"),
         B: common_assets._imports_4,
-        C: common_assets._imports_5
+        C: common_assets._imports_5,
+        D: common_vendor.o(goScienceDetail)
       });
     };
   }

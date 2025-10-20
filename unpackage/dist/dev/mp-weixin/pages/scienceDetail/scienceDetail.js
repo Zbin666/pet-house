@@ -1,5 +1,6 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
+const utils_api = require("../../utils/api.js");
 const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
   __name: "scienceDetail",
   setup(__props) {
@@ -17,65 +18,100 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
       }
     });
     const article = common_vendor.reactive({
-      id: "1",
-      title: "猫咪行为超详解",
-      reads: 50,
-      content: `
-		<div style="font-size: 28rpx; line-height: 1.8; color: #333;">
-			<h3 style="font-size: 32rpx; font-weight: 700; color: #2c2c2c; margin: 24rpx 0 16rpx 0;">防御行为语言</h3>
-			<ul style="margin: 0; padding-left: 20rpx;">
-				<li style="margin-bottom: 12rpx; color: #333;">嘶声:威胁,别过来!</li>
-				<li style="margin-bottom: 12rpx; color: #333;">嗷声:激动或害怕</li>
-				<li style="margin-bottom: 12rpx; color: #333;">呜呜:保护重要东西,别过来</li>
-				<li style="margin-bottom: 12rpx; color: #333;">提起一只爪子:准备防御</li>
-				<li style="margin-bottom: 12rpx; color: #333;">胡须向上竖起:提出抗议,但不想激化矛盾</li>
-				<li style="margin-bottom: 12rpx; color: #333;">胡须向后平伏:接受条件,愿意服从</li>
-				<li style="margin-bottom: 12rpx; color: #333;">全身蜷缩,瞳孔放大,发"喵"声:我认怂还不行吗?别打我!</li>
-			</ul>
-			
-			<h3 style="font-size: 32rpx; font-weight: 700; color: #2c2c2c; margin: 32rpx 0 16rpx 0;">攻击行为语言</h3>
-			<ul style="margin: 0; padding-left: 20rpx;">
-				<li style="margin-bottom: 12rpx; color: #333;">嘴向后咧:示威、炫耀、虚张声势,我很牛的!</li>
-				<li style="margin-bottom: 12rpx; color: #333;">竖毛:打架前的招牌动作,警告的意思。</li>
-			</ul>
-		</div>
-	`,
-      images: [
-        "/static/logo.png",
-        "/static/logo.png",
-        "/static/logo.png",
-        "/static/logo.png",
-        "/static/logo.png",
-        "/static/logo.png"
-      ],
+      id: "",
+      title: "加载中...",
+      reads: 0,
+      content: "正在加载文章内容...",
+      images: [],
       author: {
         name: "科普官",
         avatar: "/static/logo.png"
       },
-      createdAt: "2025-01-01",
-      updatedAt: "2025-01-01"
+      createdAt: "",
+      updatedAt: ""
     });
+    function isRichContent(content) {
+      if (!content || typeof content !== "string")
+        return false;
+      return /<[^>]+>/.test(content);
+    }
+    async function loadArticleDetail(articleId) {
+      var _a, _b;
+      try {
+        common_vendor.index.__f__("log", "at pages/scienceDetail/scienceDetail.vue:92", "🔍 开始加载文章详情，ID:", articleId);
+        const res = await utils_api.api.getArticle(articleId);
+        common_vendor.index.__f__("log", "at pages/scienceDetail/scienceDetail.vue:94", "📡 文章详情API返回:", res);
+        let content = res.content;
+        if (!content || content === null) {
+          content = res.title || "暂无内容";
+          common_vendor.index.__f__("log", "at pages/scienceDetail/scienceDetail.vue:100", "⚠️ 文章content为null，使用title作为内容:", content);
+        }
+        Object.assign(article, {
+          id: res.id || articleId,
+          title: res.title || "无标题",
+          reads: res.reads || 0,
+          content,
+          cover: res.cover || "/static/logo.png",
+          images: res.images || [],
+          author: {
+            name: ((_a = res.author) == null ? void 0 : _a.name) || "科普官",
+            avatar: ((_b = res.author) == null ? void 0 : _b.avatar) || "/static/logo.png"
+          },
+          createdAt: res.createdAt || "",
+          updatedAt: res.updatedAt || ""
+        });
+        common_vendor.index.__f__("log", "at pages/scienceDetail/scienceDetail.vue:119", "✅ 文章详情加载完成:", article);
+      } catch (error) {
+        common_vendor.index.__f__("error", "at pages/scienceDetail/scienceDetail.vue:121", "❌ 加载文章详情失败:", error);
+        common_vendor.index.showToast({
+          title: "加载失败",
+          icon: "none"
+        });
+      }
+    }
     function previewImage(current, urls) {
       common_vendor.index.previewImage({
         current,
         urls
       });
     }
-    common_vendor.onLoad(() => {
+    common_vendor.onLoad((options) => {
+      var _a, _b;
       try {
-        common_vendor.index.setNavigationBarTitle({ title: "详情" });
+        common_vendor.index.setNavigationBarTitle({ title: "科普详情" });
         common_vendor.index.setNavigationBarColor({ frontColor: "#000000", backgroundColor: "#fff1a8" });
+        if (options.id) {
+          loadArticleDetail(options.id);
+        } else {
+          try {
+            const ec = (_b = (_a = getCurrentPages().pop()) == null ? void 0 : _a.getOpenerEventChannel) == null ? void 0 : _b.call(_a);
+            ec && ec.on("science", (data) => {
+              Object.assign(article, data);
+              if (data.id) {
+                loadArticleDetail(data.id);
+              }
+            });
+          } catch (e) {
+            common_vendor.index.__f__("error", "at pages/scienceDetail/scienceDetail.vue:158", "获取文章数据失败:", e);
+          }
+        }
       } catch (e) {
+        common_vendor.index.__f__("error", "at pages/scienceDetail/scienceDetail.vue:162", "页面加载失败:", e);
       }
     });
     return (_ctx, _cache) => {
       return common_vendor.e({
         a: common_vendor.t(article.title),
         b: common_vendor.t(article.reads),
-        c: article.content,
-        d: article.images && article.images.length
+        c: isRichContent(article.content)
+      }, isRichContent(article.content) ? {
+        d: article.content
+      } : {
+        e: common_vendor.t(article.content)
+      }, {
+        f: article.images && article.images.length
       }, article.images && article.images.length ? {
-        e: common_vendor.f(article.images, (img, index, i0) => {
+        g: common_vendor.f(article.images, (img, index, i0) => {
           return {
             a: index,
             b: img,
@@ -83,7 +119,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           };
         })
       } : {}, {
-        f: common_vendor.s(dynamicTopPadding.value)
+        h: common_vendor.s(dynamicTopPadding.value)
       });
     };
   }

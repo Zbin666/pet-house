@@ -527,9 +527,9 @@
 }
 .s-thumb.data-v-a6ef5318 {
 	position: absolute;
-	left: -30rpx;
+	left: -40rpx;
 	top: -24rpx;
-	width: 180rpx;
+	width: 210rpx;
 	height: 180rpx;
 	border: 4rpx solid #2c2c2c;
 	border-radius: 12rpx;
@@ -541,6 +541,7 @@
 .s-thumb-img.data-v-a6ef5318 {
 	width: 100%;
 	height: 100%;
+	object-fit: fill;
 }
 .s-content.data-v-a6ef5318 {
 	display: flex;

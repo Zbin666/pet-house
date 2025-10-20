@@ -11,7 +11,10 @@
 			</view>
 
 			<!-- 富文本内容 -->
-			<rich-text :nodes="article.content" class="rich-content" />
+			<view class="rich-content">
+				<rich-text v-if="isRichContent(article.content)" :nodes="article.content" />
+				<text v-else>{{ article.content }}</text>
+			</view>
 			
 			<!-- 图片网格（如果有） -->
 			<view class="image-grid" v-if="article.images && article.images.length">
@@ -31,6 +34,7 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { api } from '@/utils/api.js'
 
 // 动态顶部内边距
 const dynamicTopPadding = ref('')
@@ -62,44 +66,65 @@ type Article = {
 }
 
 const article = reactive<Article>({
-	id: '1',
-	title: '猫咪行为超详解',
-	reads: 50,
-	content: `
-		<div style="font-size: 28rpx; line-height: 1.8; color: #333;">
-			<h3 style="font-size: 32rpx; font-weight: 700; color: #2c2c2c; margin: 24rpx 0 16rpx 0;">防御行为语言</h3>
-			<ul style="margin: 0; padding-left: 20rpx;">
-				<li style="margin-bottom: 12rpx; color: #333;">嘶声:威胁,别过来!</li>
-				<li style="margin-bottom: 12rpx; color: #333;">嗷声:激动或害怕</li>
-				<li style="margin-bottom: 12rpx; color: #333;">呜呜:保护重要东西,别过来</li>
-				<li style="margin-bottom: 12rpx; color: #333;">提起一只爪子:准备防御</li>
-				<li style="margin-bottom: 12rpx; color: #333;">胡须向上竖起:提出抗议,但不想激化矛盾</li>
-				<li style="margin-bottom: 12rpx; color: #333;">胡须向后平伏:接受条件,愿意服从</li>
-				<li style="margin-bottom: 12rpx; color: #333;">全身蜷缩,瞳孔放大,发"喵"声:我认怂还不行吗?别打我!</li>
-			</ul>
-			
-			<h3 style="font-size: 32rpx; font-weight: 700; color: #2c2c2c; margin: 32rpx 0 16rpx 0;">攻击行为语言</h3>
-			<ul style="margin: 0; padding-left: 20rpx;">
-				<li style="margin-bottom: 12rpx; color: #333;">嘴向后咧:示威、炫耀、虚张声势,我很牛的!</li>
-				<li style="margin-bottom: 12rpx; color: #333;">竖毛:打架前的招牌动作,警告的意思。</li>
-			</ul>
-		</div>
-	`,
-	images: [
-		'/static/logo.png',
-		'/static/logo.png',
-		'/static/logo.png',
-		'/static/logo.png',
-		'/static/logo.png',
-		'/static/logo.png'
-	],
+	id: '',
+	title: '加载中...',
+	reads: 0,
+	content: '正在加载文章内容...',
+	images: [],
 	author: {
 		name: '科普官',
 		avatar: '/static/logo.png'
 	},
-	createdAt: '2025-01-01',
-	updatedAt: '2025-01-01'
+	createdAt: '',
+	updatedAt: ''
 })
+
+// 判断是否为富文本内容
+function isRichContent(content: string): boolean {
+	if (!content || typeof content !== 'string') return false
+	// 检查是否包含HTML标签
+	return /<[^>]+>/.test(content)
+}
+
+// 加载文章详情
+async function loadArticleDetail(articleId: string) {
+	try {
+		console.log('🔍 开始加载文章详情，ID:', articleId)
+		const res = await api.getArticle(articleId)
+		console.log('📡 文章详情API返回:', res)
+		
+		// 处理content为null的情况
+		let content = res.content
+		if (!content || content === null) {
+			content = res.title || '暂无内容'
+			console.log('⚠️ 文章content为null，使用title作为内容:', content)
+		}
+		
+		// 更新文章数据
+		Object.assign(article, {
+			id: res.id || articleId,
+			title: res.title || '无标题',
+			reads: res.reads || 0,
+			content: content,
+			cover: res.cover || '/static/logo.png',
+			images: res.images || [],
+			author: {
+				name: res.author?.name || '科普官',
+				avatar: res.author?.avatar || '/static/logo.png'
+			},
+			createdAt: res.createdAt || '',
+			updatedAt: res.updatedAt || ''
+		})
+		
+		console.log('✅ 文章详情加载完成:', article)
+	} catch (error) {
+		console.error('❌ 加载文章详情失败:', error)
+		uni.showToast({
+			title: '加载失败',
+			icon: 'none'
+		})
+	}
+}
 
 // 图片预览功能
 function previewImage(current: string, urls: string[]) {
@@ -110,20 +135,33 @@ function previewImage(current: string, urls: string[]) {
 }
 
 // 设置顶部导航标题与背景色
-onLoad(() => {
+onLoad((options) => {
 	try {
-		uni.setNavigationBarTitle({ title: '详情' })
+		uni.setNavigationBarTitle({ title: '科普详情' })
 		uni.setNavigationBarColor({ frontColor: '#000000', backgroundColor: '#fff1a8' })
-	} catch (e) {}
+		
+		// 从URL参数获取文章ID
+		if (options.id) {
+			loadArticleDetail(options.id)
+		} else {
+			// 尝试从事件通道获取文章数据
+			try {
+				const ec = getCurrentPages().pop()?.getOpenerEventChannel?.()
+				ec && ec.on('science', (data: Partial<Article>) => {
+					Object.assign(article, data)
+					// 如果有ID，重新加载详情
+					if (data.id) {
+						loadArticleDetail(data.id)
+					}
+				})
+			} catch (e) {
+				console.error('获取文章数据失败:', e)
+			}
+		}
+	} catch (e) {
+		console.error('页面加载失败:', e)
+	}
 })
-
-// 注释掉数据接收，使用默认标题
-// try {
-// 	const ec = getCurrentPages().pop()?.getOpenerEventChannel?.()
-// 	ec && ec.on('science', (data: Partial<Article>) => {
-// 		Object.assign(article, data)
-// 	})
-// } catch (e) {}
 </script>
 
 <style scoped>

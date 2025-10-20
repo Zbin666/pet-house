@@ -25,7 +25,7 @@ const _sfc_main = {
         const userProfile = await utils_api.api.getProfile();
         currentUser.value = userProfile;
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:200", "获取用户信息失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:206", "获取用户信息失败:", e);
       }
       loadFeeds();
       loadQuestions();
@@ -49,6 +49,8 @@ const _sfc_main = {
         loadQuestions();
       } else if (topTab.value === "square") {
         loadFeeds();
+      } else if (topTab.value === "science") {
+        loadArticles();
       }
     });
     const categories = common_vendor.ref([
@@ -199,21 +201,78 @@ const _sfc_main = {
         }
         qaPosts.value = qaPosts.value.slice();
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:391", "加载问答数据失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:401", "加载问答数据失败:", e);
         qaPosts.value = [];
       }
     }
     const qaPosts = common_vendor.ref([]);
-    const sciencePosts = common_vendor.ref([
-      { id: "s1", title: "猫咪的20种肢体语言～快来速查🔎 终于知道猫猫心里在想什么了", reads: 50, cover: "/static/logo.png" },
-      { id: "s2", title: "狗狗防暑保命清单", reads: 36, cover: "/static/logo.png" },
-      { id: "s3", title: "如何训练猫咪使用猫砂盆？新手铲屎官必看指南", reads: 28, cover: "/static/logo.png" },
-      { id: "s4", title: "狗狗疫苗时间表：从幼犬到成年的完整接种计划", reads: 42, cover: "/static/logo.png" },
-      { id: "s5", title: "猫咪发情期护理：如何安全度过发情季节", reads: 33, cover: "/static/logo.png" },
-      { id: "s6", title: "狗狗皮肤病预防与治疗：常见皮肤病识别手册", reads: 67, cover: "/static/logo.png" },
-      { id: "s7", title: "猫咪营养需求分析：不同年龄阶段的饮食搭配", reads: 45, cover: "/static/logo.png" },
-      { id: "s8", title: "狗狗行为训练：从基础指令到高级技巧", reads: 39, cover: "/static/logo.png" }
-    ]);
+    const sciencePosts = common_vendor.ref([]);
+    async function loadArticles(params = {}) {
+      try {
+        common_vendor.index.__f__("log", "at pages/community/community.vue:415", "开始加载科普文章，参数:", params);
+        const res = await utils_api.api.getArticles({ page: 1, limit: 20, ...params });
+        common_vendor.index.__f__("log", "at pages/community/community.vue:417", "API返回数据:", res);
+        const list = Array.isArray(res) ? res : res.articles || res.data || [];
+        common_vendor.index.__f__("log", "at pages/community/community.vue:420", "处理后的文章列表:", list);
+        sciencePosts.value = list.map((article) => {
+          common_vendor.index.__f__("log", "at pages/community/community.vue:423", "处理文章:", article.title, "图片URL:", article.cover);
+          return {
+            id: article.id,
+            title: article.title || "无标题",
+            reads: article.reads || 0,
+            cover: article.cover || "/static/logo.png",
+            // 添加用于下载的原始URL
+            originalCover: article.cover
+          };
+        });
+        common_vendor.index.__f__("log", "at pages/community/community.vue:434", "最终科普文章数据:", sciencePosts.value);
+      } catch (e) {
+        common_vendor.index.__f__("error", "at pages/community/community.vue:436", "加载科普文章失败:", e);
+        sciencePosts.value = [];
+      }
+    }
+    const imageCache = /* @__PURE__ */ new Map();
+    function getImageSrc(article) {
+      const originalUrl = article.originalCover;
+      if (!originalUrl) {
+        return "/static/logo.png";
+      }
+      if (originalUrl.startsWith("/static/") || originalUrl.startsWith("wxfile://")) {
+        return originalUrl;
+      }
+      if (imageCache.has(originalUrl)) {
+        return imageCache.get(originalUrl);
+      }
+      common_vendor.index.downloadFile({
+        url: originalUrl,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            imageCache.set(originalUrl, res.tempFilePath);
+            sciencePosts.value = [...sciencePosts.value];
+          } else {
+            common_vendor.index.__f__("warn", "at pages/community/community.vue:471", "图片下载失败:", originalUrl, res.statusCode);
+            imageCache.set(originalUrl, "/static/404.png");
+            sciencePosts.value = [...sciencePosts.value];
+          }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/community/community.vue:477", "图片下载失败:", originalUrl, err);
+          imageCache.set(originalUrl, "/static/404.png");
+          sciencePosts.value = [...sciencePosts.value];
+        }
+      });
+      return "/static/logo.png";
+    }
+    function handleImageError(e) {
+      common_vendor.index.__f__("error", "at pages/community/community.vue:489", "图片加载失败:", e);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:490", "图片URL:", e.target.src);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:491", "错误详情:", e.detail);
+      e.target.src = "/static/404.png";
+      common_vendor.index.__f__("log", "at pages/community/community.vue:495", "已设置默认图片:", e.target.src);
+    }
+    function handleImageLoad(e) {
+      common_vendor.index.__f__("log", "at pages/community/community.vue:500", "图片加载成功:", e.target.src);
+    }
     function selectCategory(key) {
       currentCategory.value = key;
       if (topTab.value === "square") {
@@ -227,6 +286,8 @@ const _sfc_main = {
         loadFeeds();
       } else if (tab === "qa" && qaPosts.value.length === 0) {
         loadQuestions();
+      } else if (tab === "science" && sciencePosts.value.length === 0) {
+        loadArticles();
       }
     }
     function goDetail(post) {
@@ -251,14 +312,44 @@ const _sfc_main = {
         }
       });
     }
-    function goScienceDetail(article) {
+    async function goScienceDetail(article) {
+      try {
+        common_vendor.index.__f__("log", "at pages/community/community.vue:545", "🔍 点击科普文章:", article);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:546", "🔍 当前阅读数:", article.reads);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:549", "📡 开始调用增加阅读数API...");
+        const result = await utils_api.api.incrementArticleReads(article.id);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:551", "📡 API返回结果:", result);
+        if (result && result.success) {
+          common_vendor.index.__f__("log", "at pages/community/community.vue:554", "✅ 阅读数增加成功，新阅读数:", result.reads);
+          const index = sciencePosts.value.findIndex((a) => a.id === article.id);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:557", "🔍 找到文章索引:", index);
+          if (index > -1) {
+            common_vendor.index.__f__("log", "at pages/community/community.vue:560", "🔄 更新前本地阅读数:", sciencePosts.value[index].reads);
+            sciencePosts.value[index].reads = result.reads;
+            common_vendor.index.__f__("log", "at pages/community/community.vue:562", "🔄 更新后本地阅读数:", sciencePosts.value[index].reads);
+          }
+          article.reads = result.reads;
+          common_vendor.index.__f__("log", "at pages/community/community.vue:566", "🔄 更新传入详情页的阅读数:", article.reads);
+        } else {
+          common_vendor.index.__f__("warn", "at pages/community/community.vue:568", "⚠️ API返回失败或格式不正确:", result);
+        }
+      } catch (error) {
+        common_vendor.index.__f__("error", "at pages/community/community.vue:571", "❌ 增加阅读数失败:", error);
+      }
+      common_vendor.index.__f__("log", "at pages/community/community.vue:575", "🚀 准备跳转到详情页，文章数据:", article);
       common_vendor.index.navigateTo({
-        url: "/pages/scienceDetail/scienceDetail",
+        url: `/pages/scienceDetail/scienceDetail?id=${article.id}`,
         success: (res) => {
+          common_vendor.index.__f__("log", "at pages/community/community.vue:579", "✅ 页面跳转成功");
           try {
             res.eventChannel.emit("science", article);
+            common_vendor.index.__f__("log", "at pages/community/community.vue:582", "📤 已发送文章数据到详情页:", article);
           } catch (e) {
+            common_vendor.index.__f__("error", "at pages/community/community.vue:584", "❌ 发送数据到详情页失败:", e);
           }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/community/community.vue:588", "❌ 页面跳转失败:", err);
         }
       });
     }
@@ -287,7 +378,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:486", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:619", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -315,7 +406,7 @@ const _sfc_main = {
                   posts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:517", "删除动态失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:650", "删除动态失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -325,7 +416,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:527", "删除动态失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:660", "删除动态失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"
@@ -353,7 +444,7 @@ const _sfc_main = {
                   qaPosts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:558", "删除问答失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:691", "删除问答失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -363,7 +454,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:568", "删除问答失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:701", "删除问答失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"
@@ -378,6 +469,8 @@ const _sfc_main = {
         loadFeeds({ search: searchText.value.trim() });
       } else if (topTab.value === "qa") {
         loadQuestions({ search: searchText.value.trim() });
+      } else if (topTab.value === "science") {
+        loadArticles({ search: searchText.value.trim() });
       }
     }
     let searchTimeout = null;
@@ -393,6 +486,8 @@ const _sfc_main = {
             loadFeeds();
           } else if (topTab.value === "qa") {
             loadQuestions();
+          } else if (topTab.value === "science") {
+            loadArticles();
           }
           isSearching.value = false;
         }
@@ -405,6 +500,8 @@ const _sfc_main = {
         loadFeeds();
       } else if (topTab.value === "qa") {
         loadQuestions();
+      } else if (topTab.value === "science") {
+        loadArticles();
       }
     }
     return (_ctx, _cache) => {
@@ -491,11 +588,13 @@ const _sfc_main = {
       }, topTab.value === "science" ? {
         A: common_vendor.f(sciencePosts.value, (a, k0, i0) => {
           return {
-            a: a.cover,
-            b: common_vendor.t(a.title),
-            c: common_vendor.t(a.reads),
-            d: a.id,
-            e: common_vendor.o(($event) => goScienceDetail(a), a.id)
+            a: getImageSrc(a),
+            b: common_vendor.o(handleImageError, a.id),
+            c: common_vendor.o(handleImageLoad, a.id),
+            d: common_vendor.t(a.title),
+            e: common_vendor.t(a.reads),
+            f: a.id,
+            g: common_vendor.o(($event) => goScienceDetail(a), a.id)
           };
         })
       } : {}, {
