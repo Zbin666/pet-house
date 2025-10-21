@@ -48,7 +48,7 @@
 		<view class="feed" v-if="topTab === 'square'">
 			<view class="card" v-for="post in posts" :key="post.id" @tap="goDetail(post)">
 				<view class="card-hd">
-					<image class="avatar" :src="post.avatar" mode="aspectFill" />
+					<image class="avatar" :src="getUserAvatarSrc(post.avatar)" mode="aspectFill" />
 					<view class="title-meta">
 						<text class="nickname">{{ post.user }}</text>
 						<text class="sub">{{ post.pet }}｜{{ post.breed }}</text>
@@ -59,7 +59,7 @@
 					<text v-if="post.title" class="post-title">{{ post.title }}</text>
 					<text class="content">{{ post.text }}</text>
 					<view class="pics" v-if="post.images && post.images.length">
-						<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" />
+						<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" @tap.stop="previewImages(post.images, i)" />
 					</view>
 				</view>
 				<view class="card-ft" @tap.stop="noop">
@@ -130,7 +130,7 @@
 				<!-- 最高点赞评论或最早评论或未回答状态 -->
 				<view class="qa-content" v-if="qa.hasAnswer && qa.topAnswer">
 					<view class="top-answer-info">
-						<image class="top-answer-avatar" :src="qa.topAnswer.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
+						<image class="top-answer-avatar" :src="getUserAvatarSrc(qa.topAnswer.user.avatarUrl)" mode="aspectFill" />
 						<view class="top-answer-meta">
 							<text class="top-answer-user">{{ qa.topAnswer.user.nickname }}</text>
 							<text class="top-answer-pet" v-if="qa.topAnswer.pet">{{ qa.topAnswer.pet.name }}｜{{ qa.topAnswer.pet.breed }}</text>
@@ -294,7 +294,7 @@ async function loadFeeds(params = {}) {
 				time,
 				title: title ? `#${title}` : '',
 				text: f.text || '',
-				avatar: user.avatarUrl || '/static/logo.png',
+				avatar: user.avatarUrl || '/static/404.png',
 				images: imgs,
 				likes: f.likes || 0,
 				comments: typeof f.commentsCount === 'number' ? f.commentsCount : (Array.isArray(f.Comments) ? f.Comments.length : 0),
@@ -425,7 +425,7 @@ async function loadArticles(params = {}) {
 				id: article.id,
 				title: article.title || '无标题',
 				reads: article.reads || 0,
-				cover: article.cover || '/static/logo.png',
+				cover: article.cover || '/static/404.png',
 				// 添加用于下载的原始URL
 				originalCover: article.cover
 			}
@@ -440,12 +440,68 @@ async function loadArticles(params = {}) {
 
 // 图片缓存，避免重复下载
 const imageCache = new Map()
+// 用户头像缓存
+const avatarCache = new Map()
+
+// 获取用户头像的可显示 src
+function getUserAvatarSrc(url) {
+	if (!url) {
+		return '/static/user/user.png'
+	}
+	
+	// 统一规范化：
+	// 1) /uploads/ 相对路径 → 拼接静态域名
+	// 2) 强制 http → https，去掉 :80
+	let normalized = url
+	if (normalized.startsWith('/uploads/')) {
+		normalized = `https://pet-api.zbinli.cn${normalized}`
+	}
+	if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+	}
+	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+	// 本地或静态路径直接返回
+	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+		return normalized
+	}
+
+	// 命中缓存
+	if (avatarCache.has(normalized)) {
+		return avatarCache.get(normalized)
+	}
+
+	// 下载网络图片到本地临时文件
+	uni.downloadFile({
+		url: normalized,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				avatarCache.set(normalized, res.tempFilePath)
+				// 触发视图更新
+				posts.value = [...posts.value]
+				qaPosts.value = [...qaPosts.value]
+			} else {
+				avatarCache.set(normalized, '/static/user/user.png')
+				posts.value = [...posts.value]
+				qaPosts.value = [...qaPosts.value]
+			}
+		},
+		fail: () => {
+			avatarCache.set(normalized, '/static/user/user.png')
+			posts.value = [...posts.value]
+			qaPosts.value = [...qaPosts.value]
+		}
+	})
+
+	// 下载中返回占位
+	return '/static/user/user.png'
+}
 
 // 获取图片源，借鉴todoList的下载机制
 function getImageSrc(article) {
 	const originalUrl = article.originalCover
 	if (!originalUrl) {
-		return '/static/logo.png'
+		return '/static/404.png'
 	}
 	
 	// 如果是本地路径，直接返回
@@ -481,7 +537,7 @@ function getImageSrc(article) {
 	})
 	
 	// 返回默认图片，下载完成后会自动更新
-	return '/static/logo.png'
+	return '/static/404.png'
 }
 
 // 图片加载错误处理
@@ -591,6 +647,26 @@ async function goScienceDetail(article) {
 }
 function goToCreate() { uni.navigateTo({ url: '/pages/createCommunity/createCommunity' }) }
 function noop() { }
+
+// 预览图片
+function previewImages(images, current) {
+	if (!images || images.length === 0) return
+	
+	uni.previewImage({
+		current: current,
+		urls: images,
+		success: () => {
+			console.log('图片预览成功')
+		},
+		fail: (err) => {
+			console.error('图片预览失败:', err)
+			uni.showToast({
+				title: '图片预览失败',
+				icon: 'none'
+			})
+		}
+	})
+}
 
 // 切换点赞状态
 async function toggleLike(post) {
@@ -1049,6 +1125,12 @@ function clearSearch() {
 	height: 200rpx;
 	background: #f3f3f3;
 	border-radius: 12rpx;
+	cursor: pointer;
+	transition: transform 0.2s ease;
+}
+
+.pic:active {
+	transform: scale(0.98);
 }
 
 .card-ft {
@@ -1360,9 +1442,9 @@ function clearSearch() {
 
 .s-thumb {
 	position: absolute;
-	left: -40rpx;
+	left: -45rpx;
 	top: -24rpx;
-	width: 210rpx;
+	width: 220rpx;
 	height: 180rpx;
 	border: 4rpx solid #2c2c2c;
 	border-radius: 12rpx;

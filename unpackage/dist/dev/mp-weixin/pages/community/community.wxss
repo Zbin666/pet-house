@@ -256,6 +256,11 @@
 	height: 200rpx;
 	background: #f3f3f3;
 	border-radius: 12rpx;
+	cursor: pointer;
+	transition: transform 0.2s ease;
+}
+.pic.data-v-a6ef5318:active {
+	transform: scale(0.98);
 }
 .card-ft.data-v-a6ef5318 {
 	margin-top: 18rpx;
@@ -527,9 +532,9 @@
 }
 .s-thumb.data-v-a6ef5318 {
 	position: absolute;
-	left: -40rpx;
+	left: -45rpx;
 	top: -24rpx;
-	width: 210rpx;
+	width: 220rpx;
 	height: 180rpx;
 	border: 4rpx solid #2c2c2c;
 	border-radius: 12rpx;

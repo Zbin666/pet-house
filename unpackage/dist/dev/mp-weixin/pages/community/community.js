@@ -107,7 +107,7 @@ const _sfc_main = {
             time,
             title: title ? `#${title}` : "",
             text: f.text || "",
-            avatar: user.avatarUrl || "/static/logo.png",
+            avatar: user.avatarUrl || "/static/404.png",
             images: imgs,
             likes: f.likes || 0,
             comments: typeof f.commentsCount === "number" ? f.commentsCount : Array.isArray(f.Comments) ? f.Comments.length : 0,
@@ -220,7 +220,7 @@ const _sfc_main = {
             id: article.id,
             title: article.title || "无标题",
             reads: article.reads || 0,
-            cover: article.cover || "/static/logo.png",
+            cover: article.cover || "/static/404.png",
             // 添加用于下载的原始URL
             originalCover: article.cover
           };
@@ -232,10 +232,50 @@ const _sfc_main = {
       }
     }
     const imageCache = /* @__PURE__ */ new Map();
+    const avatarCache = /* @__PURE__ */ new Map();
+    function getUserAvatarSrc(url) {
+      if (!url) {
+        return "/static/user/user.png";
+      }
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized);
+      }
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            avatarCache.set(normalized, res.tempFilePath);
+            posts.value = [...posts.value];
+            qaPosts.value = [...qaPosts.value];
+          } else {
+            avatarCache.set(normalized, "/static/user/user.png");
+            posts.value = [...posts.value];
+            qaPosts.value = [...qaPosts.value];
+          }
+        },
+        fail: () => {
+          avatarCache.set(normalized, "/static/user/user.png");
+          posts.value = [...posts.value];
+          qaPosts.value = [...qaPosts.value];
+        }
+      });
+      return "/static/user/user.png";
+    }
     function getImageSrc(article) {
       const originalUrl = article.originalCover;
       if (!originalUrl) {
-        return "/static/logo.png";
+        return "/static/404.png";
       }
       if (originalUrl.startsWith("/static/") || originalUrl.startsWith("wxfile://")) {
         return originalUrl;
@@ -250,28 +290,28 @@ const _sfc_main = {
             imageCache.set(originalUrl, res.tempFilePath);
             sciencePosts.value = [...sciencePosts.value];
           } else {
-            common_vendor.index.__f__("warn", "at pages/community/community.vue:471", "图片下载失败:", originalUrl, res.statusCode);
+            common_vendor.index.__f__("warn", "at pages/community/community.vue:527", "图片下载失败:", originalUrl, res.statusCode);
             imageCache.set(originalUrl, "/static/404.png");
             sciencePosts.value = [...sciencePosts.value];
           }
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/community/community.vue:477", "图片下载失败:", originalUrl, err);
+          common_vendor.index.__f__("error", "at pages/community/community.vue:533", "图片下载失败:", originalUrl, err);
           imageCache.set(originalUrl, "/static/404.png");
           sciencePosts.value = [...sciencePosts.value];
         }
       });
-      return "/static/logo.png";
+      return "/static/404.png";
     }
     function handleImageError(e) {
-      common_vendor.index.__f__("error", "at pages/community/community.vue:489", "图片加载失败:", e);
-      common_vendor.index.__f__("error", "at pages/community/community.vue:490", "图片URL:", e.target.src);
-      common_vendor.index.__f__("error", "at pages/community/community.vue:491", "错误详情:", e.detail);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:545", "图片加载失败:", e);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:546", "图片URL:", e.target.src);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:547", "错误详情:", e.detail);
       e.target.src = "/static/404.png";
-      common_vendor.index.__f__("log", "at pages/community/community.vue:495", "已设置默认图片:", e.target.src);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:551", "已设置默认图片:", e.target.src);
     }
     function handleImageLoad(e) {
-      common_vendor.index.__f__("log", "at pages/community/community.vue:500", "图片加载成功:", e.target.src);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:556", "图片加载成功:", e.target.src);
     }
     function selectCategory(key) {
       currentCategory.value = key;
@@ -314,42 +354,42 @@ const _sfc_main = {
     }
     async function goScienceDetail(article) {
       try {
-        common_vendor.index.__f__("log", "at pages/community/community.vue:545", "🔍 点击科普文章:", article);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:546", "🔍 当前阅读数:", article.reads);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:549", "📡 开始调用增加阅读数API...");
+        common_vendor.index.__f__("log", "at pages/community/community.vue:601", "🔍 点击科普文章:", article);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:602", "🔍 当前阅读数:", article.reads);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:605", "📡 开始调用增加阅读数API...");
         const result = await utils_api.api.incrementArticleReads(article.id);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:551", "📡 API返回结果:", result);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:607", "📡 API返回结果:", result);
         if (result && result.success) {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:554", "✅ 阅读数增加成功，新阅读数:", result.reads);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:610", "✅ 阅读数增加成功，新阅读数:", result.reads);
           const index = sciencePosts.value.findIndex((a) => a.id === article.id);
-          common_vendor.index.__f__("log", "at pages/community/community.vue:557", "🔍 找到文章索引:", index);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:613", "🔍 找到文章索引:", index);
           if (index > -1) {
-            common_vendor.index.__f__("log", "at pages/community/community.vue:560", "🔄 更新前本地阅读数:", sciencePosts.value[index].reads);
+            common_vendor.index.__f__("log", "at pages/community/community.vue:616", "🔄 更新前本地阅读数:", sciencePosts.value[index].reads);
             sciencePosts.value[index].reads = result.reads;
-            common_vendor.index.__f__("log", "at pages/community/community.vue:562", "🔄 更新后本地阅读数:", sciencePosts.value[index].reads);
+            common_vendor.index.__f__("log", "at pages/community/community.vue:618", "🔄 更新后本地阅读数:", sciencePosts.value[index].reads);
           }
           article.reads = result.reads;
-          common_vendor.index.__f__("log", "at pages/community/community.vue:566", "🔄 更新传入详情页的阅读数:", article.reads);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:622", "🔄 更新传入详情页的阅读数:", article.reads);
         } else {
-          common_vendor.index.__f__("warn", "at pages/community/community.vue:568", "⚠️ API返回失败或格式不正确:", result);
+          common_vendor.index.__f__("warn", "at pages/community/community.vue:624", "⚠️ API返回失败或格式不正确:", result);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:571", "❌ 增加阅读数失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:627", "❌ 增加阅读数失败:", error);
       }
-      common_vendor.index.__f__("log", "at pages/community/community.vue:575", "🚀 准备跳转到详情页，文章数据:", article);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:631", "🚀 准备跳转到详情页，文章数据:", article);
       common_vendor.index.navigateTo({
         url: `/pages/scienceDetail/scienceDetail?id=${article.id}`,
         success: (res) => {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:579", "✅ 页面跳转成功");
+          common_vendor.index.__f__("log", "at pages/community/community.vue:635", "✅ 页面跳转成功");
           try {
             res.eventChannel.emit("science", article);
-            common_vendor.index.__f__("log", "at pages/community/community.vue:582", "📤 已发送文章数据到详情页:", article);
+            common_vendor.index.__f__("log", "at pages/community/community.vue:638", "📤 已发送文章数据到详情页:", article);
           } catch (e) {
-            common_vendor.index.__f__("error", "at pages/community/community.vue:584", "❌ 发送数据到详情页失败:", e);
+            common_vendor.index.__f__("error", "at pages/community/community.vue:640", "❌ 发送数据到详情页失败:", e);
           }
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/community/community.vue:588", "❌ 页面跳转失败:", err);
+          common_vendor.index.__f__("error", "at pages/community/community.vue:644", "❌ 页面跳转失败:", err);
         }
       });
     }
@@ -357,6 +397,24 @@ const _sfc_main = {
       common_vendor.index.navigateTo({ url: "/pages/createCommunity/createCommunity" });
     }
     function noop() {
+    }
+    function previewImages(images, current) {
+      if (!images || images.length === 0)
+        return;
+      common_vendor.index.previewImage({
+        current,
+        urls: images,
+        success: () => {
+          common_vendor.index.__f__("log", "at pages/community/community.vue:659", "图片预览成功");
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/community/community.vue:662", "图片预览失败:", err);
+          common_vendor.index.showToast({
+            title: "图片预览失败",
+            icon: "none"
+          });
+        }
+      });
     }
     async function toggleLike(post) {
       if (!currentUser.value) {
@@ -378,7 +436,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:619", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:695", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -406,7 +464,7 @@ const _sfc_main = {
                   posts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:650", "删除动态失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:726", "删除动态失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -416,7 +474,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:660", "删除动态失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:736", "删除动态失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"
@@ -444,7 +502,7 @@ const _sfc_main = {
                   qaPosts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:691", "删除问答失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:767", "删除问答失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -454,7 +512,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:701", "删除问答失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:777", "删除问答失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"
@@ -547,7 +605,7 @@ const _sfc_main = {
       }, topTab.value === "square" ? {
         w: common_vendor.f(posts.value, (post, k0, i0) => {
           return common_vendor.e({
-            a: post.avatar,
+            a: getUserAvatarSrc(post.avatar),
             b: common_vendor.t(post.user),
             c: common_vendor.t(post.pet),
             d: common_vendor.t(post.breed),
@@ -562,7 +620,8 @@ const _sfc_main = {
             j: common_vendor.f(post.images, (img, i, i1) => {
               return {
                 a: i,
-                b: img
+                b: img,
+                c: common_vendor.o(($event) => previewImages(post.images, i), i)
               };
             })
           } : {}, {
@@ -621,7 +680,7 @@ const _sfc_main = {
           } : {}, {
             h: qa.hasAnswer && qa.topAnswer
           }, qa.hasAnswer && qa.topAnswer ? common_vendor.e({
-            i: qa.topAnswer.user.avatarUrl || "/static/logo.png",
+            i: getUserAvatarSrc(qa.topAnswer.user.avatarUrl),
             j: common_vendor.t(qa.topAnswer.user.nickname),
             k: qa.topAnswer.pet
           }, qa.topAnswer.pet ? {

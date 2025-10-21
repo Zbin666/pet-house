@@ -4,6 +4,43 @@ const utils_api = require("../../utils/api.js");
 const _sfc_main = {
   __name: "createCommunity",
   setup(__props) {
+    const avatarCache = /* @__PURE__ */ new Map();
+    function getUserAvatarSrc(url) {
+      if (!url) {
+        return "/static/user/user.png";
+      }
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized);
+      }
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            avatarCache.set(normalized, res.tempFilePath);
+            userInfo.value = { ...userInfo.value };
+          } else {
+            avatarCache.set(normalized, "/static/user/user.png");
+            userInfo.value = { ...userInfo.value };
+          }
+        },
+        fail: () => {
+          avatarCache.set(normalized, "/static/user/user.png");
+          userInfo.value = { ...userInfo.value };
+        }
+      });
+      return "/static/user/user.png";
+    }
     const content = common_vendor.ref("");
     const images = common_vendor.ref([]);
     const topics = common_vendor.ref([]);
@@ -38,7 +75,7 @@ const _sfc_main = {
             }
           }, 800);
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:162", "发布问答失败:", e);
+          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:216", "发布问答失败:", e);
           common_vendor.index.showToast({
             title: e.message || "发布失败，请检查网络连接",
             icon: "none",
@@ -67,7 +104,7 @@ const _sfc_main = {
             }
           }, 800);
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:190", "发布动态失败:", e);
+          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:244", "发布动态失败:", e);
           common_vendor.index.showToast({
             title: e.message || "发布失败，请检查网络连接",
             icon: "none",
@@ -108,7 +145,7 @@ const _sfc_main = {
           currentPet.value = pets[0];
         }
       } catch (e) {
-        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:239", "Failed to load user/pet info:", e);
+        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:293", "Failed to load user/pet info:", e);
       }
     }
     common_vendor.onMounted(() => {
@@ -120,7 +157,7 @@ const _sfc_main = {
         b: common_vendor.o(($event) => isQuestion.value = false),
         c: common_vendor.n(isQuestion.value ? "active" : ""),
         d: common_vendor.o(($event) => isQuestion.value = true),
-        e: userInfo.value.avatarUrl || "/static/logo.png",
+        e: getUserAvatarSrc(userInfo.value.avatarUrl),
         f: common_vendor.t(userInfo.value.nickname || "用户"),
         g: common_vendor.t(currentPet.value.name || "未设置宠物"),
         h: common_vendor.t(currentPet.value.breed ? "｜" + currentPet.value.breed : ""),

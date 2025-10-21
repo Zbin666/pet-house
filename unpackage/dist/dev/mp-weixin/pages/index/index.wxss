@@ -97,7 +97,7 @@
 .pet-content {
 	display: flex;
 	padding: 24rpx 18rpx 0 18rpx;
-	border: 1rpx solid yellow;
+	/* border: 1rpx solid yellow; */
 }
 
 /* 多宠物横滑容器 */
@@ -142,8 +142,8 @@
 	border: 4rpx solid #2c2c2c;
 }
 .pet-avatar-inner {
-	width: 160rpx;
-	height: 120rpx;
+	width: 200rpx;
+	height: 200rpx;
 	background: linear-gradient(180deg, #ffd280, #ffeab1);
 	border-radius: 12rpx;
 }
@@ -344,6 +344,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
+	line-clamp: 5; /* 标准属性，提升兼容性 */
 	-webkit-line-clamp: 5; /* 最多显示4行 */
 	-webkit-box-orient: vertical;
 	word-break: break-word;

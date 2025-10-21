@@ -64,6 +64,41 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     const replyingToAnswerDirect = common_vendor.ref(null);
     const inputRef = common_vendor.ref(null);
     const currentUserId = common_vendor.ref("");
+    const avatarCache = /* @__PURE__ */ new Map();
+    const avatarUpdateTrigger = common_vendor.ref(0);
+    function getUserAvatarSrc(url) {
+      if (!url)
+        return "/static/user/user.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/"))
+        return normalized;
+      if (avatarCache.has(normalized))
+        return avatarCache.get(normalized);
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            avatarCache.set(normalized, res.tempFilePath);
+            avatarUpdateTrigger.value++;
+          } else {
+            avatarCache.set(normalized, "/static/user/user.png");
+            avatarUpdateTrigger.value++;
+          }
+        },
+        fail: () => {
+          avatarCache.set(normalized, "/static/user/user.png");
+          avatarUpdateTrigger.value++;
+        }
+      });
+      return "/static/user/user.png";
+    }
     async function loadQuestionDetail(questionId) {
       try {
         const data = await utils_api.api.getQuestion(questionId);
@@ -123,7 +158,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           await loadAnswerComments(answer.id);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:361", "加载问答详情失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:397", "加载问答详情失败:", error);
         common_vendor.index.showToast({
           title: "加载失败",
           icon: "none"
@@ -158,7 +193,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         } catch (e) {
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:406", "提交回答失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:442", "提交回答失败:", error);
         common_vendor.index.showToast({
           title: "提交失败",
           icon: "none"
@@ -184,7 +219,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:437", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:473", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -208,7 +243,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:466", "关注操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:502", "关注操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -218,7 +253,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     async function loadAnswerComments(answerId) {
       try {
         const data = await utils_api.api.getAnswerComments(answerId);
-        common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:479", "加载评论数据:", data);
+        common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:515", "加载评论数据:", data);
         const answer = qa.answers.find((a) => a.id === answerId);
         if (answer) {
           answer.comments = data.map((comment, index) => ({
@@ -230,10 +265,10 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             showReplies: false,
             expandedReplies: 0
           }));
-          common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:490", "更新后的回答评论:", answer.comments);
+          common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:526", "更新后的回答评论:", answer.comments);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:493", "加载评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:529", "加载评论失败:", error);
       }
     }
     function formatCommentTime(createdAt) {
@@ -319,7 +354,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:603", "提交回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:639", "提交回复失败:", error);
         common_vendor.index.showToast({
           title: "回复失败",
           icon: "none"
@@ -363,7 +398,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:656", "提交回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:692", "提交回复失败:", error);
         common_vendor.index.showToast({
           title: "回复失败",
           icon: "none"
@@ -385,7 +420,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:682", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:718", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -531,101 +566,104 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         d: qa.isFollowed ? 1 : "",
         e: common_vendor.o(followQuestion),
         f: common_vendor.t(qa.content),
-        g: qa.user.avatarUrl || "/static/logo.png",
-        h: common_vendor.t(qa.user.nickname || "用户"),
-        i: common_vendor.t(qa.time),
-        j: qa.user.id === currentUserId.value
+        g: getUserAvatarSrc(qa.user.avatarUrl),
+        h: `qa-user-avatar-${avatarUpdateTrigger.value}`,
+        i: common_vendor.t(qa.user.nickname || "用户"),
+        j: common_vendor.t(qa.time),
+        k: qa.user.id === currentUserId.value
       }, qa.user.id === currentUserId.value ? {
-        k: common_assets._imports_0$4,
-        l: common_vendor.o(confirmDeleteQuestion)
+        l: common_assets._imports_0$4,
+        m: common_vendor.o(confirmDeleteQuestion)
       } : {}, {
-        m: common_vendor.f(qa.answers, (answer, k0, i0) => {
+        n: common_vendor.f(qa.answers, (answer, k0, i0) => {
           var _a2, _b2;
           return common_vendor.e({
-            a: answer.user.avatarUrl || "/static/logo.png",
-            b: common_vendor.t(answer.user.nickname),
-            c: answer.pet && answer.pet.name
+            a: getUserAvatarSrc(answer.user.avatarUrl),
+            b: `answer-avatar-${answer.id}-${avatarUpdateTrigger.value}`,
+            c: common_vendor.t(answer.user.nickname),
+            d: answer.pet && answer.pet.name
           }, answer.pet && answer.pet.name ? {
-            d: common_vendor.t(answer.pet.name),
-            e: common_vendor.t(answer.pet.breed)
+            e: common_vendor.t(answer.pet.name),
+            f: common_vendor.t(answer.pet.breed)
           } : {}, {
-            f: common_vendor.t(answer.content),
-            g: common_vendor.t(answer.time),
-            h: common_vendor.o(($event) => startReplyToAnswer(answer), answer.id),
-            i: answer.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-            j: common_vendor.t(answer.likes),
-            k: common_vendor.o(($event) => likeAnswer(answer), answer.id),
-            l: ((_a2 = answer.user) == null ? void 0 : _a2.id) === currentUserId.value
+            g: common_vendor.t(answer.content),
+            h: common_vendor.t(answer.time),
+            i: common_vendor.o(($event) => startReplyToAnswer(answer), answer.id),
+            j: answer.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+            k: common_vendor.t(answer.likes),
+            l: common_vendor.o(($event) => likeAnswer(answer), answer.id),
+            m: ((_a2 = answer.user) == null ? void 0 : _a2.id) === currentUserId.value
           }, ((_b2 = answer.user) == null ? void 0 : _b2.id) === currentUserId.value ? {
-            m: common_assets._imports_0$4,
-            n: common_vendor.o(($event) => confirmDeleteAnswer(answer), answer.id)
+            n: common_assets._imports_0$4,
+            o: common_vendor.o(($event) => confirmDeleteAnswer(answer), answer.id)
           } : {}, {
-            o: answer.showComments && answer.comments && answer.comments.length
+            p: answer.showComments && answer.comments && answer.comments.length
           }, answer.showComments && answer.comments && answer.comments.length ? {
-            p: common_vendor.f(answer.comments.slice(0, answer.expandedComments), (comment, k1, i1) => {
+            q: common_vendor.f(answer.comments.slice(0, answer.expandedComments), (comment, k1, i1) => {
               var _a3, _b3;
               return common_vendor.e({
-                a: comment.user.avatarUrl || "/static/logo.png",
-                b: common_vendor.t(comment.user.nickname),
-                c: comment.replyTo && comment.replyTo.nickname
+                a: getUserAvatarSrc(comment.user.avatarUrl),
+                b: `comment-avatar-${comment.id}-${avatarUpdateTrigger.value}`,
+                c: common_vendor.t(comment.user.nickname),
+                d: comment.replyTo && comment.replyTo.nickname
               }, comment.replyTo && comment.replyTo.nickname ? {
-                d: common_vendor.t(comment.replyTo.nickname)
+                e: common_vendor.t(comment.replyTo.nickname)
               } : {}, {
-                e: comment.pet && comment.pet.name
+                f: comment.pet && comment.pet.name
               }, comment.pet && comment.pet.name ? {
-                f: common_vendor.t(comment.pet.name),
-                g: common_vendor.t(comment.pet.breed)
+                g: common_vendor.t(comment.pet.name),
+                h: common_vendor.t(comment.pet.breed)
               } : {}, {
-                h: common_vendor.t(comment.content),
-                i: common_vendor.t(comment.time),
-                j: common_vendor.o(($event) => startReply(comment, answer), comment.id),
-                k: comment.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-                l: comment.likes > 0
+                i: common_vendor.t(comment.content),
+                j: common_vendor.t(comment.time),
+                k: common_vendor.o(($event) => startReply(comment, answer), comment.id),
+                l: comment.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+                m: comment.likes > 0
               }, comment.likes > 0 ? {
-                m: common_vendor.t(comment.likes)
+                n: common_vendor.t(comment.likes)
               } : {}, {
-                n: common_vendor.o(($event) => likeComment(comment), comment.id),
-                o: ((_a3 = comment.user) == null ? void 0 : _a3.id) === currentUserId.value
+                o: common_vendor.o(($event) => likeComment(comment), comment.id),
+                p: ((_a3 = comment.user) == null ? void 0 : _a3.id) === currentUserId.value
               }, ((_b3 = comment.user) == null ? void 0 : _b3.id) === currentUserId.value ? {
-                p: common_assets._imports_0$4,
-                q: common_vendor.o(($event) => confirmDeleteAnswerComment(answer, comment), comment.id)
+                q: common_assets._imports_0$4,
+                r: common_vendor.o(($event) => confirmDeleteAnswerComment(answer, comment), comment.id)
               } : {}, {
-                r: comment.id
+                s: comment.id
               });
             }),
-            q: common_vendor.o(() => {
+            r: common_vendor.o(() => {
             }, answer.id)
           } : {}, {
-            r: answer.comments && answer.comments.length > 0
+            s: answer.comments && answer.comments.length > 0
           }, answer.comments && answer.comments.length > 0 ? common_vendor.e({
-            s: !answer.showComments
+            t: !answer.showComments
           }, !answer.showComments ? {
-            t: common_vendor.t(answer.comments.length),
-            v: common_vendor.o(($event) => toggleAnswerComments(answer), answer.id)
+            v: common_vendor.t(answer.comments.length),
+            w: common_vendor.o(($event) => toggleAnswerComments(answer), answer.id)
           } : common_vendor.e({
-            w: answer.expandedComments < answer.comments.length
+            x: answer.expandedComments < answer.comments.length
           }, answer.expandedComments < answer.comments.length ? {
-            x: common_vendor.o(($event) => expandMoreComments(answer), answer.id)
+            y: common_vendor.o(($event) => expandMoreComments(answer), answer.id)
           } : {}, {
-            y: common_vendor.o(($event) => collapseComments(answer), answer.id)
+            z: common_vendor.o(($event) => collapseComments(answer), answer.id)
           })) : {}, {
-            z: answer.id
+            A: answer.id
           });
         }),
-        n: qa.answers.length === 0
+        o: qa.answers.length === 0
       }, qa.answers.length === 0 ? {} : {}, {
-        o: common_vendor.o(cancelReply),
-        p: replyingToComment.value ? `回复 ${replyingToComment.value.user.nickname}：` : replyingToAnswerDirect.value ? `回复 ${replyingToAnswerDirect.value.user.nickname}：` : "输入你的回答",
-        q: isSubmitting.value,
-        r: replyingToComment.value !== null || replyingToAnswerDirect.value !== null,
-        s: common_vendor.o(($event) => replyingToComment.value ? submitReply() : replyingToAnswerDirect.value ? submitReplyToAnswer() : submitAnswer()),
-        t: common_vendor.o(() => {
+        p: common_vendor.o(cancelReply),
+        q: replyingToComment.value ? `回复 ${replyingToComment.value.user.nickname}：` : replyingToAnswerDirect.value ? `回复 ${replyingToAnswerDirect.value.user.nickname}：` : "输入你的回答",
+        r: isSubmitting.value,
+        s: replyingToComment.value !== null || replyingToAnswerDirect.value !== null,
+        t: common_vendor.o(($event) => replyingToComment.value ? submitReply() : replyingToAnswerDirect.value ? submitReplyToAnswer() : submitAnswer()),
+        v: common_vendor.o(() => {
         }),
-        v: currentAnswer.value,
-        w: common_vendor.o(($event) => currentAnswer.value = $event.detail.value),
-        x: common_vendor.o(() => {
+        w: currentAnswer.value,
+        x: common_vendor.o(($event) => currentAnswer.value = $event.detail.value),
+        y: common_vendor.o(() => {
         }),
-        y: common_vendor.s(dynamicTopPadding.value)
+        z: common_vendor.s(dynamicTopPadding.value)
       });
     };
   }

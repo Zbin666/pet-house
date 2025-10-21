@@ -21,7 +21,7 @@
 			</view>
 
 			<view class="qa-user-info">
-				<image class="qa-user-avatar" :src="qa.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
+				<image class="qa-user-avatar" :src="getUserAvatarSrc(qa.user.avatarUrl)" :key="`qa-user-avatar-${avatarUpdateTrigger}`" mode="aspectFill" />
 				<text class="qa-user-name">{{ qa.user.nickname || '用户' }}</text>
 				<text class="qa-time">{{ qa.time }}</text>
 				<view v-if="qa.user.id === currentUserId" class="qa-delete-btn" @tap.stop="confirmDeleteQuestion">
@@ -39,7 +39,7 @@
 					<view class="answer-list">
 						<view class="answer-card" v-for="answer in qa.answers" :key="answer.id">
 							<view class="doctor-info">
-								<image class="avatar" :src="answer.user.avatarUrl || '/static/logo.png'"
+								<image class="avatar" :src="getUserAvatarSrc(answer.user.avatarUrl)" :key="`answer-avatar-${answer.id}-${avatarUpdateTrigger}`"
 									mode="aspectFill" />
 								<view class="d-meta">
 									<text class="d-name">{{ answer.user.nickname }}</text>
@@ -63,7 +63,7 @@
 							<view class="answer-comments" v-if="answer.showComments && answer.comments && answer.comments.length" @tap.stop>
 								<view class="comment-item" v-for="comment in answer.comments.slice(0, answer.expandedComments)" :key="comment.id">
 									<view class="comment-user">
-										<image class="c-avatar" :src="comment.user.avatarUrl || '/static/logo.png'" mode="aspectFill" />
+									<image class="c-avatar" :src="getUserAvatarSrc(comment.user.avatarUrl)" :key="`comment-avatar-${comment.id}-${avatarUpdateTrigger}`" mode="aspectFill" />
 										<view class="c-info">
 											<view class="c-row">
 												<view class="c-column">
@@ -285,6 +285,42 @@ const replyingToAnswer = ref<Answer | null>(null)
 const replyingToAnswerDirect = ref<Answer | null>(null)
 const inputRef = ref<any>(null)
 const currentUserId = ref('')
+
+// 用户头像缓存与下载
+const avatarCache = new Map<string, string>()
+const avatarUpdateTrigger = ref(0) // 用于触发响应式更新
+
+function getUserAvatarSrc(url?: string) {
+	if (!url) return '/static/user/user.png'
+	let normalized = url
+	if (normalized.startsWith('/uploads/')) {
+		normalized = `https://pet-api.zbinli.cn${normalized}`
+	}
+	if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+	}
+	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) return normalized
+	if (avatarCache.has(normalized)) return avatarCache.get(normalized) as string
+	uni.downloadFile({
+		url: normalized,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				avatarCache.set(normalized, res.tempFilePath)
+				// 触发响应式更新
+				avatarUpdateTrigger.value++
+			} else {
+				avatarCache.set(normalized, '/static/user/user.png')
+				avatarUpdateTrigger.value++
+			}
+		},
+		fail: () => {
+			avatarCache.set(normalized, '/static/user/user.png')
+			avatarUpdateTrigger.value++
+		}
+	})
+	return '/static/user/user.png'
+}
 
 // 加载问答详情
 async function loadQuestionDetail(questionId: string) {

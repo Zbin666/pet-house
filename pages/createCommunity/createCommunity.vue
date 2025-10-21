@@ -14,7 +14,7 @@
 			
 			<!-- 用户信息 -->
 			<view class="user-info">
-				<image class="user-avatar" :src="userInfo.avatarUrl || '/static/logo.png'" mode="aspectFill" />
+				<image class="user-avatar" :src="getUserAvatarSrc(userInfo.avatarUrl)" mode="aspectFill" />
 				<view class="user-details">
 					<text class="username">{{ userInfo.nickname || '用户' }}</text>
 					<text class="user-desc">{{ currentPet.name || '未设置宠物' }}{{ currentPet.breed ? '｜' + currentPet.breed : '' }}</text>
@@ -121,6 +121,60 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { api } from '@/utils/api.js'
+
+// 用户头像缓存
+const avatarCache = new Map()
+
+// 获取用户头像的可显示 src
+function getUserAvatarSrc(url) {
+	if (!url) {
+		return '/static/user/user.png'
+	}
+	
+	// 统一规范化：
+	// 1) /uploads/ 相对路径 → 拼接静态域名
+	// 2) 强制 http → https，去掉 :80
+	let normalized = url
+	if (normalized.startsWith('/uploads/')) {
+		normalized = `https://pet-api.zbinli.cn${normalized}`
+	}
+	if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+	}
+	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+	// 本地或静态路径直接返回
+	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+		return normalized
+	}
+
+	// 命中缓存
+	if (avatarCache.has(normalized)) {
+		return avatarCache.get(normalized)
+	}
+
+	// 下载网络图片到本地临时文件
+	uni.downloadFile({
+		url: normalized,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				avatarCache.set(normalized, res.tempFilePath)
+				// 触发视图更新
+				userInfo.value = { ...userInfo.value }
+			} else {
+				avatarCache.set(normalized, '/static/user/user.png')
+				userInfo.value = { ...userInfo.value }
+			}
+		},
+		fail: () => {
+			avatarCache.set(normalized, '/static/user/user.png')
+			userInfo.value = { ...userInfo.value }
+		}
+	})
+
+	// 下载中返回占位
+	return '/static/user/user.png'
+}
 
 const content = ref('')
 const images = ref([])

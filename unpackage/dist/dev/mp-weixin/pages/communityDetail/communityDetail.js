@@ -48,6 +48,41 @@ const _sfc_main = {
     const replyingToComment = common_vendor.ref(null);
     const replyingToReply = common_vendor.ref(null);
     const inputRef = common_vendor.ref(null);
+    const avatarCache = /* @__PURE__ */ new Map();
+    const avatarUpdateTrigger = common_vendor.ref(0);
+    function getUserAvatarSrc(url) {
+      if (!url)
+        return "/static/user/user.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/"))
+        return normalized;
+      if (avatarCache.has(normalized))
+        return avatarCache.get(normalized);
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            avatarCache.set(normalized, res.tempFilePath);
+            avatarUpdateTrigger.value++;
+          } else {
+            avatarCache.set(normalized, "/static/user/user.png");
+            avatarUpdateTrigger.value++;
+          }
+        },
+        fail: () => {
+          avatarCache.set(normalized, "/static/user/user.png");
+          avatarUpdateTrigger.value++;
+        }
+      });
+      return "/static/user/user.png";
+    }
     async function loadDetail(id) {
       var _a;
       try {
@@ -213,7 +248,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:408", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:444", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -307,7 +342,7 @@ const _sfc_main = {
         } catch (_) {
         }
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:504", "加载评论失败:", e);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:540", "加载评论失败:", e);
       }
     }
     function startReply(comment) {
@@ -456,7 +491,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:690", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:726", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -476,7 +511,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:731", "点赞回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:767", "点赞回复失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -524,124 +559,146 @@ const _sfc_main = {
       comment.showReplies = false;
       comment.expandedReplies = 0;
     }
+    function previewImages(images, current) {
+      if (!images || images.length === 0)
+        return;
+      common_vendor.index.previewImage({
+        current,
+        urls: images,
+        success: () => {
+          common_vendor.index.__f__("log", "at pages/communityDetail/communityDetail.vue:829", "图片预览成功");
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:832", "图片预览失败:", err);
+          common_vendor.index.showToast({
+            title: "图片预览失败",
+            icon: "none"
+          });
+        }
+      });
+    }
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: post.avatar,
-        b: common_vendor.t(post.user),
-        c: common_vendor.t(post.pet),
-        d: common_vendor.t(post.breed),
-        e: common_vendor.t(post.time),
-        f: post.title
+        a: getUserAvatarSrc(post.avatar),
+        b: `post-avatar-${avatarUpdateTrigger.value}`,
+        c: common_vendor.t(post.user),
+        d: common_vendor.t(post.pet),
+        e: common_vendor.t(post.breed),
+        f: common_vendor.t(post.time),
+        g: post.title
       }, post.title ? {
-        g: common_vendor.t(post.title)
+        h: common_vendor.t(post.title)
       } : {}, {
-        h: common_vendor.t(post.text),
-        i: post.images && post.images.length
+        i: common_vendor.t(post.text),
+        j: post.images && post.images.length
       }, post.images && post.images.length ? {
-        j: common_vendor.f(post.images, (img, i, i0) => {
+        k: common_vendor.f(post.images, (img, i, i0) => {
           return {
             a: i,
-            b: img
+            b: img,
+            c: common_vendor.o(($event) => previewImages(post.images, i), i)
           };
         })
       } : {}, {
-        k: common_assets._imports_0$6,
-        l: common_vendor.t(post.shares),
-        m: common_assets._imports_1$1,
-        n: common_vendor.t(comments.length),
-        o: post.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-        p: common_vendor.t(post.likes),
-        q: common_vendor.o(likePost),
-        r: post.userId === currentUserId.value
+        l: common_assets._imports_0$6,
+        m: common_vendor.t(post.shares),
+        n: common_assets._imports_1$1,
+        o: common_vendor.t(comments.length),
+        p: post.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+        q: common_vendor.t(post.likes),
+        r: common_vendor.o(likePost),
+        s: post.userId === currentUserId.value
       }, post.userId === currentUserId.value ? {
-        s: common_assets._imports_0$4,
-        t: common_vendor.o(confirmDeletePost)
+        t: common_assets._imports_0$4,
+        v: common_vendor.o(confirmDeletePost)
       } : {}, {
-        v: common_vendor.t(totalComments.value),
-        w: common_vendor.f(comments, (comment, k0, i0) => {
+        w: common_vendor.t(totalComments.value),
+        x: common_vendor.f(comments, (comment, k0, i0) => {
           return common_vendor.e({
-            a: comment.avatar,
-            b: common_vendor.t(comment.user),
-            c: comment.petName
+            a: getUserAvatarSrc(comment.avatar),
+            b: `comment-avatar-${comment.id}-${avatarUpdateTrigger.value}`,
+            c: common_vendor.t(comment.user),
+            d: comment.petName
           }, comment.petName ? {
-            d: common_vendor.t(comment.petName),
-            e: common_vendor.t(comment.petBreed)
+            e: common_vendor.t(comment.petName),
+            f: common_vendor.t(comment.petBreed)
           } : {}, {
-            f: common_vendor.t(comment.text),
-            g: common_vendor.t(comment.time),
-            h: common_vendor.o(($event) => startReply(comment), comment.id),
-            i: comment.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-            j: comment.likes > 0
+            g: common_vendor.t(comment.text),
+            h: common_vendor.t(comment.time),
+            i: common_vendor.o(($event) => startReply(comment), comment.id),
+            j: comment.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+            k: comment.likes > 0
           }, comment.likes > 0 ? {
-            k: common_vendor.t(comment.likes)
+            l: common_vendor.t(comment.likes)
           } : {}, {
-            l: common_vendor.o(($event) => likeComment(comment), comment.id),
-            m: comment.isSelf
+            m: common_vendor.o(($event) => likeComment(comment), comment.id),
+            n: comment.isSelf
           }, comment.isSelf ? {
-            n: common_assets._imports_0$4,
-            o: common_vendor.o(($event) => confirmDeleteComment(comment), comment.id)
+            o: common_assets._imports_0$4,
+            p: common_vendor.o(($event) => confirmDeleteComment(comment), comment.id)
           } : {}, {
-            p: comment.showReplies && comment.replies && comment.replies.length > 0
+            q: comment.showReplies && comment.replies && comment.replies.length > 0
           }, comment.showReplies && comment.replies && comment.replies.length > 0 ? {
-            q: common_vendor.f(comment.replies.slice(0, comment.expandedReplies || 0), (reply, k1, i1) => {
+            r: common_vendor.f(comment.replies.slice(0, comment.expandedReplies || 0), (reply, k1, i1) => {
               return common_vendor.e({
-                a: reply.avatar,
-                b: common_vendor.t(reply.user),
-                c: reply.replyToUser
+                a: getUserAvatarSrc(reply.avatar),
+                b: `reply-avatar-${reply.id}-${avatarUpdateTrigger.value}`,
+                c: common_vendor.t(reply.user),
+                d: reply.replyToUser
               }, reply.replyToUser ? {
-                d: common_vendor.t(reply.replyToUser)
+                e: common_vendor.t(reply.replyToUser)
               } : {}, {
-                e: reply.petName
+                f: reply.petName
               }, reply.petName ? {
-                f: common_vendor.t(reply.petName),
-                g: common_vendor.t(reply.petBreed)
+                g: common_vendor.t(reply.petName),
+                h: common_vendor.t(reply.petBreed)
               } : {}, {
-                h: common_vendor.t(reply.content),
-                i: common_vendor.t(reply.time),
-                j: common_vendor.o(($event) => startReplyToReply(comment, reply), reply.id),
-                k: reply.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-                l: reply.likes > 0
+                i: common_vendor.t(reply.content),
+                j: common_vendor.t(reply.time),
+                k: common_vendor.o(($event) => startReplyToReply(comment, reply), reply.id),
+                l: reply.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+                m: reply.likes > 0
               }, reply.likes > 0 ? {
-                m: common_vendor.t(reply.likes)
+                n: common_vendor.t(reply.likes)
               } : {}, {
-                n: common_vendor.o(($event) => likeCommentReply(reply), reply.id),
-                o: reply.userId === currentUserId.value
+                o: common_vendor.o(($event) => likeCommentReply(reply), reply.id),
+                p: reply.userId === currentUserId.value
               }, reply.userId === currentUserId.value ? {
-                p: common_assets._imports_0$4,
-                q: common_vendor.o(($event) => confirmDeleteReply(comment, reply), reply.id)
+                q: common_assets._imports_0$4,
+                r: common_vendor.o(($event) => confirmDeleteReply(comment, reply), reply.id)
               } : {}, {
-                r: reply.id
+                s: reply.id
               });
             })
           } : {}, {
-            r: comment.replies && comment.replies.length > 0
+            s: comment.replies && comment.replies.length > 0
           }, comment.replies && comment.replies.length > 0 ? common_vendor.e({
-            s: !comment.showReplies
+            t: !comment.showReplies
           }, !comment.showReplies ? {
-            t: common_vendor.t(comment.replies.length),
-            v: common_vendor.o(($event) => toggleReplies(comment), comment.id)
+            v: common_vendor.t(comment.replies.length),
+            w: common_vendor.o(($event) => toggleReplies(comment), comment.id)
           } : common_vendor.e({
-            w: (comment.expandedReplies || 0) < comment.replies.length
+            x: (comment.expandedReplies || 0) < comment.replies.length
           }, (comment.expandedReplies || 0) < comment.replies.length ? {
-            x: common_vendor.o(($event) => expandMoreReplies(comment), comment.id)
+            y: common_vendor.o(($event) => expandMoreReplies(comment), comment.id)
           } : {}, {
-            y: common_vendor.o(($event) => collapseReplies(comment), comment.id)
+            z: common_vendor.o(($event) => collapseReplies(comment), comment.id)
           })) : {}, {
-            z: comment.id
+            A: comment.id
           });
         }),
-        x: common_assets._imports_0$6,
-        y: common_vendor.o(sharePost),
-        z: post.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-        A: common_vendor.o(likePost),
-        B: getInputPlaceholder(),
-        C: replyingToComment.value !== null || replyingToReply.value !== null,
-        D: common_vendor.o(submitComment),
-        E: commentText.value,
-        F: common_vendor.o(($event) => commentText.value = $event.detail.value),
-        G: common_vendor.o(() => {
+        y: common_assets._imports_0$6,
+        z: common_vendor.o(sharePost),
+        A: post.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
+        B: common_vendor.o(likePost),
+        C: getInputPlaceholder(),
+        D: replyingToComment.value !== null || replyingToReply.value !== null,
+        E: common_vendor.o(submitComment),
+        F: commentText.value,
+        G: common_vendor.o(($event) => commentText.value = $event.detail.value),
+        H: common_vendor.o(() => {
         }),
-        H: common_vendor.s(dynamicTopPadding.value)
+        I: common_vendor.s(dynamicTopPadding.value)
       });
     };
   }

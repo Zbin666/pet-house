@@ -2,7 +2,7 @@
 	<view class="page" :style="dynamicTopPadding">
 		<view class="card">
 			<view class="card-hd">
-				<image class="avatar" :src="post.avatar" mode="aspectFill" />
+				<image class="avatar" :src="getUserAvatarSrc(post.avatar)" :key="`post-avatar-${avatarUpdateTrigger}`" mode="aspectFill" />
 				<view class="title-meta">
 					<text class="nickname">{{ post.user }}</text>
 					<text class="sub">{{ post.pet }}｜{{ post.breed }}</text>
@@ -13,7 +13,7 @@
 				<text v-if="post.title" class="post-title">{{ post.title }}</text>
 				<text class="content">{{ post.text }}</text>
 				<view class="pics" v-if="post.images && post.images.length">
-					<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" />
+					<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" @tap.stop="previewImages(post.images, i)" />
 				</view>
 			</view>
 			<view class="card-ft">
@@ -54,7 +54,7 @@
 					<view class="comment-list">
 						<view class="comment-item" v-for="comment in comments" :key="comment.id">
 							<view class="comment-user">
-								<image class="c-avatar" :src="comment.avatar" mode="aspectFill" />
+								<image class="c-avatar" :src="getUserAvatarSrc(comment.avatar)" :key="`comment-avatar-${comment.id}-${avatarUpdateTrigger}`" mode="aspectFill" />
 								<view class="c-info">
 									<view class="c-row">
 										<view class="c-column">
@@ -91,7 +91,7 @@
 									v-for="reply in comment.replies.slice(0, comment.expandedReplies || 0)"
 									:key="reply.id">
 									<view class="reply-user">
-										<image class="r-avatar" :src="reply.avatar" mode="aspectFill" />
+								<image class="r-avatar" :src="getUserAvatarSrc(reply.avatar)" :key="`reply-avatar-${reply.id}-${avatarUpdateTrigger}`" mode="aspectFill" />
 										<view class="r-info">
 											<view class="r-row">
 												<view class="r-column">
@@ -234,6 +234,42 @@ const replyingToComment = ref(null) // 正在回复的评论
 const replyingToReply = ref(null) // 正在回复的回复
 // 取消全局评论展开/收起，按评论单独控制
 const inputRef = ref(null) // 输入框引用
+
+// 用户头像缓存与下载（与社区页一致）
+const avatarCache = new Map()
+const avatarUpdateTrigger = ref(0) // 用于触发响应式更新
+
+function getUserAvatarSrc(url) {
+	if (!url) return '/static/user/user.png'
+	let normalized = url
+	if (normalized.startsWith('/uploads/')) {
+		normalized = `https://pet-api.zbinli.cn${normalized}`
+	}
+	if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+	}
+	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) return normalized
+	if (avatarCache.has(normalized)) return avatarCache.get(normalized)
+	uni.downloadFile({
+		url: normalized,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				avatarCache.set(normalized, res.tempFilePath)
+				// 触发响应式更新
+				avatarUpdateTrigger.value++
+			} else {
+				avatarCache.set(normalized, '/static/user/user.png')
+				avatarUpdateTrigger.value++
+			}
+		},
+		fail: () => {
+			avatarCache.set(normalized, '/static/user/user.png')
+			avatarUpdateTrigger.value++
+		}
+	})
+	return '/static/user/user.png'
+}
 
 async function loadDetail(id) {
 	try {
@@ -781,6 +817,26 @@ function collapseReplies(comment) {
 	comment.showReplies = false
 	comment.expandedReplies = 0
 }
+
+// 预览图片
+function previewImages(images, current) {
+	if (!images || images.length === 0) return
+	
+	uni.previewImage({
+		current: current,
+		urls: images,
+		success: () => {
+			console.log('图片预览成功')
+		},
+		fail: (err) => {
+			console.error('图片预览失败:', err)
+			uni.showToast({
+				title: '图片预览失败',
+				icon: 'none'
+			})
+		}
+	})
+}
 </script>
 
 <style scoped>
@@ -872,6 +928,12 @@ function collapseReplies(comment) {
 	height: 200rpx;
 	background: #f3f3f3;
 	border-radius: 12rpx;
+	cursor: pointer;
+	transition: transform 0.2s ease;
+}
+
+.pic:active {
+	transform: scale(0.98);
 }
 
 .card-ft {

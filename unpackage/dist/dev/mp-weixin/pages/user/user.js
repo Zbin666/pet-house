@@ -34,10 +34,103 @@ const _sfc_main = {
     const pets = common_vendor.ref([]);
     const stats = common_vendor.ref({ feeds: 0, likes: 0 });
     const maxTogetherDays = common_vendor.ref(0);
+    const avatarCache = /* @__PURE__ */ new Map();
+    const petAvatarCache = /* @__PURE__ */ new Map();
+    const avatarLoading = common_vendor.ref(false);
+    function getUserAvatarSrc(url) {
+      if (!url)
+        return "/static/user/user.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized);
+      }
+      avatarLoading.value = true;
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          avatarLoading.value = false;
+          if (res.statusCode === 200 && res.tempFilePath) {
+            avatarCache.set(normalized, res.tempFilePath);
+            userInfo.value = { ...userInfo.value || {} };
+          } else {
+            avatarCache.set(normalized, "/static/user/user.png");
+            userInfo.value = { ...userInfo.value || {} };
+          }
+        },
+        fail: () => {
+          avatarLoading.value = false;
+          avatarCache.set(normalized, "/static/user/user.png");
+          userInfo.value = { ...userInfo.value || {} };
+        }
+      });
+      return "/static/user/user.png";
+    }
+    function onAvatarError(e) {
+      try {
+        e && e.target && (e.target.src = "/static/user/user.png");
+      } catch {
+      }
+    }
+    function onAvatarLoad(_) {
+    }
+    function getPetAvatarSrc(url) {
+      if (!url)
+        return "/static/inedx/add.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (petAvatarCache.has(normalized)) {
+        return petAvatarCache.get(normalized);
+      }
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            petAvatarCache.set(normalized, res.tempFilePath);
+            pets.value = [...pets.value];
+          } else {
+            petAvatarCache.set(normalized, "/static/index/add.png");
+            pets.value = [...pets.value];
+          }
+        },
+        fail: () => {
+          petAvatarCache.set(normalized, "/static/index/add.png");
+          pets.value = [...pets.value];
+        }
+      });
+      return "/static/index/add.png";
+    }
     const gender = common_vendor.ref("female");
     const genderIcon = common_vendor.computed(() => gender.value === "male" ? "/static/user/male.png" : "/static/user/female.png");
     async function loadData() {
+      var _a;
       try {
+        const profile = await utils_api.api.getProfile();
+        if (profile) {
+          userInfo.value = {
+            ...userInfo.value,
+            ...profile,
+            avatarUrl: profile.avatarUrl || ((_a = userInfo.value) == null ? void 0 : _a.avatarUrl)
+          };
+        }
         const petsResult = await utils_api.api.getPets();
         pets.value = Array.isArray(petsResult) ? petsResult : petsResult.data || [];
         const statsResult = await utils_api.api.getUserStats();
@@ -51,7 +144,7 @@ const _sfc_main = {
           return Math.max(max, days);
         }, 0);
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/user/user.vue:138", "加载数据失败:", error);
+        common_vendor.index.__f__("error", "at pages/user/user.vue:276", "加载数据失败:", error);
       }
     }
     function goEdit() {
@@ -82,19 +175,23 @@ const _sfc_main = {
     }
     return (_ctx, _cache) => {
       var _a, _b;
-      return {
+      return common_vendor.e({
         a: common_assets._imports_0$8,
-        b: ((_a = userInfo.value) == null ? void 0 : _a.avatarUrl) || "/static/logo.png",
-        c: common_vendor.t(((_b = userInfo.value) == null ? void 0 : _b.nickname) || "用户"),
-        d: genderIcon.value,
-        e: common_vendor.t(stats.value.feeds || 0),
-        f: common_vendor.t(stats.value.likes || 0),
-        g: common_vendor.o(openSetting),
-        h: common_assets._imports_1$3,
-        i: common_vendor.t(maxTogetherDays.value),
-        j: common_vendor.f(pets.value, (p, k0, i0) => {
+        b: getUserAvatarSrc((_a = userInfo.value) == null ? void 0 : _a.avatarUrl),
+        c: common_vendor.o(onAvatarError),
+        d: common_vendor.o(onAvatarLoad),
+        e: avatarLoading.value
+      }, avatarLoading.value ? {} : {}, {
+        f: common_vendor.t(((_b = userInfo.value) == null ? void 0 : _b.nickname) || "用户"),
+        g: genderIcon.value,
+        h: common_vendor.t(stats.value.feeds || 0),
+        i: common_vendor.t(stats.value.likes || 0),
+        j: common_vendor.o(openSetting),
+        k: common_assets._imports_1$3,
+        l: common_vendor.t(maxTogetherDays.value),
+        m: common_vendor.f(pets.value, (p, k0, i0) => {
           return {
-            a: p.avatarUrl || "/static/logo.png",
+            a: getPetAvatarSrc(p.avatarUrl),
             b: common_vendor.t(p.name),
             c: p.gender === "male" ? "/static/user/male.png" : "/static/user/female.png",
             d: common_vendor.t(formatMeta(p)),
@@ -102,14 +199,14 @@ const _sfc_main = {
             f: common_vendor.o(($event) => goPetDetail(p), p.id)
           };
         }),
-        k: common_assets._imports_2$2,
-        l: common_vendor.o(goEdit),
-        m: common_assets._imports_3$3,
-        n: common_vendor.o(openSetting),
-        o: common_assets._imports_3$3,
-        p: common_vendor.o(logoutAction),
-        q: common_vendor.s(dynamicTopPadding.value)
-      };
+        n: common_assets._imports_2$2,
+        o: common_vendor.o(goEdit),
+        p: common_assets._imports_3$3,
+        q: common_vendor.o(openSetting),
+        r: common_assets._imports_3$3,
+        s: common_vendor.o(logoutAction),
+        t: common_vendor.s(dynamicTopPadding.value)
+      });
     };
   }
 };

@@ -7,7 +7,7 @@
 				<!-- 用户头像和基本信息 -->
 				<view class="header">
 					<view class="avatar-wrap" @tap="pickAvatar">
-						<image class="avatar" :src="userInfo.avatar" mode="aspectFill" />
+						<image class="avatar" :src="getUserAvatarSrc(userInfo.avatar)" mode="aspectFill" @error="onAvatarError" @load="onAvatarLoad" />
 						<view class="avatar-edit">编辑</view>
 					</view>
 					<view class="user-info">
@@ -96,6 +96,10 @@
 import { ref, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { api } from '@/utils/api.js'
+import { pickAndUploadAvatar } from '@/utils/upload.js'
+
+// 头像下载缓存，避免重复下载
+const avatarCache = new Map()
 
 defineOptions({ name: 'SettingsIndex' })
 
@@ -127,6 +131,64 @@ const settings = reactive({
 })
 
 const cacheSize = ref('—')
+
+// 获取用户头像的可显示 src（与 user.vue 保持一致）
+function getUserAvatarSrc(url) {
+    if (!url) return '/static/user/user.png'
+
+    // 统一规范化：
+    // 1) /uploads/ 相对路径 → 拼接静态域名
+    // 2) 强制 http → https，去掉 :80
+    let normalized = url
+    if (normalized.startsWith('/uploads/')) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`
+    }
+    if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+        normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+    }
+    normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+    // 本地或静态路径直接返回
+    if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+        return normalized
+    }
+
+    // 命中缓存
+    if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized)
+    }
+
+    // 下载网络图片到本地临时文件
+    uni.downloadFile({
+        url: normalized,
+        success: (res) => {
+            if (res.statusCode === 200 && res.tempFilePath) {
+                avatarCache.set(normalized, res.tempFilePath)
+                userInfo.value = { ...(userInfo.value || {}) }
+            } else {
+                avatarCache.set(normalized, '/static/user/user.png')
+                userInfo.value = { ...(userInfo.value || {}) }
+            }
+        },
+        fail: () => {
+            avatarCache.set(normalized, '/static/user/user.png')
+            userInfo.value = { ...(userInfo.value || {}) }
+        }
+    })
+
+    // 下载中返回占位
+    return '/static/user/user.png'
+}
+
+function onAvatarError(e) {
+    try {
+        e && e.target && (e.target.src = '/static/user/user.png')
+    } catch {}
+}
+
+function onAvatarLoad(_) {
+    // 可按需添加埋点/日志
+}
 
 onLoad(() => {
 	uni.setNavigationBarTitle({ title: '个人设置' })
@@ -187,18 +249,25 @@ async function saveEdit() {
     }
 }
 
-function pickAvatar() {
-	uni.chooseImage({
-		count: 1,
-		sizeType: ['compressed'],
-		success: res => {
-			if (editMode.value) {
-				form.avatar = res.tempFilePaths[0]
-			} else {
-				userInfo.value.avatar = res.tempFilePaths[0]
-			}
-		}
-	})
+async function pickAvatar() {
+    try {
+        // 选择并上传头像，返回完整可访问的URL（HTTPS/白名单域名）
+        const url = await pickAndUploadAvatar()
+        
+        // 立即保存到后端用户资料
+        await api.updateProfile({ avatarUrl: url })
+        
+        // 同步到本地UI
+        if (editMode.value) {
+            form.avatar = url
+        }
+        userInfo.value.avatar = url
+        userInfo.value.avatarUrl = url
+        
+        uni.showToast({ title: '头像已更新', icon: 'success' })
+    } catch (e) {
+        uni.showToast({ title: '头像更新失败', icon: 'none' })
+    }
 }
 
 function clearCache() {
@@ -317,8 +386,8 @@ async function loadProfileAndSettings() {
 
 .avatar-wrap {
 	position: relative;
-	width: 120rpx;
-	height: 120rpx;
+	width: 100rpx;
+	height: 100rpx;
 	border: 4rpx solid #2c2c2c;
 	border-radius: 16rpx;
 	background: #f5f5f5;
@@ -326,8 +395,8 @@ async function loadProfileAndSettings() {
 }
 
 .avatar {
-	width: 120rpx;
-	height: 120rpx;
+	width: 100rpx;
+	height: 100rpx;
 	border-radius: 16rpx;
 	background: #f5f5f5;
 }

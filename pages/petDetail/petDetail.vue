@@ -8,7 +8,7 @@
 				<!-- 头部：头像 + 基本信息列表 -->
 				<view class="header">
 					<view class="avatar-wrap" @tap="editMode ? pickAvatar() : null">
-						<image class="avatar" :src="editMode && form.avatarUrl ? form.avatarUrl : (pet.avatarUrl || '/static/logo.png')"
+						<image class="avatar" :src="getPetAvatarSrc(editMode && form.avatarUrl ? form.avatarUrl : pet.avatarUrl)"
 							mode="aspectFill" 
 							@load="onAvatarLoad"
 							@error="onAvatarError" />
@@ -105,8 +105,8 @@
 						<text class="k big">日常照片：</text>
 					</view>
 					<view class="gallery">
-							<view v-for="(g, i) in editMode ? form.gallery : gallery" :key="'g' + i" class="g-wrapper">
-								<image class="g" :src="g" mode="aspectFill" @tap="preview(i)" />
+							<view v-for="(g, i) in editMode ? form.gallery : gallery" :key="`photo-${i}-${photoUpdateTrigger}`" class="g-wrapper">
+								<image class="g" :src="getPhotoSrc(g)" mode="aspectFill" @tap="preview(i)" />
 							<view v-if="editMode" class="g-delete" @tap="deletePhoto(i)">×</view>
 						</view>
 						<view v-if="editMode" class="g add" @tap="pickGallery">+</view>
@@ -121,8 +121,113 @@
 import { ref, computed, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { api } from '@/utils/api.js'
+import { uploadImage, compressImage } from '@/utils/upload.js'
+
+// 头像下载缓存，避免重复下载
+const avatarCache = new Map()
+
+// 照片缓存
+const photoCache = new Map()
+const photoUpdateTrigger = ref(0)
 
 const pet = ref({})
+
+// 获取宠物头像的可显示 src（与 user.vue 保持一致）
+function getPetAvatarSrc(url) {
+    if (!url) return '/static/logo.png'
+
+    // 统一规范化：
+    // 1) /uploads/ 相对路径 → 拼接静态域名
+    // 2) 强制 http → https，去掉 :80
+    let normalized = url
+    if (normalized.startsWith('/uploads/')) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`
+    }
+    if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+        normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+    }
+    normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+    // 本地或静态路径直接返回
+    if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+        return normalized
+    }
+
+    // 命中缓存
+    if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized)
+    }
+
+    // 下载网络图片到本地临时文件
+    uni.downloadFile({
+        url: normalized,
+        success: (res) => {
+            if (res.statusCode === 200 && res.tempFilePath) {
+                avatarCache.set(normalized, res.tempFilePath)
+                pet.value = { ...(pet.value || {}) }
+            } else {
+                avatarCache.set(normalized, '/static/logo.png')
+                pet.value = { ...(pet.value || {}) }
+            }
+        },
+        fail: () => {
+            avatarCache.set(normalized, '/static/logo.png')
+            pet.value = { ...(pet.value || {}) }
+        }
+    })
+
+    // 下载中返回占位
+    return '/static/logo.png'
+}
+
+// 获取照片的可显示 src
+function getPhotoSrc(url) {
+    if (!url) return '/static/index/add.png'
+    
+    // 统一规范化：
+    // 1) /uploads/ 相对路径 → 拼接静态域名
+    // 2) 强制 http → https，去掉 :80
+    let normalized = url
+    if (normalized.startsWith('/uploads/')) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`
+    }
+    if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+        normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+    }
+    normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+    // 本地或静态路径直接返回
+    if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+        return normalized
+    }
+
+    // 命中缓存
+    if (photoCache.has(normalized)) {
+        return photoCache.get(normalized)
+    }
+
+    // 下载网络图片到本地临时文件
+    uni.downloadFile({
+        url: normalized,
+        success: (res) => {
+            if (res.statusCode === 200 && res.tempFilePath) {
+                photoCache.set(normalized, res.tempFilePath)
+                photoUpdateTrigger.value++
+            } else {
+                console.warn('照片下载失败:', normalized, res.statusCode)
+                photoCache.set(normalized, '/static/index/add.png')
+                photoUpdateTrigger.value++
+            }
+        },
+        fail: (err) => {
+            console.error('照片下载失败:', normalized, err)
+            photoCache.set(normalized, '/static/index/add.png')
+            photoUpdateTrigger.value++
+        }
+    })
+    
+    return '/static/index/add.png'
+}
 
 onLoad(async (query) => {
 	// 设置导航栏背景色与页面背景顶部颜色一致
@@ -179,7 +284,16 @@ onLoad(async (query) => {
         try {
             const res = await api.getMedia({ petId: pet.value.id })
             const mediaList = Array.isArray(res) ? res : (res.media || res.data || [])
-            gallery.value = mediaList.map(m => m.url).filter(Boolean)
+            
+            // 按照创建时间排序（最早到最晚）
+            const sortedMediaList = mediaList.sort((a, b) => {
+                const timeA = new Date(a.createdAt || a.created_at || 0).getTime()
+                const timeB = new Date(b.createdAt || b.created_at || 0).getTime()
+                return timeA - timeB // 升序：最早的在前面
+            })
+            
+            gallery.value = sortedMediaList.map(m => m.url).filter(Boolean)
+            console.log('照片按时间排序:', sortedMediaList.map(m => ({ url: m.url, createdAt: m.createdAt || m.created_at })))
         } catch (err) {
             console.warn('加载宠物相册失败', err)
         }
@@ -214,12 +328,132 @@ function cancelEdit() {
 	gallery.value = [...originalGallery.value] // 恢复原始照片
 }
 async function saveEdit() {
-    // 前端本地保存展示；如需同步后端，可调用 api.updatePet
-    pet.value = { ...pet.value, name: form.name, months: form.months, weight: form.weight, gender: form.gender, breed: form.breed, color: form.color, neutered: form.neutered, birthday: form.birthday, startTogether: form.startTogether, avatarUrl: form.avatarUrl || pet.value.avatarUrl }
-    vaccines.value = [...form.vaccines]
-    temperament.value = form.temperament
-    gallery.value = [...form.gallery]
-    editMode.value = false
+    try {
+        uni.showLoading({ title: '保存中...' })
+        
+        // 准备更新数据
+        const updateData = {
+            name: form.name,
+            months: form.months,
+            weight: form.weight,
+            gender: form.gender,
+            breed: form.breed,
+            color: form.color,
+            neutered: form.neutered,
+            birthday: form.birthday,
+            startTogether: form.startTogether,
+            temperament: form.temperament,
+            vaccines: form.vaccines
+        }
+        
+        // 如果有新头像，需要先上传
+        if (form.avatar && form.avatar.startsWith('wxfile://')) {
+            try {
+                const { uploadImage, compressImage } = await import('@/utils/upload.js')
+                const compressedPath = await compressImage(form.avatar, 0.8)
+                const avatarUrl = await uploadImage(compressedPath, 'avatar')
+                updateData.avatarUrl = avatarUrl
+            } catch (error) {
+                console.warn('头像上传失败:', error)
+                uni.showToast({ title: '头像上传失败，其他信息已保存', icon: 'none' })
+            }
+        } else if (form.avatarUrl) {
+            updateData.avatarUrl = form.avatarUrl
+        }
+        
+        // 更新宠物基本信息
+        await api.updatePet(pet.value.id, updateData)
+        
+        // 处理照片更新
+        console.log('🔍 检查照片更新...')
+        console.log('form.gallery:', form.gallery)
+        console.log('gallery.value:', gallery.value)
+        
+        if (form.gallery && form.gallery.length > 0) {
+            // 检查是否有新添加的照片（本地路径）
+            const newPhotos = form.gallery.filter(photo => photo.startsWith('wxfile://'))
+            console.log('新照片数量:', newPhotos.length)
+            console.log('新照片路径:', newPhotos)
+            
+            if (newPhotos.length > 0) {
+                try {
+                    console.log('开始上传照片...')
+                    
+                    // 压缩并上传新照片
+                    const uploadPromises = newPhotos.map(async (photoPath) => {
+                        console.log('压缩照片:', photoPath)
+                        const compressedPath = await compressImage(photoPath, 0.7)
+                        console.log('压缩后路径:', compressedPath)
+                        const uploadedUrl = await uploadImage(compressedPath, 'gallery')
+                        console.log('上传成功，URL:', uploadedUrl)
+                        return uploadedUrl
+                    })
+                    
+                    const uploadedUrls = await Promise.all(uploadPromises)
+                    console.log('所有照片上传完成:', uploadedUrls)
+                    
+                    // 创建媒体记录
+                    console.log('创建媒体记录...')
+                    console.log('petId:', pet.value.id)
+                    console.log('urls:', uploadedUrls)
+                    
+                    const mediaResult = await api.createMedia({
+                        petId: pet.value.id,
+                        type: 'image',
+                        urls: uploadedUrls,
+                        description: '宠物照片'
+                    })
+                    
+                    console.log('媒体记录创建结果:', mediaResult)
+                    console.log('成功上传照片:', uploadedUrls.length, '张')
+                    
+                    // 重新从服务器获取排序后的照片列表
+                    try {
+                        const res = await api.getMedia({ petId: pet.value.id })
+                        const mediaList = Array.isArray(res) ? res : (res.media || res.data || [])
+                        
+                        // 按照创建时间排序（最早到最晚）
+                        const sortedMediaList = mediaList.sort((a, b) => {
+                            const timeA = new Date(a.createdAt || a.created_at || 0).getTime()
+                            const timeB = new Date(b.createdAt || b.created_at || 0).getTime()
+                            return timeA - timeB // 升序：最早的在前面
+                        })
+                        
+                        gallery.value = sortedMediaList.map(m => m.url).filter(Boolean)
+                        console.log('保存后重新加载照片，按时间排序:', sortedMediaList.map(m => ({ url: m.url, createdAt: m.createdAt || m.created_at })))
+                    } catch (err) {
+                        console.warn('重新加载照片失败，使用本地更新:', err)
+                        // 如果重新加载失败，使用本地更新
+                        const existingPhotos = form.gallery.filter(photo => !photo.startsWith('wxfile://'))
+                        gallery.value = [...existingPhotos, ...uploadedUrls]
+                    }
+                    
+                } catch (error) {
+                    console.error('照片上传失败:', error)
+                    uni.showToast({ title: '照片上传失败，其他信息已保存', icon: 'none' })
+                }
+            } else {
+                console.log('没有新照片需要上传')
+            }
+        } else {
+            console.log('没有照片需要处理')
+        }
+        
+        // 更新本地数据
+        pet.value = { ...pet.value, ...updateData }
+        vaccines.value = [...form.vaccines]
+        temperament.value = form.temperament
+        gallery.value = [...form.gallery]
+        editMode.value = false
+        
+        uni.hideLoading()
+        uni.showToast({ title: '保存成功', icon: 'success' })
+        
+    } catch (error) {
+        uni.hideLoading()
+        console.error('保存失败:', error)
+        uni.showToast({ title: '保存失败', icon: 'none' })
+    }
 }
 function onGenderChange(e) { genderIndex.value = Number(e.detail.value || 0); form.gender = genderIndex.value === 1 ? 'male' : 'female' }
 function onVaccinesChange(e) { form.vaccines = e.detail.value || [] }
@@ -290,6 +524,9 @@ function onAvatarLoad(e) {
 function onAvatarError(e) {
     console.error('❌ 头像图片加载失败:', e);
     console.log('当前图片URL:', pet.value.avatarUrl);
+    try {
+        e && e.target && (e.target.src = '/static/logo.png')
+    } catch {}
 }
 </script>
 

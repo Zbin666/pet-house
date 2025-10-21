@@ -24,14 +24,14 @@
 								</view>
 								<view class="pet-info">
 									<template v-if="!editMode">
-										<image class="pet-avatar" :src="record.data.petAvatar" mode="aspectFill" />
+										<image class="pet-avatar" :src="getPetAvatarSrc(record.data.petAvatar)" mode="aspectFill" />
 										<text class="pet-name">{{ record.data.petName }}</text>
 									</template>
 									<view v-else class="pet-selector">
 							<scroll-view class="pet-scroll" scroll-x="true" show-scrollbar="false">
 											<view class="pet-option" v-for="pet in petList" :key="pet.id"
 												:class="{ active: form.petId === pet.id }" @tap="selectPet(pet)">
-									<image class="pet-avatar" :src="pet.avatar" mode="aspectFill" />
+									<image class="pet-avatar" :src="getPetAvatarSrc(pet.avatarUrl || pet.avatar)" mode="aspectFill" />
 									<text class="pet-name">{{ pet.name }}</text>
 								</view>
 							</scroll-view>
@@ -333,7 +333,7 @@
 						<scroll-view class="pet-scroll" scroll-x="true" show-scrollbar="false">
 							<view class="pet-option" v-for="(pet, index) in petList" :key="index"
 								:class="{ selected: selectedPets.includes(index) }" @tap="togglePet(index)">
-									<image class="pet-avatar" :src="pet.avatar" mode="aspectFill" />
+									<image class="pet-avatar" :src="getPetAvatarSrc(pet.avatarUrl || pet.avatar)" mode="aspectFill" />
 									<text class="pet-name">{{ pet.name }}</text>
 									<view v-if="selectedPets.includes(index)" class="check-mark">✓</view>
 								</view>
@@ -544,6 +544,9 @@ const showAllPets = ref(false)
 const currentIndex = ref(0)
 const recordList = ref([])
 
+// 宠物头像缓存
+const petAvatarCache = new Map()
+
 // 图片配置
 const imageConfig = [
 	{ top: '/static/record/cat.png', bottom: '/static/record/gray-cat.png' },
@@ -573,6 +576,42 @@ function isDogTop(index) {
 	return imageConfig[configIndex].top === '/static/record/up-dog_1.png'
 }
 
+// 获取宠物头像源
+function getPetAvatarSrc(url) {
+	if (!url) {
+		return '/static/index/add.png'
+	}
+	if (url.startsWith('/static/') || url.startsWith('wxfile://')) {
+		return url
+	}
+	if (petAvatarCache.has(url)) {
+		return petAvatarCache.get(url)
+	}
+	uni.downloadFile({
+		url: url,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				petAvatarCache.set(url, res.tempFilePath)
+				// 触发响应式更新
+				recordList.value = [...recordList.value]
+				petList.value = [...petList.value]
+			} else {
+				console.warn('宠物头像下载失败:', url, res.statusCode)
+				petAvatarCache.set(url, '/static/index/add.png')
+				recordList.value = [...recordList.value]
+				petList.value = [...petList.value]
+			}
+		},
+		fail: (err) => {
+			console.error('宠物头像下载失败:', url, err)
+			petAvatarCache.set(url, '/static/index/add.png')
+			recordList.value = [...recordList.value]
+			petList.value = [...petList.value]
+		}
+	})
+	return '/static/index/add.png'
+}
+
 onLoad(async (query) => {
 	uni.setNavigationBarTitle({ title: '记录详情' })
 	uni.setNavigationBarColor({ frontColor: '#000000', backgroundColor: '#fff1a8' })
@@ -583,6 +622,8 @@ onLoad(async (query) => {
 
 // 返回本页或从其他页面回到当前页时，自动刷新记录
 onShow(async () => {
+	// 清理宠物头像缓存，确保显示最新头像
+	petAvatarCache.clear()
 	await initRecordList({ type: currentFrontType.value })
 })
 
@@ -633,7 +674,7 @@ async function initRecordList(query) {
 				data: {
 					time: r.time,
 					petName: pet?.name || '',
-					petAvatar: pet?.avatarUrl || '/static/logo.png',
+					petAvatar: pet?.avatarUrl || '/static/index/add.png',
 					// 透传后端 payload（已保证为对象）
 					...payloadObj
 				}
@@ -687,7 +728,7 @@ async function loadPets() {
 	try {
 		const res = await api.getPets()
 		const list = Array.isArray(res) ? res : (res.data || [])
-		petList.value = list.map(p => ({ id: p.id, name: p.name, avatar: p.avatarUrl || '/static/logo.png', avatarUrl: p.avatarUrl }))
+		petList.value = list.map(p => ({ id: p.id, name: p.name, avatar: p.avatarUrl || '/static/index/add.png', avatarUrl: p.avatarUrl }))
 	} catch (e) {
 		petList.value = []
 	}
@@ -988,7 +1029,7 @@ async function saveNewRecord() {
 				data: {
 					time: created?.time || new Date().toISOString(),
 					petName: pet.name,
-					petAvatar: pet.avatarUrl || pet.avatar || '/static/logo.png',
+					petAvatar: pet.avatarUrl || pet.avatar || '/static/index/add.png',
 					...(payload || {})
 				}
 			})

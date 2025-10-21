@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const common_vendor = require("../common/vendor.js");
 const utils_api = require("./api.js");
 function compressImage(filePath, quality = 0.8) {
@@ -21,10 +22,10 @@ async function uploadImage(filePath, type = "gallery") {
     common_vendor.index.__f__("log", "at utils/upload.js:33", "=== 前端图片上传调试信息 ===");
     common_vendor.index.__f__("log", "at utils/upload.js:34", "文件路径:", filePath);
     common_vendor.index.__f__("log", "at utils/upload.js:35", "上传类型:", type);
-    common_vendor.index.__f__("log", "at utils/upload.js:36", "上传URL:", "http://pet-api.zbinli.cn/api/media/upload");
+    common_vendor.index.__f__("log", "at utils/upload.js:36", "上传URL:", "https://pet-api.zbinli.cn/api/media/upload");
     common_vendor.index.__f__("log", "at utils/upload.js:37", "Token:", common_vendor.index.getStorageSync("token"));
     const uploadTask = common_vendor.index.uploadFile({
-      url: "http://pet-api.zbinli.cn/api/media/upload",
+      url: "https://pet-api.zbinli.cn/api/media/upload",
       filePath,
       name: "file",
       formData: {
@@ -44,7 +45,7 @@ async function uploadImage(filePath, type = "gallery") {
           const data = JSON.parse(res.data);
           common_vendor.index.__f__("log", "at utils/upload.js:61", "📋 解析后的数据:", data);
           if (data.success) {
-            const imageUrl = `http://pet-api.zbinli.cn/uploads/${data.filename}`;
+            const imageUrl = `https://pet-api.zbinli.cn/uploads/${data.filename}`;
             common_vendor.index.__f__("log", "at utils/upload.js:66", "✅ 图片上传成功:");
             common_vendor.index.__f__("log", "at utils/upload.js:67", "- 文件名:", data.filename);
             common_vendor.index.__f__("log", "at utils/upload.js:68", "- 相对URL:", data.url);
@@ -106,7 +107,29 @@ async function uploadImages(filePaths, type = "gallery", petId = null) {
     throw error;
   }
 }
+async function pickAndUploadAvatar() {
+  try {
+    const res = await common_vendor.index.chooseImage({
+      count: 1,
+      sizeType: ["compressed"],
+      sourceType: ["album", "camera"]
+    });
+    const filePath = res.tempFilePaths[0];
+    const compressedPath = await compressImage(filePath, 0.8);
+    common_vendor.index.showLoading({ title: "上传头像中..." });
+    const avatarUrl = await uploadImage(compressedPath, "avatar");
+    common_vendor.index.hideLoading();
+    common_vendor.index.showToast({ title: "头像上传成功", icon: "success" });
+    return avatarUrl;
+  } catch (error) {
+    common_vendor.index.hideLoading();
+    common_vendor.index.__f__("error", "at utils/upload.js:212", "选择头像失败:", error);
+    common_vendor.index.showToast({ title: "头像上传失败", icon: "none" });
+    throw error;
+  }
+}
 exports.compressImage = compressImage;
+exports.pickAndUploadAvatar = pickAndUploadAvatar;
 exports.uploadImage = uploadImage;
 exports.uploadImages = uploadImages;
 //# sourceMappingURL=../../.sourcemap/mp-weixin/utils/upload.js.map

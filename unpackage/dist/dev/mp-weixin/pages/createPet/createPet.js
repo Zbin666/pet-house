@@ -6,6 +6,84 @@ const utils_upload = require("../../utils/upload.js");
 const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
   __name: "createPet",
   setup(__props) {
+    const avatarCache = /* @__PURE__ */ new Map();
+    const avatarUpdateTrigger = common_vendor.ref(0);
+    const photoCache = /* @__PURE__ */ new Map();
+    const photoUpdateTrigger = common_vendor.ref(0);
+    function getAvatarSrc(url) {
+      if (!url)
+        return "/static/index/add.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized);
+      }
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            avatarCache.set(normalized, res.tempFilePath);
+            avatarUpdateTrigger.value++;
+          } else {
+            common_vendor.index.__f__("warn", "at pages/createPet/createPet.vue:183", "头像下载失败:", normalized, res.statusCode);
+            avatarCache.set(normalized, "/static/index/add.png");
+            avatarUpdateTrigger.value++;
+          }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:189", "头像下载失败:", normalized, err);
+          avatarCache.set(normalized, "/static/index/add.png");
+          avatarUpdateTrigger.value++;
+        }
+      });
+      return "/static/index/add.png";
+    }
+    function getPhotoSrc(url) {
+      if (!url)
+        return "/static/index/add.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (photoCache.has(normalized)) {
+        return photoCache.get(normalized);
+      }
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            photoCache.set(normalized, res.tempFilePath);
+            photoUpdateTrigger.value++;
+          } else {
+            common_vendor.index.__f__("warn", "at pages/createPet/createPet.vue:232", "照片下载失败:", normalized, res.statusCode);
+            photoCache.set(normalized, "/static/index/add.png");
+            photoUpdateTrigger.value++;
+          }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:238", "照片下载失败:", normalized, err);
+          photoCache.set(normalized, "/static/index/add.png");
+          photoUpdateTrigger.value++;
+        }
+      });
+      return "/static/index/add.png";
+    }
     const form = common_vendor.reactive({
       name: "",
       months: "",
@@ -58,7 +136,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         common_vendor.index.showToast({ title: "头像上传成功", icon: "success" });
       } catch (error) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:215", "选择头像失败:", error);
+        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:321", "选择头像失败:", error);
         common_vendor.index.showToast({ title: "头像上传失败", icon: "none" });
       }
     }
@@ -88,7 +166,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         common_vendor.index.showToast({ title: `成功上传${uploadedUrls.length}张照片`, icon: "success" });
       } catch (error) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:254", "选择照片失败:", error);
+        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:360", "选择照片失败:", error);
         common_vendor.index.showToast({ title: "照片上传失败", icon: "none" });
       }
     }
@@ -144,9 +222,9 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         if (form.avatar) {
           payload.avatarUrl = form.avatar;
         }
-        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:317", "提交宠物数据:", payload);
+        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:423", "提交宠物数据:", payload);
         const pet = await utils_api.api.createPet(payload);
-        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:319", "宠物创建成功:", pet);
+        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:425", "宠物创建成功:", pet);
         if (form.gallery && form.gallery.length > 0) {
           const uploadedUrls = form.gallery.filter((url) => url && url.trim());
           if (uploadedUrls.length > 0) {
@@ -157,12 +235,12 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
                 urls: uploadedUrls,
                 description: "宠物照片"
               });
-              common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:334", "成功创建媒体记录:", uploadedUrls.length, "张照片");
+              common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:440", "成功创建媒体记录:", uploadedUrls.length, "张照片");
             } catch (error) {
-              common_vendor.index.__f__("warn", "at pages/createPet/createPet.vue:336", "照片上传失败，但宠物已创建:", error);
+              common_vendor.index.__f__("warn", "at pages/createPet/createPet.vue:442", "照片上传失败，但宠物已创建:", error);
             }
           } else {
-            common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:339", "没有照片，跳过媒体记录创建");
+            common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:445", "没有照片，跳过媒体记录创建");
           }
         }
         common_vendor.index.hideLoading();
@@ -172,7 +250,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         }, 800);
       } catch (e) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:352", "创建宠物失败:", e);
+        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:458", "创建宠物失败:", e);
         let errorMessage = "创建失败";
         if (e.message) {
           if (e.message.includes("Unauthorized")) {
@@ -204,37 +282,38 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
       return common_vendor.e({
         a: form.avatar
       }, form.avatar ? {
-        b: form.avatar
+        b: getAvatarSrc(form.avatar),
+        c: `avatar-${avatarUpdateTrigger.value}`
       } : {
-        c: common_assets._imports_0$1
+        d: common_assets._imports_0$1
       }, {
-        d: common_vendor.o(pickAvatar),
-        e: form.name,
-        f: common_vendor.o(($event) => form.name = $event.detail.value),
-        g: form.months,
-        h: common_vendor.o(common_vendor.m(($event) => form.months = $event.detail.value, {
+        e: common_vendor.o(pickAvatar),
+        f: form.name,
+        g: common_vendor.o(($event) => form.name = $event.detail.value),
+        h: form.months,
+        i: common_vendor.o(common_vendor.m(($event) => form.months = $event.detail.value, {
           number: true
         })),
-        i: form.weight,
-        j: common_vendor.o(($event) => form.weight = $event.detail.value),
-        k: common_vendor.t(genders.value[genderIndex.value]),
-        l: genders.value,
-        m: genderIndex.value,
-        n: common_vendor.o(onGenderChange),
-        o: form.breed,
-        p: common_vendor.o(($event) => form.breed = $event.detail.value),
-        q: form.color,
-        r: common_vendor.o(($event) => form.color = $event.detail.value),
-        s: common_vendor.t(form.birthday || "选择生日"),
-        t: form.birthday,
-        v: common_vendor.o(onBirthdayChange),
-        w: common_vendor.t(form.startTogether || "选择日期"),
-        x: form.startTogether,
-        y: common_vendor.o(onStartTogetherChange),
-        z: common_assets._imports_1$4,
-        A: form.neutered,
-        B: common_vendor.o((e) => form.neutered = e.detail.value),
-        C: common_vendor.f(vaccineOptions.value, (option, k0, i0) => {
+        j: form.weight,
+        k: common_vendor.o(($event) => form.weight = $event.detail.value),
+        l: common_vendor.t(genders.value[genderIndex.value]),
+        m: genders.value,
+        n: genderIndex.value,
+        o: common_vendor.o(onGenderChange),
+        p: form.breed,
+        q: common_vendor.o(($event) => form.breed = $event.detail.value),
+        r: form.color,
+        s: common_vendor.o(($event) => form.color = $event.detail.value),
+        t: common_vendor.t(form.birthday || "选择生日"),
+        v: form.birthday,
+        w: common_vendor.o(onBirthdayChange),
+        x: common_vendor.t(form.startTogether || "选择日期"),
+        y: form.startTogether,
+        z: common_vendor.o(onStartTogetherChange),
+        A: common_assets._imports_1$4,
+        B: form.neutered,
+        C: common_vendor.o((e) => form.neutered = e.detail.value),
+        D: common_vendor.f(vaccineOptions.value, (option, k0, i0) => {
           return {
             a: option,
             b: form.vaccines.includes(option),
@@ -242,21 +321,21 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             d: option
           };
         }),
-        D: common_vendor.o(onVaccinesChange),
-        E: form.temperament,
-        F: common_vendor.o(($event) => form.temperament = $event.detail.value),
-        G: common_assets._imports_1$4,
-        H: common_vendor.f(form.gallery, (photo, index, i0) => {
+        E: common_vendor.o(onVaccinesChange),
+        F: form.temperament,
+        G: common_vendor.o(($event) => form.temperament = $event.detail.value),
+        H: common_assets._imports_1$4,
+        I: common_vendor.f(form.gallery, (photo, index, i0) => {
           return {
-            a: photo,
-            b: common_vendor.o(($event) => deletePhoto(index), index),
-            c: index
+            a: getPhotoSrc(photo),
+            b: common_vendor.o(($event) => deletePhoto(index), `photo-${index}-${photoUpdateTrigger.value}`),
+            c: `photo-${index}-${photoUpdateTrigger.value}`
           };
         }),
-        I: common_assets._imports_0$1,
-        J: common_vendor.o(pickPhotos),
-        K: common_vendor.o(cancel),
-        L: common_vendor.o(savePet)
+        J: common_assets._imports_0$1,
+        K: common_vendor.o(pickPhotos),
+        L: common_vendor.o(cancel),
+        M: common_vendor.o(savePet)
       });
     };
   }

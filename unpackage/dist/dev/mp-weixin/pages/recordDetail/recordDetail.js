@@ -28,6 +28,7 @@ const _sfc_main = {
     const showAllPets = common_vendor.ref(false);
     const currentIndex = common_vendor.ref(0);
     const recordList = common_vendor.ref([]);
+    const petAvatarCache = /* @__PURE__ */ new Map();
     const imageConfig = [
       { top: "/static/record/cat.png", bottom: "/static/record/gray-cat.png" },
       { top: "/static/record/up-cat_2.png", bottom: "/static/record/bottom-cat_2.png" },
@@ -49,6 +50,39 @@ const _sfc_main = {
       const configIndex = index % imageConfig.length;
       return imageConfig[configIndex].top === "/static/record/up-dog_1.png";
     }
+    function getPetAvatarSrc(url) {
+      if (!url) {
+        return "/static/index/add.png";
+      }
+      if (url.startsWith("/static/") || url.startsWith("wxfile://")) {
+        return url;
+      }
+      if (petAvatarCache.has(url)) {
+        return petAvatarCache.get(url);
+      }
+      common_vendor.index.downloadFile({
+        url,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            petAvatarCache.set(url, res.tempFilePath);
+            recordList.value = [...recordList.value];
+            petList.value = [...petList.value];
+          } else {
+            common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:599", "宠物头像下载失败:", url, res.statusCode);
+            petAvatarCache.set(url, "/static/index/add.png");
+            recordList.value = [...recordList.value];
+            petList.value = [...petList.value];
+          }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:606", "宠物头像下载失败:", url, err);
+          petAvatarCache.set(url, "/static/index/add.png");
+          recordList.value = [...recordList.value];
+          petList.value = [...petList.value];
+        }
+      });
+      return "/static/index/add.png";
+    }
     common_vendor.onLoad(async (query) => {
       common_vendor.index.setNavigationBarTitle({ title: "记录详情" });
       common_vendor.index.setNavigationBarColor({ frontColor: "#000000", backgroundColor: "#fff1a8" });
@@ -56,6 +90,7 @@ const _sfc_main = {
       await initRecordList(query);
     });
     common_vendor.onShow(async () => {
+      petAvatarCache.clear();
       await initRecordList({ type: currentFrontType.value });
     });
     const onRecordsChanged = async () => {
@@ -86,7 +121,7 @@ const _sfc_main = {
             try {
               payloadObj = JSON.parse(rawPayload);
             } catch (err) {
-              common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:622", "记录 payload 解析失败(字符串非 JSON):", r == null ? void 0 : r.id, rawPayload);
+              common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:663", "记录 payload 解析失败(字符串非 JSON):", r == null ? void 0 : r.id, rawPayload);
               payloadObj = {};
             }
           } else if (rawPayload && typeof rawPayload === "object") {
@@ -100,7 +135,7 @@ const _sfc_main = {
             data: {
               time: r.time,
               petName: (pet == null ? void 0 : pet.name) || "",
-              petAvatar: (pet == null ? void 0 : pet.avatarUrl) || "/static/logo.png",
+              petAvatar: (pet == null ? void 0 : pet.avatarUrl) || "/static/index/add.png",
               // 透传后端 payload（已保证为对象）
               ...payloadObj
             }
@@ -123,7 +158,7 @@ const _sfc_main = {
           recordData.value = {};
         }
       } catch (e) {
-        common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:658", "加载记录失败:", e);
+        common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:699", "加载记录失败:", e);
         recordList.value = [];
         currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating;
         recordData.value = {};
@@ -151,7 +186,7 @@ const _sfc_main = {
       try {
         const res = await utils_api.api.getPets();
         const list = Array.isArray(res) ? res : res.data || [];
-        petList.value = list.map((p) => ({ id: p.id, name: p.name, avatar: p.avatarUrl || "/static/logo.png", avatarUrl: p.avatarUrl }));
+        petList.value = list.map((p) => ({ id: p.id, name: p.name, avatar: p.avatarUrl || "/static/index/add.png", avatarUrl: p.avatarUrl }));
       } catch (e) {
         petList.value = [];
       }
@@ -296,7 +331,7 @@ const _sfc_main = {
                 icon: "success"
               });
             } catch (error) {
-              common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:864", "删除记录失败:", error);
+              common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:905", "删除记录失败:", error);
               common_vendor.index.showToast({
                 title: "删除失败",
                 icon: "none"
@@ -401,7 +436,7 @@ const _sfc_main = {
             data: {
               time: (created == null ? void 0 : created.time) || (/* @__PURE__ */ new Date()).toISOString(),
               petName: pet.name,
-              petAvatar: pet.avatarUrl || pet.avatar || "/static/logo.png",
+              petAvatar: pet.avatarUrl || pet.avatar || "/static/index/add.png",
               ...payload || {}
             }
           });
@@ -431,12 +466,12 @@ const _sfc_main = {
             d: common_vendor.t(record.type.title),
             e: common_vendor.t(formatTime(record.data.time))
           }, !editMode.value ? {
-            f: record.data.petAvatar,
+            f: getPetAvatarSrc(record.data.petAvatar),
             g: common_vendor.t(record.data.petName)
           } : {
             h: common_vendor.f(petList.value, (pet, k1, i1) => {
               return {
-                a: pet.avatar,
+                a: getPetAvatarSrc(pet.avatarUrl || pet.avatar),
                 b: common_vendor.t(pet.name),
                 c: pet.id,
                 d: form.petId === pet.id ? 1 : "",
@@ -689,7 +724,7 @@ const _sfc_main = {
         s: common_vendor.o(hideAddModal),
         t: common_vendor.f(petList.value, (pet, index, i0) => {
           return common_vendor.e({
-            a: pet.avatar,
+            a: getPetAvatarSrc(pet.avatarUrl || pet.avatar),
             b: common_vendor.t(pet.name),
             c: selectedPets.value.includes(index)
           }, selectedPets.value.includes(index) ? {} : {}, {

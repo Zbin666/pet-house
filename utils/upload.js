@@ -33,12 +33,12 @@ export async function uploadImage(filePath, type = 'gallery') {
     console.log('=== 前端图片上传调试信息 ===');
     console.log('文件路径:', filePath);
     console.log('上传类型:', type);
-    console.log('上传URL:', 'http://pet-api.zbinli.cn/api/media/upload');
+    console.log('上传URL:', 'https://pet-api.zbinli.cn/api/media/upload');
     console.log('Token:', uni.getStorageSync('token'));
     
     // 上传到后端服务器
     const uploadTask = uni.uploadFile({
-      url: 'http://pet-api.zbinli.cn/api/media/upload',
+      url: 'https://pet-api.zbinli.cn/api/media/upload',
       filePath: filePath,
       name: 'file',
       formData: {
@@ -62,7 +62,7 @@ export async function uploadImage(filePath, type = 'gallery') {
           
           if (data.success) {
             // 返回完整的图片URL
-            const imageUrl = `http://pet-api.zbinli.cn/uploads/${data.filename}`
+            const imageUrl = `https://pet-api.zbinli.cn/uploads/${data.filename}`
             console.log('✅ 图片上传成功:');
             console.log('- 文件名:', data.filename);
             console.log('- 相对URL:', data.url);

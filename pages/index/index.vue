@@ -18,18 +18,11 @@
 				<view class="pet-left">
 					<view class="pet-avatar">
 						<image 
-							v-if="currentPet?.avatarUrl" 
-							:src="currentPet.avatarUrl" 
+							:src="getPetAvatarSrc(currentPet?.avatarUrl)" 
 							class="pet-avatar-inner" 
 							mode="aspectFill" 
 							@error="onImageError" 
 							@load="onImageLoad" 
-						/>
-						<image 
-							v-else 
-							:src="getDefaultPetAvatar()" 
-							class="pet-avatar-inner" 
-							mode="aspectFill" 
 						/>
 					</view>
 				</view>
@@ -52,14 +45,7 @@
 						<view class="pet-left">
 								<view class="pet-avatar">
 									<image 
-										v-if="pet?.avatarUrl" 
-										:src="pet.avatarUrl" 
-										class="pet-avatar-inner" 
-										mode="aspectFill" 
-									/>
-									<image 
-										v-else 
-										:src="getDefaultPetAvatar()" 
+										:src="getPetAvatarSrc(pet?.avatarUrl)" 
 										class="pet-avatar-inner" 
 										mode="aspectFill" 
 									/>
@@ -213,27 +199,56 @@ onShow(async () => {
   await loadDailyScience()
 })
 
-// 处理图片URL，确保可以正常访问
-function processImageUrl(url) {
-  if (!url) return null
-  
-  // 如果是wxfile协议（小程序临时文件），直接返回
-  if (url.startsWith('wxfile://')) {
-    return url
-  }
-  
-  // 如果是完整的HTTP/HTTPS URL，直接返回
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
-  }
-  
-  // 如果是相对路径，添加基础URL
-  if (url.startsWith('/')) {
-    return `http://pet-api.zbinli.cn${url}`
-  }
-  
-  // 如果不是以/开头，添加基础URL和/
-  return `http://pet-api.zbinli.cn/${url}`
+// 头像下载缓存，避免重复下载
+const avatarCache = new Map()
+
+// 获取宠物头像的可显示 src（与 user.vue 保持一致）
+function getPetAvatarSrc(url) {
+    if (!url) return '/static/index/add.png'
+
+    // 统一规范化：
+    // 1) /uploads/ 相对路径 → 拼接静态域名
+    // 2) 强制 http → https，去掉 :80
+    let normalized = url
+    if (normalized.startsWith('/uploads/')) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`
+    }
+    if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+        normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+    }
+    normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+    // 本地或静态路径直接返回
+    if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+        return normalized
+    }
+
+    // 命中缓存
+    if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized)
+    }
+
+    // 下载网络图片到本地临时文件
+    uni.downloadFile({
+        url: normalized,
+        success: (res) => {
+            if (res.statusCode === 200 && res.tempFilePath) {
+                avatarCache.set(normalized, res.tempFilePath)
+                // 触发视图更新
+                pets.value = [...pets.value]
+            } else {
+                avatarCache.set(normalized, '/static/index/add.png')
+                pets.value = [...pets.value]
+            }
+        },
+        fail: () => {
+            avatarCache.set(normalized, '/static/index/add.png')
+            pets.value = [...pets.value]
+        }
+    })
+
+    // 下载中返回占位
+    return '/static/index/add.png'
 }
 
 // 获取默认宠物头像
@@ -251,13 +266,7 @@ async function loadPets() {
     // 兼容后端直接返回数组 或 包在 data 里
     pets.value = Array.isArray(result) ? result : (result.data || [])
     
-    // 处理图片URL
-    pets.value = pets.value.map(pet => ({
-      ...pet,
-      avatarUrl: processImageUrl(pet.avatarUrl)
-    }))
-    
-    console.log('处理后的宠物数据:', pets.value);
+    console.log('宠物数据:', pets.value);
     console.log('第一个宠物的头像URL:', pets.value[0]?.avatarUrl);
     console.log('第一个宠物的完整数据:', pets.value[0]);
     
@@ -295,11 +304,11 @@ async function loadTodayReminders() {
   }
 }
 
-// 加载"今日科普"：固定获取第一篇article文章
+// 加载"今日科普"：按天循环，从第一篇到最后一篇，再回到第一篇
 async function loadDailyScience() {
   try {
     console.log('🔍 开始加载今日科普...')
-    const res = await api.getArticles({ page: 1, limit: 1 })
+    const res = await api.getArticles({ page: 1, limit: 200 })
     console.log('📡 科普API返回:', res)
     
     const list = Array.isArray(res) ? res : (res.articles || res.data || [])
@@ -311,9 +320,21 @@ async function loadDailyScience() {
       return
     }
     
-    // 固定获取第一篇文章
-    const selectedArticle = list[0]
-    console.log('✅ 选中的科普文章（第一篇）:', selectedArticle)
+    // 稳定排序：按创建时间升序；若无createdAt或相同，则按id升序
+    const stable = list.slice().sort((a, b) => {
+      const at = new Date(a.createdAt || 0).getTime()
+      const bt = new Date(b.createdAt || 0).getTime()
+      if (at !== bt) return at - bt
+      return String(a.id).localeCompare(String(b.id))
+    })
+    
+    // 以天为周期的循环索引（第一天取第一篇，依次类推，超出后取模回到第一篇）
+    const dayIndex = Math.floor(Date.now() / 86400000)
+    const idx = dayIndex % stable.length
+    console.log('📅 今日索引:', idx, '总文章数:', stable.length)
+    
+    const selectedArticle = stable[idx]
+    console.log('✅ 选中的科普文章:', selectedArticle)
     
     // 处理内容截断和null值
     if (selectedArticle) {
@@ -371,10 +392,8 @@ function onImageError(e) {
   console.error('图片加载失败:', e)
   console.error('失败的图片URL:', currentPet.value?.avatarUrl)
   
-  // 当图片加载失败时，使用默认头像
-  if (currentPet.value) {
-    currentPet.value.avatarUrl = getDefaultPetAvatar()
-  }
+  // 图片加载失败时，getPetAvatarSrc 已经处理了默认头像
+  // 这里不需要额外处理
 }
 
 function goPetDetail(pet) {
@@ -527,7 +546,7 @@ function goScienceDetail() {
 .pet-content {
 	display: flex;
 	padding: 24rpx 18rpx 0 18rpx;
-	border: 1rpx solid yellow;
+	/* border: 1rpx solid yellow; */
 }
 
 /* 多宠物横滑容器 */
@@ -578,8 +597,8 @@ function goScienceDetail() {
 }
 
 .pet-avatar-inner {
-	width: 160rpx;
-	height: 120rpx;
+	width: 200rpx;
+	height: 200rpx;
 	background: linear-gradient(180deg, #ffd280, #ffeab1);
 	border-radius: 12rpx;
 }
@@ -805,6 +824,7 @@ function goScienceDetail() {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
+	line-clamp: 5; /* 标准属性，提升兼容性 */
 	-webkit-line-clamp: 5; /* 最多显示4行 */
 	-webkit-box-orient: vertical;
 	word-break: break-word;

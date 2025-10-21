@@ -4,7 +4,12 @@
 		<view class="profile-card">
 			<image class="decor" src="/static/user/icon.png"></image>
 			<view class="profile-main" @tap="openSetting">
-				<image class="avatar" :src="userInfo?.avatarUrl || '/static/logo.png'" mode="aspectFill"></image>
+            <view class="avatar-container">
+                <image class="avatar" :src="getUserAvatarSrc(userInfo?.avatarUrl)" mode="aspectFill" @error="onAvatarError" @load="onAvatarLoad"></image>
+                <view v-if="avatarLoading" class="avatar-loading">
+                    <view class="loading-spinner"></view>
+                </view>
+            </view>
 				<view class="meta">
 					<view class="row1">
 						<text class="uname">{{ userInfo?.nickname || '用户' }}</text>
@@ -32,7 +37,7 @@
 			<view class="pet-grid">
 				<view class="pet-card" v-for="p in pets" :key="p.id" @tap="goPetDetail(p)">
 					<view class="pet-avatar-container">
-						<image class="pet-avatar" :src="p.avatarUrl || '/static/logo.png'" mode="aspectFill"></image>
+						<image class="pet-avatar" :src="getPetAvatarSrc(p.avatarUrl)" mode="aspectFill"></image>
 					</view>
 					<view class="pet-information">
 						<view class="pet-name">
@@ -103,6 +108,8 @@ onMounted(async () => {
 onShow(async () => {
 	if (!checkAuth()) return
 	await loadData()
+	// 注意：不清理任何头像缓存，避免重复下载和加载动画
+	// 头像缓存会自然过期，无需手动清理
 })
 
 // 用户信息
@@ -111,6 +118,127 @@ const pets = ref([])
 const stats = ref({ feeds: 0, likes: 0 })
 const maxTogetherDays = ref(0)
 
+// 头像下载缓存，避免重复下载
+const avatarCache = new Map()
+// 宠物头像下载缓存
+const petAvatarCache = new Map()
+// 头像加载状态
+const avatarLoading = ref(false)
+
+// 获取用户头像的可显示 src：
+// - 本地/静态路径：直接返回
+// - 网络路径：先从缓存取；无缓存则下载到临时文件并缓存，先返回占位
+function getUserAvatarSrc(url) {
+    if (!url) return '/static/user/user.png'
+
+    // 统一规范化：
+    // 1) /uploads/ 相对路径 → 拼接静态域名（与 todoList 一致）
+    // 2) 强制 http → https，去掉 :80
+    let normalized = url
+    if (normalized.startsWith('/uploads/')) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`
+    }
+    if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+        normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+    }
+    normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+    // 本地或静态路径直接返回
+    if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+        return normalized
+    }
+
+    // 命中缓存
+    if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized)
+    }
+
+    // 设置加载状态
+    avatarLoading.value = true
+    
+    // 下载网络图片到本地临时文件（小程序推荐）
+    uni.downloadFile({
+        url: normalized,
+        success: (res) => {
+            avatarLoading.value = false
+            if (res.statusCode === 200 && res.tempFilePath) {
+                avatarCache.set(normalized, res.tempFilePath)
+                userInfo.value = { ...(userInfo.value || {}) }
+            } else {
+                avatarCache.set(normalized, '/static/user/user.png')
+                userInfo.value = { ...(userInfo.value || {}) }
+            }
+        },
+        fail: () => {
+            avatarLoading.value = false
+            avatarCache.set(normalized, '/static/user/user.png')
+            userInfo.value = { ...(userInfo.value || {}) }
+        }
+    })
+
+    // 下载中返回占位
+    return '/static/user/user.png'
+}
+
+function onAvatarError(e) {
+    try {
+        e && e.target && (e.target.src = '/static/user/user.png')
+    } catch {}
+}
+
+function onAvatarLoad(_) {
+    // 可按需添加埋点/日志
+}
+
+// 获取宠物头像的可显示 src（与 index.vue 保持一致）
+function getPetAvatarSrc(url) {
+    if (!url) return '/static/inedx/add.png'
+
+    // 统一规范化：
+    // 1) /uploads/ 相对路径 → 拼接静态域名
+    // 2) 强制 http → https，去掉 :80
+    let normalized = url
+    if (normalized.startsWith('/uploads/')) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`
+    }
+    if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+        normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+    }
+    normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+    // 本地或静态路径直接返回
+    if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+        return normalized
+    }
+
+    // 命中缓存
+    if (petAvatarCache.has(normalized)) {
+        return petAvatarCache.get(normalized)
+    }
+
+    // 下载网络图片到本地临时文件
+    uni.downloadFile({
+        url: normalized,
+        success: (res) => {
+            if (res.statusCode === 200 && res.tempFilePath) {
+                petAvatarCache.set(normalized, res.tempFilePath)
+                // 触发视图更新
+                pets.value = [...pets.value]
+            } else {
+                petAvatarCache.set(normalized, '/static/index/add.png')
+                pets.value = [...pets.value]
+            }
+        },
+        fail: () => {
+            petAvatarCache.set(normalized, '/static/index/add.png')
+            pets.value = [...pets.value]
+        }
+    })
+
+    // 下载中返回占位
+    return '/static/index/add.png'
+}
+
 // 页面用户性别：'male' | 'female'
 const gender = ref('female')
 const genderIcon = computed(() => gender.value === 'male' ? '/static/user/male.png' : '/static/user/female.png')
@@ -118,6 +246,16 @@ const genderIcon = computed(() => gender.value === 'male' ? '/static/user/male.p
 // 加载数据
 async function loadData() {
 	try {
+		// 加载用户信息
+		const profile = await api.getProfile()
+		if (profile) {
+			userInfo.value = {
+				...userInfo.value,
+				...profile,
+				avatarUrl: profile.avatarUrl || userInfo.value?.avatarUrl
+			}
+		}
+		
 		// 加载宠物数据（兼容数组或 {data: []}）
 		const petsResult = await api.getPets()
 		pets.value = Array.isArray(petsResult) ? petsResult : (petsResult.data || [])
@@ -207,12 +345,47 @@ function formatMeta(p) {
 	position: relative;
 }
 
-.avatar {
+.avatar-container {
+	position: relative;
 	margin-left: 15rpx;
-	width: 160rpx;
-	height: 160rpx;
+	width: 120rpx;
+	height: 120rpx;
+}
+
+.avatar {
+	width: 120rpx;
+	height: 120rpx;
 	border-radius: 999rpx;
 	background: #f5f5f5;
+	transition: opacity 0.3s ease;
+}
+
+.avatar-loading {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 999rpx;
+	background: rgba(245, 245, 245, 0.8);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1;
+}
+
+.loading-spinner {
+	width: 40rpx;
+	height: 40rpx;
+	border: 4rpx solid #e0e0e0;
+	border-top: 4rpx solid #667eea;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
 }
 
 .meta {

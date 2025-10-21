@@ -2,9 +2,11 @@
 const common_vendor = require("../../common/vendor.js");
 const common_assets = require("../../common/assets.js");
 const utils_api = require("../../utils/api.js");
+const utils_upload = require("../../utils/upload.js");
 const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
   __name: "setting",
   setup(__props) {
+    const avatarCache = /* @__PURE__ */ new Map();
     const userInfo = common_vendor.ref({
       id: "",
       name: "",
@@ -28,6 +30,49 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
       privacy: false
     });
     const cacheSize = common_vendor.ref("—");
+    function getUserAvatarSrc(url) {
+      if (!url)
+        return "/static/user/user.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (avatarCache.has(normalized)) {
+        return avatarCache.get(normalized);
+      }
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            avatarCache.set(normalized, res.tempFilePath);
+            userInfo.value = { ...userInfo.value || {} };
+          } else {
+            avatarCache.set(normalized, "/static/user/user.png");
+            userInfo.value = { ...userInfo.value || {} };
+          }
+        },
+        fail: () => {
+          avatarCache.set(normalized, "/static/user/user.png");
+          userInfo.value = { ...userInfo.value || {} };
+        }
+      });
+      return "/static/user/user.png";
+    }
+    function onAvatarError(e) {
+      try {
+        e && e.target && (e.target.src = "/static/user/user.png");
+      } catch {
+      }
+    }
+    function onAvatarLoad(_) {
+    }
     common_vendor.onLoad(() => {
       common_vendor.index.setNavigationBarTitle({ title: "个人设置" });
       common_vendor.index.setNavigationBarColor({ frontColor: "#000000", backgroundColor: "#fff1a8" });
@@ -77,18 +122,19 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
         common_vendor.index.showToast({ title: "保存失败", icon: "none" });
       }
     }
-    function pickAvatar() {
-      common_vendor.index.chooseImage({
-        count: 1,
-        sizeType: ["compressed"],
-        success: (res) => {
-          if (editMode.value) {
-            form.avatar = res.tempFilePaths[0];
-          } else {
-            userInfo.value.avatar = res.tempFilePaths[0];
-          }
+    async function pickAvatar() {
+      try {
+        const url = await utils_upload.pickAndUploadAvatar();
+        await utils_api.api.updateProfile({ avatarUrl: url });
+        if (editMode.value) {
+          form.avatar = url;
         }
-      });
+        userInfo.value.avatar = url;
+        userInfo.value.avatarUrl = url;
+        common_vendor.index.showToast({ title: "头像已更新", icon: "success" });
+      } catch (e) {
+        common_vendor.index.showToast({ title: "头像更新失败", icon: "none" });
+      }
     }
     function clearCache() {
       common_vendor.index.showModal({
@@ -148,53 +194,55 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
     }
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: userInfo.value.avatar,
-        b: common_vendor.o(pickAvatar),
-        c: common_vendor.t(userInfo.value.name),
-        d: common_vendor.t(userInfo.value.desc),
-        e: !editMode.value
+        a: getUserAvatarSrc(userInfo.value.avatar),
+        b: common_vendor.o(onAvatarError),
+        c: common_vendor.o(onAvatarLoad),
+        d: common_vendor.o(pickAvatar),
+        e: common_vendor.t(userInfo.value.name),
+        f: common_vendor.t(userInfo.value.desc),
+        g: !editMode.value
       }, !editMode.value ? {
-        f: common_assets._imports_0$9,
-        g: common_vendor.o(startEdit)
+        h: common_assets._imports_0$9,
+        i: common_vendor.o(startEdit)
       } : {
-        h: common_vendor.o(cancelEdit),
-        i: common_vendor.o(saveEdit)
+        j: common_vendor.o(cancelEdit),
+        k: common_vendor.o(saveEdit)
       }, {
-        j: !editMode.value
+        l: !editMode.value
       }, !editMode.value ? {
-        k: common_vendor.t(userInfo.value.name)
+        m: common_vendor.t(userInfo.value.name)
       } : {
-        l: form.name,
-        m: common_vendor.o(($event) => form.name = $event.detail.value)
+        n: form.name,
+        o: common_vendor.o(($event) => form.name = $event.detail.value)
       }, {
-        n: !editMode.value
+        p: !editMode.value
       }, !editMode.value ? {
-        o: common_vendor.t(userInfo.value.desc || "暂无简介")
+        q: common_vendor.t(userInfo.value.desc || "暂无简介")
       } : {
-        p: form.desc,
-        q: common_vendor.o(($event) => form.desc = $event.detail.value)
+        r: form.desc,
+        s: common_vendor.o(($event) => form.desc = $event.detail.value)
       }, {
-        r: !editMode.value
+        t: !editMode.value
       }, !editMode.value ? {
-        s: common_vendor.t(userInfo.value.phone || "未绑定")
+        v: common_vendor.t(userInfo.value.phone || "未绑定")
       } : {
-        t: form.phone,
-        v: common_vendor.o(($event) => form.phone = $event.detail.value)
+        w: form.phone,
+        x: common_vendor.o(($event) => form.phone = $event.detail.value)
       }, {
-        w: !editMode.value
+        y: !editMode.value
       }, !editMode.value ? {
-        x: common_vendor.t(userInfo.value.email || "未绑定")
+        z: common_vendor.t(userInfo.value.email || "未绑定")
       } : {
-        y: form.email,
-        z: common_vendor.o(($event) => form.email = $event.detail.value)
+        A: form.email,
+        B: common_vendor.o(($event) => form.email = $event.detail.value)
       }, {
-        A: common_vendor.t(userInfo.value.registerTime),
-        B: settings.notifications,
-        C: common_vendor.o((e) => settings.notifications = e.detail.value),
-        D: settings.privacy,
-        E: common_vendor.o((e) => settings.privacy = e.detail.value),
-        F: common_vendor.t(cacheSize.value),
-        G: common_vendor.o(clearCache)
+        C: common_vendor.t(userInfo.value.registerTime),
+        D: settings.notifications,
+        E: common_vendor.o((e) => settings.notifications = e.detail.value),
+        F: settings.privacy,
+        G: common_vendor.o((e) => settings.privacy = e.detail.value),
+        H: common_vendor.t(cacheSize.value),
+        I: common_vendor.o(clearCache)
       });
     };
   }

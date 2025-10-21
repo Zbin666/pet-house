@@ -15,7 +15,7 @@
 				<!-- 宠物头像 -->
 				<view class="avatar-section">
 					<view class="avatar-wrap" @tap="pickAvatar">
-						<image v-if="form.avatar" class="avatar" :src="form.avatar" mode="aspectFill" />
+						<image v-if="form.avatar" class="avatar" :src="getAvatarSrc(form.avatar)" :key="`avatar-${avatarUpdateTrigger}`" mode="aspectFill" />
 						<view v-else class="avatar-placeholder">
 							<image class="add-icon" src="/static/index/add.png" mode="widthFix" />
 							<text class="add-text">添加头像</text>
@@ -111,8 +111,8 @@
 						<text>日常照片</text>
 					</view>
 					<view class="gallery">
-						<view v-for="(photo, index) in form.gallery" :key="index" class="photo-item">
-							<image class="photo" :src="photo" mode="aspectFill" />
+						<view v-for="(photo, index) in form.gallery" :key="`photo-${index}-${photoUpdateTrigger}`" class="photo-item">
+							<image class="photo" :src="getPhotoSrc(photo)" mode="aspectFill" />
 							<view class="delete-btn" @tap="deletePhoto(index)">×</view>
 						</view>
 						<view class="add-photo" @tap="pickPhotos">
@@ -137,6 +137,112 @@ import { ref, reactive } from 'vue'
 import { api } from '@/utils/api.js'
 import { uploadImage, uploadImages, compressImage } from '@/utils/upload.js'
 import { onLoad } from '@dcloudio/uni-app'
+
+// 头像缓存
+const avatarCache = new Map()
+const avatarUpdateTrigger = ref(0)
+
+// 照片缓存
+const photoCache = new Map()
+const photoUpdateTrigger = ref(0)
+
+// 获取头像的可显示 src
+function getAvatarSrc(url) {
+	if (!url) return '/static/index/add.png'
+	
+	// 统一规范化：
+	// 1) /uploads/ 相对路径 → 拼接静态域名
+	// 2) 强制 http → https，去掉 :80
+	let normalized = url
+	if (normalized.startsWith('/uploads/')) {
+		normalized = `https://pet-api.zbinli.cn${normalized}`
+	}
+	if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+	}
+	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+	// 本地或静态路径直接返回
+	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+		return normalized
+	}
+
+	// 命中缓存
+	if (avatarCache.has(normalized)) {
+		return avatarCache.get(normalized)
+	}
+
+	// 下载网络图片到本地临时文件
+	uni.downloadFile({
+		url: normalized,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				avatarCache.set(normalized, res.tempFilePath)
+				avatarUpdateTrigger.value++
+			} else {
+				console.warn('头像下载失败:', normalized, res.statusCode)
+				avatarCache.set(normalized, '/static/index/add.png')
+				avatarUpdateTrigger.value++
+			}
+		},
+		fail: (err) => {
+			console.error('头像下载失败:', normalized, err)
+			avatarCache.set(normalized, '/static/index/add.png')
+			avatarUpdateTrigger.value++
+		}
+	})
+	
+	return '/static/index/add.png'
+}
+
+// 获取照片的可显示 src
+function getPhotoSrc(url) {
+	if (!url) return '/static/index/add.png'
+	
+	// 统一规范化：
+	// 1) /uploads/ 相对路径 → 拼接静态域名
+	// 2) 强制 http → https，去掉 :80
+	let normalized = url
+	if (normalized.startsWith('/uploads/')) {
+		normalized = `https://pet-api.zbinli.cn${normalized}`
+	}
+	if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+	}
+	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+	// 本地或静态路径直接返回
+	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+		return normalized
+	}
+
+	// 命中缓存
+	if (photoCache.has(normalized)) {
+		return photoCache.get(normalized)
+	}
+
+	// 下载网络图片到本地临时文件
+	uni.downloadFile({
+		url: normalized,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				photoCache.set(normalized, res.tempFilePath)
+				photoUpdateTrigger.value++
+			} else {
+				console.warn('照片下载失败:', normalized, res.statusCode)
+				photoCache.set(normalized, '/static/index/add.png')
+				photoUpdateTrigger.value++
+			}
+		},
+		fail: (err) => {
+			console.error('照片下载失败:', normalized, err)
+			photoCache.set(normalized, '/static/index/add.png')
+			photoUpdateTrigger.value++
+		}
+	})
+	
+	return '/static/index/add.png'
+}
 
 // 表单数据
 const form = reactive({
