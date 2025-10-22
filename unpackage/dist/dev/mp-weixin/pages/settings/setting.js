@@ -202,7 +202,7 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "SettingsIndex" }, {
         f: common_vendor.t(userInfo.value.desc),
         g: !editMode.value
       }, !editMode.value ? {
-        h: common_assets._imports_0$9,
+        h: common_assets._imports_1$5,
         i: common_vendor.o(startEdit)
       } : {
         j: common_vendor.o(cancelEdit),

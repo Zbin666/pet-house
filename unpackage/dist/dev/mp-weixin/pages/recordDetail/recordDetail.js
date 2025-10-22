@@ -28,7 +28,12 @@ const _sfc_main = {
     const showAllPets = common_vendor.ref(false);
     const currentIndex = common_vendor.ref(0);
     const recordList = common_vendor.ref([]);
+    const swiperHeight = common_vendor.ref(0);
+    const scrollLeft = common_vendor.ref(0);
+    const isLoading = common_vendor.ref(true);
     const petAvatarCache = /* @__PURE__ */ new Map();
+    const photoCache = /* @__PURE__ */ new Map();
+    const photoUpdateTrigger = common_vendor.ref(0);
     const imageConfig = [
       { top: "/static/record/cat.png", bottom: "/static/record/gray-cat.png" },
       { top: "/static/record/up-cat_2.png", bottom: "/static/record/bottom-cat_2.png" },
@@ -68,17 +73,55 @@ const _sfc_main = {
             recordList.value = [...recordList.value];
             petList.value = [...petList.value];
           } else {
-            common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:599", "宠物头像下载失败:", url, res.statusCode);
+            common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:646", "宠物头像下载失败:", url, res.statusCode);
             petAvatarCache.set(url, "/static/index/add.png");
             recordList.value = [...recordList.value];
             petList.value = [...petList.value];
           }
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:606", "宠物头像下载失败:", url, err);
+          common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:653", "宠物头像下载失败:", url, err);
           petAvatarCache.set(url, "/static/index/add.png");
           recordList.value = [...recordList.value];
           petList.value = [...petList.value];
+        }
+      });
+      return "/static/index/add.png";
+    }
+    function getPhotoSrc(url) {
+      if (!url) {
+        return "/static/index/add.png";
+      }
+      if (url.startsWith("/static/") || url.startsWith("wxfile://")) {
+        return url;
+      }
+      if (photoCache.has(url)) {
+        return photoCache.get(url);
+      }
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            photoCache.set(url, res.tempFilePath);
+            photoUpdateTrigger.value++;
+          } else {
+            common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:696", "照片下载失败:", url, res.statusCode);
+            photoCache.set(url, "/static/index/add.png");
+            photoUpdateTrigger.value++;
+          }
+        },
+        fail: (err) => {
+          common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:702", "照片下载失败:", url, err);
+          photoCache.set(url, "/static/index/add.png");
+          photoUpdateTrigger.value++;
         }
       });
       return "/static/index/add.png";
@@ -91,20 +134,29 @@ const _sfc_main = {
     });
     common_vendor.onShow(async () => {
       petAvatarCache.clear();
-      await initRecordList({ type: currentFrontType.value });
+      photoCache.clear();
+      if (recordList.value.length === 0) {
+        const currentType = currentFrontType.value;
+        await initRecordList({ type: currentType }, false);
+      }
     });
     const onRecordsChanged = async () => {
-      await initRecordList({ type: currentFrontType.value });
+      var _a, _b;
+      const currentType = recordList.value.length > 0 ? (_b = (_a = recordList.value[currentIndex.value]) == null ? void 0 : _a.type) == null ? void 0 : _b.key : currentFrontType.value;
+      await initRecordList({ type: currentType }, false);
     };
     common_vendor.index.$on && common_vendor.index.$on("records:changed", onRecordsChanged);
     common_vendor.onUnmounted(() => {
       common_vendor.index.$off && common_vendor.index.$off("records:changed", onRecordsChanged);
     });
-    async function initRecordList(query) {
+    async function initRecordList(query, showLoading = true) {
       const targetType = query.type || "eating";
       currentFrontType.value = targetType;
       const typeMap = { eating: "feed", drinking: "water", weight: "weight", washing: "clean", noting: "diary", shit: "diary", abnormal: "diary", medicine: "medicine" };
       const backendType = typeMap[targetType] || "diary";
+      if (showLoading) {
+        isLoading.value = true;
+      }
       try {
         const params = { type: backendType, page: 1, limit: 20 };
         if (query.startDate && query.endDate) {
@@ -121,7 +173,7 @@ const _sfc_main = {
             try {
               payloadObj = JSON.parse(rawPayload);
             } catch (err) {
-              common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:663", "记录 payload 解析失败(字符串非 JSON):", r == null ? void 0 : r.id, rawPayload);
+              common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:773", "记录 payload 解析失败(字符串非 JSON):", r == null ? void 0 : r.id, rawPayload);
               payloadObj = {};
             }
           } else if (rawPayload && typeof rawPayload === "object") {
@@ -157,11 +209,18 @@ const _sfc_main = {
           currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating;
           recordData.value = {};
         }
+        setTimeout(() => {
+          measureCurrentSlideHeight();
+        }, 100);
       } catch (e) {
-        common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:699", "加载记录失败:", e);
+        common_vendor.index.__f__("warn", "at pages/recordDetail/recordDetail.vue:813", "加载记录失败:", e);
         recordList.value = [];
         currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating;
         recordData.value = {};
+      } finally {
+        if (showLoading) {
+          isLoading.value = false;
+        }
       }
     }
     function determineFrontType(r, fallbackFrontType) {
@@ -195,21 +254,30 @@ const _sfc_main = {
       const date = new Date(time);
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
     }
-    function onSwiperChange(e) {
-      currentIndex.value = e.detail.current;
-      if (recordList.value.length > 0) {
-        const currentRecordData = recordList.value[currentIndex.value];
-        currentRecord.value = currentRecordData.type;
-        recordData.value = currentRecordData.data;
+    function onScrollChange(e) {
+      const currentScrollLeft = e.detail.scrollLeft;
+      const itemWidth = 750;
+      let newIndex = Math.round(currentScrollLeft / itemWidth);
+      newIndex = Math.max(0, Math.min(newIndex, recordList.value.length - 1));
+      if (newIndex !== currentIndex.value) {
+        currentIndex.value = newIndex;
+        if (recordList.value.length > 0) {
+          const currentRecordData = recordList.value[currentIndex.value];
+          currentRecord.value = currentRecordData.type;
+          recordData.value = currentRecordData.data;
+        }
+        measureCurrentSlideHeight();
       }
     }
     function goToSlide(index) {
       currentIndex.value = index;
+      scrollLeft.value = index * 750;
       if (recordList.value.length > 0) {
         const currentRecordData = recordList.value[currentIndex.value];
         currentRecord.value = currentRecordData.type;
         recordData.value = currentRecordData.data;
       }
+      measureCurrentSlideHeight();
     }
     function startEdit() {
       editMode.value = true;
@@ -221,9 +289,15 @@ const _sfc_main = {
       if (!Array.isArray(form.photos)) {
         form.photos = Array.isArray(recordData.value.photos) ? [...recordData.value.photos] : [];
       }
+      setTimeout(() => {
+        measureCurrentSlideHeight();
+      }, 100);
     }
     function cancelEdit() {
       editMode.value = false;
+      setTimeout(() => {
+        measureCurrentSlideHeight();
+      }, 100);
     }
     function selectPet(pet) {
       form.petId = pet.id;
@@ -315,9 +389,8 @@ const _sfc_main = {
                   title: "删除成功",
                   icon: "success"
                 });
-                setTimeout(() => {
-                  common_vendor.index.navigateBack();
-                }, 1500);
+                currentRecord.value = recordTypes[currentFrontType.value] || recordTypes.eating;
+                recordData.value = {};
                 return;
               }
               if (currentIndex.value >= recordList.value.length) {
@@ -331,7 +404,7 @@ const _sfc_main = {
                 icon: "success"
               });
             } catch (error) {
-              common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:905", "删除记录失败:", error);
+              common_vendor.index.__f__("error", "at pages/recordDetail/recordDetail.vue:1051", "删除记录失败:", error);
               common_vendor.index.showToast({
                 title: "删除失败",
                 icon: "none"
@@ -454,11 +527,23 @@ const _sfc_main = {
         common_vendor.index.showToast({ title: "保存失败", icon: "none" });
       }
     }
+    function measureCurrentSlideHeight() {
+      const id = `#slide-${currentIndex.value}`;
+      common_vendor.index.createSelectorQuery().select(id).boundingClientRect((rect) => {
+        if (rect && rect.height) {
+          swiperHeight.value = Math.max(rect.height + 120, 900);
+        } else {
+          swiperHeight.value = 900;
+        }
+      }).exec();
+    }
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: recordList.value.length > 0
-      }, recordList.value.length > 0 ? {
-        b: common_vendor.f(recordList.value, (record, index, i0) => {
+        a: isLoading.value
+      }, isLoading.value ? {
+        b: common_assets._imports_0$9
+      } : recordList.value.length > 0 ? {
+        d: common_vendor.f(recordList.value, (record, index, i0) => {
           return common_vendor.e({
             a: isDogTop(index) ? 1 : "",
             b: getTopImage(index),
@@ -605,18 +690,18 @@ const _sfc_main = {
           }, !editMode.value ? {
             aE: common_vendor.f(record.data.photos, (photo, i, i1) => {
               return {
-                a: i,
-                b: photo,
-                c: common_vendor.o(($event) => previewPhoto(record.data.photos, i), i)
+                a: `photo-${i}-${photoUpdateTrigger.value}`,
+                b: getPhotoSrc(photo),
+                c: common_vendor.o(($event) => previewPhoto(record.data.photos, i), `photo-${i}-${photoUpdateTrigger.value}`)
               };
             })
           } : {
             aF: common_vendor.f(form.photos || [], (p, i, i1) => {
               return {
-                a: p,
-                b: common_vendor.o(($event) => removeEditNotePhoto(i), i),
-                c: i,
-                d: common_vendor.o(($event) => previewPhoto(form.photos || [], i), i)
+                a: getPhotoSrc(p),
+                b: common_vendor.o(($event) => removeEditNotePhoto(i), `edit-photo-${i}-${photoUpdateTrigger.value}`),
+                c: `edit-photo-${i}-${photoUpdateTrigger.value}`,
+                d: common_vendor.o(($event) => previewPhoto(form.photos || [], i), `edit-photo-${i}-${photoUpdateTrigger.value}`)
               };
             }),
             aG: common_vendor.o(selectEditNotePhotos, index)
@@ -678,7 +763,7 @@ const _sfc_main = {
             aH: record.type.key === "abnormal",
             aU: record.type.key === "medicine"
           }, !editMode.value ? {
-            bl: common_assets._imports_0$9,
+            bl: common_assets._imports_1$5,
             bm: common_vendor.o(startEdit, index)
           } : {
             bn: common_vendor.o(cancelEdit, index),
@@ -687,19 +772,25 @@ const _sfc_main = {
             bp: common_assets._imports_0$4,
             bq: common_vendor.o(deleteRecord, index)
           } : {}, {
-            br: index
+            br: isDogBottom(index) ? 1 : "",
+            bs: getBottomImage(index),
+            bt: index,
+            bv: `slide-${index}`
           });
         }),
-        c: !editMode.value,
-        d: !editMode.value,
         e: !editMode.value,
-        f: editMode.value ? 1 : "",
-        g: currentIndex.value,
-        h: common_vendor.o(onSwiperChange)
+        f: !editMode.value,
+        g: !editMode.value,
+        h: editMode.value ? 1 : "",
+        i: recordList.value.length,
+        j: scrollLeft.value,
+        k: common_vendor.o(onScrollChange),
+        l: swiperHeight.value + "px"
       } : {}, {
-        i: recordList.value.length > 0
-      }, recordList.value.length > 0 ? {
-        j: common_vendor.f(recordList.value, (record, index, i0) => {
+        c: recordList.value.length > 0,
+        m: !isLoading.value && recordList.value.length > 0
+      }, !isLoading.value && recordList.value.length > 0 ? {
+        n: common_vendor.f(recordList.value, (record, index, i0) => {
           return {
             a: index,
             b: common_vendor.n({
@@ -708,21 +799,17 @@ const _sfc_main = {
             c: common_vendor.o(($event) => goToSlide(index), index)
           };
         })
-      } : {
-        k: common_assets._imports_2$3
-      }, {
-        l: common_assets._imports_3$1,
-        m: common_vendor.o(showAddModal),
-        n: recordList.value.length > 0
-      }, recordList.value.length > 0 ? {
-        o: isDogBottom(currentIndex.value) ? 1 : "",
-        p: getBottomImage(currentIndex.value)
+      } : !isLoading.value ? {
+        p: common_assets._imports_0$9
       } : {}, {
-        q: showModal.value
+        o: !isLoading.value,
+        q: common_assets._imports_3$1,
+        r: common_vendor.o(showAddModal),
+        s: showModal.value
       }, showModal.value ? common_vendor.e({
-        r: common_vendor.t(currentRecord.value.title),
-        s: common_vendor.o(hideAddModal),
-        t: common_vendor.f(petList.value, (pet, index, i0) => {
+        t: common_vendor.t(currentRecord.value.title),
+        v: common_vendor.o(hideAddModal),
+        w: common_vendor.f(petList.value, (pet, index, i0) => {
           return common_vendor.e({
             a: getPetAvatarSrc(pet.avatarUrl || pet.avatar),
             b: common_vendor.t(pet.name),
@@ -733,89 +820,89 @@ const _sfc_main = {
             f: common_vendor.o(($event) => togglePet(index), index)
           });
         }),
-        v: currentRecord.value.key === "eating"
+        x: currentRecord.value.key === "eating"
       }, currentRecord.value.key === "eating" ? {
-        w: newRecord.foodType,
-        x: common_vendor.o(($event) => newRecord.foodType = $event.detail.value),
-        y: newRecord.weight,
-        z: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
+        y: newRecord.foodType,
+        z: common_vendor.o(($event) => newRecord.foodType = $event.detail.value),
+        A: newRecord.weight,
+        B: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
           number: true
         })),
-        A: newRecord.note,
-        B: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        C: newRecord.note,
+        D: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "drinking" ? {
-        D: newRecord.amount,
-        E: common_vendor.o(common_vendor.m(($event) => newRecord.amount = $event.detail.value, {
+        F: newRecord.amount,
+        G: common_vendor.o(common_vendor.m(($event) => newRecord.amount = $event.detail.value, {
           number: true
         })),
-        F: newRecord.method,
-        G: common_vendor.o(($event) => newRecord.method = $event.detail.value),
-        H: newRecord.note,
-        I: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        H: newRecord.method,
+        I: common_vendor.o(($event) => newRecord.method = $event.detail.value),
+        J: newRecord.note,
+        K: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "weight" ? {
-        K: newRecord.weight,
-        L: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
+        M: newRecord.weight,
+        N: common_vendor.o(common_vendor.m(($event) => newRecord.weight = $event.detail.value, {
           number: true
         })),
-        M: newRecord.method,
-        N: common_vendor.o(($event) => newRecord.method = $event.detail.value),
-        O: newRecord.note,
-        P: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        O: newRecord.method,
+        P: common_vendor.o(($event) => newRecord.method = $event.detail.value),
+        Q: newRecord.note,
+        R: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "washing" ? {
-        R: newRecord.washType,
-        S: common_vendor.o(($event) => newRecord.washType = $event.detail.value),
-        T: newRecord.product,
-        U: common_vendor.o(($event) => newRecord.product = $event.detail.value),
-        V: newRecord.note,
-        W: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        T: newRecord.washType,
+        U: common_vendor.o(($event) => newRecord.washType = $event.detail.value),
+        V: newRecord.product,
+        W: common_vendor.o(($event) => newRecord.product = $event.detail.value),
+        X: newRecord.note,
+        Y: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "shit" ? {
-        Y: newRecord.status,
-        Z: common_vendor.o(($event) => newRecord.status = $event.detail.value),
-        aa: newRecord.color,
-        ab: common_vendor.o(($event) => newRecord.color = $event.detail.value),
-        ac: newRecord.note,
-        ad: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        aa: newRecord.status,
+        ab: common_vendor.o(($event) => newRecord.status = $event.detail.value),
+        ac: newRecord.color,
+        ad: common_vendor.o(($event) => newRecord.color = $event.detail.value),
+        ae: newRecord.note,
+        af: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : currentRecord.value.key === "noting" ? {
-        af: newRecord.content,
-        ag: common_vendor.o(($event) => newRecord.content = $event.detail.value),
-        ah: common_vendor.f(newRecord.photos || [], (p, i, i0) => {
+        ah: newRecord.content,
+        ai: common_vendor.o(($event) => newRecord.content = $event.detail.value),
+        aj: common_vendor.f(newRecord.photos || [], (p, i, i0) => {
           return {
-            a: p,
-            b: common_vendor.o(($event) => removeNotePhoto(i), i),
-            c: i,
-            d: common_vendor.o(($event) => previewPhoto(newRecord.photos || [], i), i)
+            a: getPhotoSrc(p),
+            b: common_vendor.o(($event) => removeNotePhoto(i), `new-photo-${i}-${photoUpdateTrigger.value}`),
+            c: `new-photo-${i}-${photoUpdateTrigger.value}`,
+            d: common_vendor.o(($event) => previewPhoto(newRecord.photos || [], i), `new-photo-${i}-${photoUpdateTrigger.value}`)
           };
         }),
-        ai: common_vendor.o(selectNotePhotos)
+        ak: common_vendor.o(selectNotePhotos)
       } : currentRecord.value.key === "abnormal" ? {
-        ak: newRecord.abnormalType,
-        al: common_vendor.o(($event) => newRecord.abnormalType = $event.detail.value),
-        am: newRecord.severity,
-        an: common_vendor.o(($event) => newRecord.severity = $event.detail.value),
-        ao: newRecord.description,
-        ap: common_vendor.o(($event) => newRecord.description = $event.detail.value)
+        am: newRecord.abnormalType,
+        an: common_vendor.o(($event) => newRecord.abnormalType = $event.detail.value),
+        ao: newRecord.severity,
+        ap: common_vendor.o(($event) => newRecord.severity = $event.detail.value),
+        aq: newRecord.description,
+        ar: common_vendor.o(($event) => newRecord.description = $event.detail.value)
       } : currentRecord.value.key === "medicine" ? {
-        ar: newRecord.medicineName,
-        as: common_vendor.o(($event) => newRecord.medicineName = $event.detail.value),
-        at: newRecord.dosage,
-        av: common_vendor.o(($event) => newRecord.dosage = $event.detail.value),
-        aw: newRecord.medicineTime,
-        ax: common_vendor.o(($event) => newRecord.medicineTime = $event.detail.value),
-        ay: newRecord.note,
-        az: common_vendor.o(($event) => newRecord.note = $event.detail.value)
+        at: newRecord.medicineName,
+        av: common_vendor.o(($event) => newRecord.medicineName = $event.detail.value),
+        aw: newRecord.dosage,
+        ax: common_vendor.o(($event) => newRecord.dosage = $event.detail.value),
+        ay: newRecord.medicineTime,
+        az: common_vendor.o(($event) => newRecord.medicineTime = $event.detail.value),
+        aA: newRecord.note,
+        aB: common_vendor.o(($event) => newRecord.note = $event.detail.value)
       } : {}, {
-        C: currentRecord.value.key === "drinking",
-        J: currentRecord.value.key === "weight",
-        Q: currentRecord.value.key === "washing",
-        X: currentRecord.value.key === "shit",
-        ae: currentRecord.value.key === "noting",
-        aj: currentRecord.value.key === "abnormal",
-        aq: currentRecord.value.key === "medicine",
-        aA: common_vendor.o(hideAddModal),
-        aB: common_vendor.o(saveNewRecord),
-        aC: common_vendor.o(() => {
+        E: currentRecord.value.key === "drinking",
+        L: currentRecord.value.key === "weight",
+        S: currentRecord.value.key === "washing",
+        Z: currentRecord.value.key === "shit",
+        ag: currentRecord.value.key === "noting",
+        al: currentRecord.value.key === "abnormal",
+        as: currentRecord.value.key === "medicine",
+        aC: common_vendor.o(hideAddModal),
+        aD: common_vendor.o(saveNewRecord),
+        aE: common_vendor.o(() => {
         }),
-        aD: common_vendor.o(hideAddModal)
+        aF: common_vendor.o(hideAddModal)
       }) : {});
     };
   }

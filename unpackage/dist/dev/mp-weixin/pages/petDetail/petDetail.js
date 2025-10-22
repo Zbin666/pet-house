@@ -390,7 +390,7 @@ const _sfc_main = {
       }, {
         B: !editMode.value
       }, !editMode.value ? {
-        C: common_assets._imports_0$9,
+        C: common_assets._imports_1$5,
         D: common_vendor.o(startEdit),
         E: common_assets._imports_0$4,
         F: common_vendor.o(deletePet)

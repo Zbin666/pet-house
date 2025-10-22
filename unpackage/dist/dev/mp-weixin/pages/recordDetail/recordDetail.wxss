@@ -6,59 +6,111 @@
 	padding-top: calc(40rpx + constant(safe-area-inset-top));
 	background: linear-gradient(180deg, #fff1a8 0%, #fff3c9 32%, #fff7e3 68%, #fffaf1 100%);
 	position: relative;
-	overflow: hidden;
-	/* 整页不滚动 */
+	overflow-y: auto;
 }
 
-/* 装饰图标 */
+/* 顶部装饰区域 - 固定高度容器 */
+.top-decoration.data-v-7889064e {
+	position: relative;
+	width: 100%;
+	height: 180rpx;
+	min-height: 180rpx;
+	flex: 0 0 120rpx;
+	flex-shrink: 0;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	margin-bottom: 20rpx;
+	z-index: 10;
+}
 .decor.data-v-7889064e {
 	width: 200rpx;
 	height: 200rpx;
+	position: absolute;
+	top: 2rpx;
+	left: 50%;
+	transform: translateX(-50%);
 	z-index: 10;
+	pointer-events: none;
 }
 .decor--dog-ccw.data-v-7889064e {
 	top: -5rpx;
-	left: 8nrpx;
-	transform: rotate(-5deg);
+	left: 50%;
+	transform: translateX(-50%) rotate(-5deg);
 	transform-origin: center center;
 }
 
 /* 轮播图容器 */
 .carousel-container.data-v-7889064e {
 	width: 100%;
-	height: calc(100vh - 120rpx);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: flex-start;
-	padding: 20rpx 30rpx 0 30rpx;
+	padding: 20rpx 20rpx 0 20rpx;
 	box-sizing: border-box;
-}
-.record-swiper.data-v-7889064e {
-	width: 100%;
-	height: calc(100% - 80rpx);
-}
-.swiper-item.data-v-7889064e {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0 10rpx;
-    box-sizing: border-box;
 	overflow: visible;
-	/* 外层不滚动不裁切 */
-    position: relative;
+	position: relative;
+}
+.record-scroll.data-v-7889064e {
+	width: 100%;
+	/* 高度通过内联样式绑定 swiperHeight */
+	min-height: 600rpx;
+	/* 确保最小高度 */
+}
+.scroll-content.data-v-7889064e {
+	display: flex;
+	width: calc(100% * var(--item-count, 1));
+}
+.scroll-item.data-v-7889064e {
+	width: 750rpx;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	padding: 0 0rpx;
+	box-sizing: border-box;
+	overflow: visible;
+	position: relative;
+	min-height: 100%;
+}
+
+/* 编辑模式下的轮播图调整 */
+/* 编辑模式下的 swiper 高度由 swiperHeight 控制，无需额外样式覆盖 */
+
+/* 旧的 swiper-item 样式已移除，使用 scroll-item 替代 */
+
+/* 每页实际内容容器：用于测量高度 */
+.slide-content.data-v-7889064e {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
 }
 .sheet.data-v-7889064e {
 	position: relative;
 	width: 100%;
-	max-width: 700rpx;
+	min-width: 640rpx;
+	max-width: 640rpx;
+	/* 确保卡片在编辑模式下从当前位置向下展开 */
+	align-self: flex-start;
 }
 
-/* 编辑模式下限制卡片最大宽度，避免视觉跳变过宽 */
+/* 编辑模式和浏览模式保持相同宽度 */
 .sheet--edit.data-v-7889064e {
-	max-width: 590rpx;
-	/* 可按需微调 580~620rpx */
+	min-width: 640rpx;
+	max-width: 640rpx;
+	/* 与浏览模式保持一致 */
+}
+
+/* 编辑模式下的卡片内容区域 */
+.sheet--edit .sheet-body.data-v-7889064e {
+	/* max-height: calc(100vh - 300rpx); */
+	/* overflow-y: auto; */
+	/* 确保编辑模式下卡片从当前位置向下展开 */
+	position: relative;
+	z-index: 2;
 }
 .sheet-bg.data-v-7889064e {
 	position: absolute;
@@ -84,9 +136,10 @@
 	padding: 32rpx 28rpx 120rpx 28rpx;
 	z-index: 1;
 	min-height: 600rpx;
+	/* max-height: calc(100vh - 200rpx); */
 	box-sizing: border-box;
-	overflow: visible;
-	/* 内容不滚动 */
+	/* overflow-y: auto; */
+	/* 内容过多时可滚动 */
 }
 
 /* 轮播指示器 */
@@ -95,7 +148,30 @@
 	justify-content: center;
 	align-items: center;
 	gap: 16rpx;
-	margin-top: 40rpx;
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 12rpx;
+	z-index: 3;
+}
+
+/* 加载状态 */
+.loading.data-v-7889064e {
+	width: 100%;
+	min-height: 60vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 20rpx;
+}
+.loading-img.data-v-7889064e {
+	width: 380rpx;
+	opacity: 0.6;
+}
+.loading-text.data-v-7889064e {
+	color: #999;
+	font-size: 28rpx;
 }
 
 /* 空状态 */
@@ -339,6 +415,16 @@
 	flex-wrap: wrap;
 	gap: 12rpx;
 }
+
+/* 编辑模式下的照片上传区域优化 */
+.sheet--edit .photo-uploader.data-v-7889064e {
+	max-height: 300rpx;
+	overflow-y: auto;
+	padding: 8rpx;
+	border: 2rpx dashed #ddd;
+	border-radius: 8rpx;
+	background: #fafafa;
+}
 .photo-thumb.data-v-7889064e {
 	position: relative;
 	width: 140rpx;
@@ -414,18 +500,42 @@
 
 /* 底部灰猫装饰图 */
 .bottom-cat.data-v-7889064e {
-    position: fixed;
-    left: 50%;
-    bottom: 16rpx;
-    transform: translateX(-50%);
-    width: 300rpx;
-    z-index: 5;
-    opacity: 0.9;
-	pointer-events: none;
-	/* 不阻挡点击 */
+	display: none;
 }
 .bottom-cat.bottom-cat--dog.data-v-7889064e {
-    width: 220rpx;
+	display: none;
+}
+
+/* 底部装饰区域 - 固定高度容器（随轮播项滑动） */
+.bottom-decoration.data-v-7889064e {
+	position: relative;
+	width: 100%;
+	height: 300rpx;
+	min-height: 300rpx;
+	flex: 0 0 300rpx;
+	flex-shrink: 0;
+	display: flex;
+	justify-content: center;
+	align-items: flex-end;
+	margin-top: 40rpx;
+	/* 与卡片拉开间距，避免覆盖 */
+	margin-bottom: 56rpx;
+	/* 为底部圆点预留空间，避免重叠 */
+	z-index: 0;
+}
+.bottom-decor.data-v-7889064e {
+	width: 300rpx;
+	max-height: 260rpx;
+	/* 增加高度以适配更大的容器 */
+	margin-top: 20rpx;
+	/* 图片在容器内下移，避免被截断 */
+	margin-bottom: 20rpx;
+	object-fit: contain;
+	opacity: 0.9;
+	pointer-events: none;
+}
+.bottom-decor.bottom-decor--dog.data-v-7889064e {
+	width: 220rpx;
 }
 
 /* 弹窗样式 */
