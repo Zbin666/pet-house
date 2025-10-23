@@ -1296,6 +1296,7 @@ function clearSearch() {
 	border: 4rpx solid #2c2c2c;
 	padding: 25rpx 35rpx;
 	box-shadow: 0 8rpx 0 #2c2c2c;
+	margin-bottom: 30rpx;
 }
 
 .card-hd {
@@ -1440,6 +1441,7 @@ function clearSearch() {
 	border: 4rpx solid #2c2c2c;
 	padding: 24rpx;
 	box-shadow: 0 6rpx 0 #2c2c2c;
+	margin-bottom: 30rpx;
 }
 
 .qa-delete-btn {
@@ -1462,13 +1464,14 @@ function clearSearch() {
 	height: 20rpx;
 }
 
-/* 左右装饰圆点（与分隔线对齐） */
+/* 左右装饰圆点（卡片竖直中心） */
 .qa-card::before,
 .qa-card::after {
 	content: '';
 	position: absolute;
-	top: 120rpx;
-	/* 与标题区高度匹配，必要时微调 */
+	top: 50%;
+	transform: translateY(-50%);
+	/* 垂直居中 */
 	width: 22rpx;
 	height: 22rpx;
 	background: #2c2c2c;
@@ -1671,6 +1674,7 @@ function clearSearch() {
 
 .science-item {
 	display: flex;
+	margin-bottom: 30rpx;
 }
 
 .s-card {
@@ -1738,10 +1742,7 @@ function clearSearch() {
 
 .loading-text,
 .load-more-text {
-	padding: 12rpx 24rpx;
-	border-radius: 20rpx;
-	background: #f5f5f5;
-	border: 2rpx solid #ddd;
+
 }
 
 .no-more-text {
