@@ -189,6 +189,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 35rpx;
+	height: calc(100vh - 200rpx);
+	overflow-y: auto;
 }
 .card.data-v-a6ef5318 {
 	background: #fff;
@@ -310,6 +312,8 @@
 	flex-direction: column;
 	gap: 20rpx;
 	margin-top: 20rpx;
+	height: calc(100vh - 200rpx);
+	overflow-y: auto;
 }
 .qa-card.data-v-a6ef5318 {
 	position: relative;
@@ -514,6 +518,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 18rpx;
+	height: calc(100vh - 200rpx);
+	overflow-y: auto;
 }
 .science-item.data-v-a6ef5318 {
 	display: flex;
@@ -565,4 +571,64 @@
 .s-reads.data-v-a6ef5318 {
 	color: #7a7a7a;
 	font-size: 24rpx;
+}
+
+/* 加载更多样式 */
+.load-more.data-v-a6ef5318 {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 30rpx 0;
+	margin-top: 20rpx;
+}
+.loading-text.data-v-a6ef5318,
+.load-more-text.data-v-a6ef5318 {
+	padding: 12rpx 24rpx;
+	border-radius: 20rpx;
+	background: #f5f5f5;
+	border: 2rpx solid #ddd;
+}
+.no-more-text.data-v-a6ef5318 {
+	background: transparent;
+	border: none;
+	position: relative;
+	padding: 0 40rpx;
+}
+.no-more-text.data-v-a6ef5318::before,
+.no-more-text.data-v-a6ef5318::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	width: 100rpx;
+	height: 2rpx;
+	background: #ddd;
+}
+.no-more-text.data-v-a6ef5318::before {
+	left: -80rpx;
+}
+.no-more-text.data-v-a6ef5318::after {
+	right: -80rpx;
+}
+.loading-text text.data-v-a6ef5318 {
+	color: #666;
+	font-size: 24rpx;
+}
+.no-more-text text.data-v-a6ef5318 {
+	color: #999;
+	font-size: 24rpx;
+}
+.load-more-text.data-v-a6ef5318 {
+	background: #fff;
+	border-color: #2c2c2c;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+.load-more-text.data-v-a6ef5318:active {
+	transform: scale(0.98);
+	background: #f0f0f0;
+}
+.load-more-text text.data-v-a6ef5318 {
+	color: #2c2c2c;
+	font-size: 24rpx;
+	font-weight: 500;
 }

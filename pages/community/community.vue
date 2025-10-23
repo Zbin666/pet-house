@@ -45,7 +45,15 @@
 		</scroll-view>
 
 		<!-- 动态列表（广场） -->
-		<view class="feed" v-if="topTab === 'square'">
+		<scroll-view 
+			class="feed" 
+			v-if="topTab === 'square'" 
+			scroll-y 
+			@scrolltolower="loadMoreFeeds"
+			:refresher-enabled="true"
+			:refresher-triggered="feedLoading"
+			@refresherrefresh="() => loadFeeds()"
+		>
 			<view class="card" v-for="post in posts" :key="post.id" @tap="goDetail(post)">
 				<view class="card-hd">
 					<image class="avatar" :src="getUserAvatarSrc(post.avatar)" mode="aspectFill" />
@@ -59,7 +67,7 @@
 					<text v-if="post.title" class="post-title">{{ post.title }}</text>
 					<text class="content">{{ post.text }}</text>
 					<view class="pics" v-if="post.images && post.images.length">
-						<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" @tap.stop="previewImages(post.images, i)" />
+						<image class="pic" v-for="(img, i) in post.images" :key="`${imageUpdateTrigger}-${i}`" :src="getPostImageSrc(img)" mode="aspectFill" @tap.stop="previewImages(post.images, i)" />
 					</view>
 				</view>
 				<view class="card-ft" @tap.stop="noop">
@@ -80,10 +88,31 @@
 					</view>
 				</view>
 			</view>
-		</view>
+			
+			<!-- 加载更多提示 -->
+			<view class="load-more" v-if="posts.length > 0">
+				<view v-if="feedLoading" class="loading-text">
+					<text>加载中...</text>
+				</view>
+				<view v-else-if="!feedHasMore" class="no-more-text">
+					<text>没有更多了</text>
+				</view>
+				<view v-else class="load-more-text" @tap="loadMoreFeeds">
+					<text>点击加载更多</text>
+				</view>
+			</view>
+		</scroll-view>
 
 		<!-- 科普列表 -->
-		<view class="science-feed" v-if="topTab === 'science'">
+		<scroll-view 
+			class="science-feed" 
+			v-if="topTab === 'science'" 
+			scroll-y 
+			@scrolltolower="loadMoreArticles"
+			:refresher-enabled="true"
+			:refresher-triggered="scienceLoading"
+			@refresherrefresh="() => loadArticles()"
+		>
 			<view class="science-item" v-for="a in sciencePosts" :key="a.id" @tap="goScienceDetail(a)">
 				<view class="s-card">
 					<view class="s-thumb">
@@ -101,10 +130,31 @@
 					</view>
 				</view>
 			</view>
-		</view>
+			
+			<!-- 加载更多提示 -->
+			<view class="load-more" v-if="sciencePosts.length > 0">
+				<view v-if="scienceLoading" class="loading-text">
+					<text>加载中...</text>
+				</view>
+				<view v-else-if="!scienceHasMore" class="no-more-text">
+					<text>没有更多了</text>
+				</view>
+				<view v-else class="load-more-text" @tap="loadMoreArticles">
+					<text>点击加载更多</text>
+				</view>
+			</view>
+		</scroll-view>
 
 		<!-- 问答列表 -->
-		<view class="qa-feed" v-if="topTab === 'qa'">
+		<scroll-view 
+			class="qa-feed" 
+			v-if="topTab === 'qa'" 
+			scroll-y 
+			@scrolltolower="loadMoreQuestions"
+			:refresher-enabled="true"
+			:refresher-triggered="qaLoading"
+			@refresherrefresh="() => loadQuestions()"
+		>
 			<view class="qa-card" v-for="qa in qaPosts" :key="qa.id" @tap="goQADetail(qa)">
 				<!-- 删除按钮 -->
 				<view v-if="qa.isOwner" class="qa-delete-btn" @tap.stop="deleteQuestion(qa)">
@@ -128,9 +178,9 @@
 				<view class="qa-divider"></view>
 
 				<!-- 最高点赞评论或最早评论或未回答状态 -->
-				<view class="qa-content" v-if="qa.hasAnswer && qa.topAnswer">
+				<view class="qa-content" v-if="qa.hasAnswer && qa.topAnswer" :key="`qa-content-${qaAvatarUpdateTrigger}-${qa.id}`">
 					<view class="top-answer-info">
-						<image class="top-answer-avatar" :src="getUserAvatarSrc(qa.topAnswer.user.avatarUrl)" mode="aspectFill" />
+						<image class="top-answer-avatar" :src="getUserAvatarSrc(qa.topAnswer.user.avatarUrl)" :key="`qa-avatar-${qaAvatarUpdateTrigger}-${qa.topAnswer.user.id || qa.id}`" mode="aspectFill" />
 						<view class="top-answer-meta">
 							<text class="top-answer-user">{{ qa.topAnswer.user.nickname }}</text>
 							<text class="top-answer-pet" v-if="qa.topAnswer.pet">{{ qa.topAnswer.pet.name }}｜{{ qa.topAnswer.pet.breed }}</text>
@@ -165,7 +215,20 @@
 					<text class="stat-text">{{ qa.readCount }}个阅读</text>
 				</view>
 			</view>
-		</view>
+			
+			<!-- 加载更多提示 -->
+			<view class="load-more" v-if="qaPosts.length > 0">
+				<view v-if="qaLoading" class="loading-text">
+					<text>加载中...</text>
+				</view>
+				<view v-else-if="!qaHasMore" class="no-more-text">
+					<text>没有更多了</text>
+				</view>
+				<view v-else class="load-more-text" @tap="loadMoreQuestions">
+					<text>点击加载更多</text>
+				</view>
+			</view>
+		</scroll-view>
 
 		<!-- 浮动添加按钮 -->
 		<view class="floating-add-btn" v-if="topTab !== 'science'" @tap="goToCreate">
@@ -197,6 +260,11 @@ onMounted(async () => {
 	} catch (e) {
 		dynamicTopPadding.value = ''
 	}
+	
+	// 清理图片缓存（只在应用启动时清理一次）
+	postImageCache.clear()
+	avatarCache.clear()
+	imageCache.clear()
 	
 	// 获取当前用户信息
 	try {
@@ -241,13 +309,26 @@ const categories = ref([
 const currentCategory = ref('rec')
 
 const posts = ref([])
+// 广场分页状态
+const feedPage = ref(1)
+const feedLimit = ref(10)
+const feedHasMore = ref(true)
+const feedLoading = ref(false)
 
-async function loadFeeds(params = {}) {
+async function loadFeeds(params = {}, isLoadMore = false) {
+	if (feedLoading.value) return
+	
 	try {
-		const res = await api.getFeeds({ page: 1, limit: 20, ...params })
+		feedLoading.value = true
+		const currentPage = isLoadMore ? feedPage.value : 1
+		const res = await api.getFeeds({ 
+			page: currentPage, 
+			limit: feedLimit.value, 
+			...params 
+		})
 		const list = Array.isArray(res) ? res : (res.feeds || res.data || [])
 		
-		posts.value = list.map((f) => {
+		const newPosts = list.map((f) => {
 			const user = f.User || {}
 			const pet = f.Pet || {}
 			const imgs = Array.isArray(f.images) ? f.images : []
@@ -303,19 +384,51 @@ async function loadFeeds(params = {}) {
 				isLiked: f.isLiked || false // 添加点赞状态
 			}
 		})
+		
+		if (isLoadMore) {
+			// 加载更多：追加到现有列表
+			posts.value = [...posts.value, ...newPosts]
+			feedPage.value++
+		} else {
+			// 首次加载或刷新：替换列表
+			posts.value = newPosts
+			feedPage.value = 2 // 下次加载更多时从第2页开始
+		}
+		
+		// 判断是否还有更多数据
+		feedHasMore.value = newPosts.length >= feedLimit.value
+		
 	} catch (e) {
-		posts.value = []
+		if (!isLoadMore) {
+			posts.value = []
+		}
+	} finally {
+		feedLoading.value = false
 	}
 }
 
+// 加载更多广场动态
+async function loadMoreFeeds() {
+	if (!feedHasMore.value || feedLoading.value) return
+	await loadFeeds({}, true)
+}
+
 // 加载问答数据
-async function loadQuestions(params = {}) {
+async function loadQuestions(params = {}, isLoadMore = false) {
+	if (qaLoading.value) return
+	
 	try {
-		const res = await api.getQuestions({ page: 1, limit: 20, ...params })
+		qaLoading.value = true
+		const currentPage = isLoadMore ? qaPage.value : 1
+		const res = await api.getQuestions({ 
+			page: currentPage, 
+			limit: qaLimit.value, 
+			...params 
+		})
 		const list = Array.isArray(res) ? res : (res.questions || res.data || [])
 		
 		// 处理问答数据
-		qaPosts.value = list.map(q => {
+		const newQaPosts = list.map(q => {
 			
 			// 时间格式化
 			let time = '刚刚'
@@ -373,7 +486,7 @@ async function loadQuestions(params = {}) {
 		})
 
 		// 懒加载补齐：有回答但缺少置顶回答详情时，拉取问题详情填充
-		for (const qa of qaPosts.value) {
+		for (const qa of newQaPosts) {
 			if (!qa.topAnswer) {
 				try {
 					const detail = await api.getQuestion(qa.id)
@@ -395,31 +508,74 @@ async function loadQuestions(params = {}) {
 				}
 			}
 		}
+		
+		if (isLoadMore) {
+			// 加载更多：追加到现有列表
+			qaPosts.value = [...qaPosts.value, ...newQaPosts]
+			qaPage.value++
+		} else {
+			// 首次加载或刷新：替换列表
+			qaPosts.value = newQaPosts
+			qaPage.value = 2 // 下次加载更多时从第2页开始
+		}
+		
+		// 判断是否还有更多数据
+		qaHasMore.value = newQaPosts.length >= qaLimit.value
+		
 		// 触发视图更新
 		qaPosts.value = qaPosts.value.slice()
 	} catch (e) {
 		console.error('加载问答数据失败:', e)
-		qaPosts.value = []
+		if (!isLoadMore) {
+			qaPosts.value = []
+		}
+	} finally {
+		qaLoading.value = false
 	}
+}
+
+// 加载更多问答
+async function loadMoreQuestions() {
+	if (!qaHasMore.value || qaLoading.value) return
+	await loadQuestions({}, true)
 }
 
 // 问答数据
 const qaPosts = ref([])
+// 问答分页状态
+const qaPage = ref(1)
+const qaLimit = ref(10)
+const qaHasMore = ref(true)
+const qaLoading = ref(false)
 
 // 科普数据
 const sciencePosts = ref([])
+// 科普分页状态
+const sciencePage = ref(1)
+const scienceLimit = ref(10)
+const scienceHasMore = ref(true)
+const scienceLoading = ref(false)
 
 // 加载科普文章数据
-async function loadArticles(params = {}) {
+async function loadArticles(params = {}, isLoadMore = false) {
+	if (scienceLoading.value) return
+	
 	try {
-		console.log('开始加载科普文章，参数:', params)
-		const res = await api.getArticles({ page: 1, limit: 20, ...params })
+		scienceLoading.value = true
+		console.log('开始加载科普文章，参数:', params, '是否加载更多:', isLoadMore)
+		
+		const currentPage = isLoadMore ? sciencePage.value : 1
+		const res = await api.getArticles({ 
+			page: currentPage, 
+			limit: scienceLimit.value, 
+			...params 
+		})
 		console.log('API返回数据:', res)
 		
 		const list = Array.isArray(res) ? res : (res.articles || res.data || [])
 		console.log('处理后的文章列表:', list)
 
-		sciencePosts.value = list.map(article => {
+		const newArticles = list.map(article => {
 			console.log('处理文章:', article.title, '图片URL:', article.cover)
 			return {
 				id: article.id,
@@ -431,17 +587,47 @@ async function loadArticles(params = {}) {
 			}
 		})
 		
+		if (isLoadMore) {
+			// 加载更多：追加到现有列表
+			sciencePosts.value = [...sciencePosts.value, ...newArticles]
+			sciencePage.value++
+		} else {
+			// 首次加载或刷新：替换列表
+			sciencePosts.value = newArticles
+			sciencePage.value = 2 // 下次加载更多时从第2页开始
+		}
+		
+		// 判断是否还有更多数据
+		scienceHasMore.value = newArticles.length >= scienceLimit.value
+		
 		console.log('最终科普文章数据:', sciencePosts.value)
+		console.log('当前页数:', sciencePage.value, '是否还有更多:', scienceHasMore.value)
 	} catch (e) {
 		console.error('加载科普文章失败:', e)
-		sciencePosts.value = []
+		if (!isLoadMore) {
+			sciencePosts.value = []
+		}
+	} finally {
+		scienceLoading.value = false
 	}
+}
+
+// 加载更多科普文章
+async function loadMoreArticles() {
+	if (!scienceHasMore.value || scienceLoading.value) return
+	await loadArticles({}, true)
 }
 
 // 图片缓存，避免重复下载
 const imageCache = new Map()
 // 用户头像缓存
 const avatarCache = new Map()
+// 动态图片缓存
+const postImageCache = new Map()
+// 响应式更新触发器
+const imageUpdateTrigger = ref(0)
+// 问答头像更新触发器
+const qaAvatarUpdateTrigger = ref(0)
 
 // 获取用户头像的可显示 src
 function getUserAvatarSrc(url) {
@@ -480,16 +666,19 @@ function getUserAvatarSrc(url) {
 				// 触发视图更新
 				posts.value = [...posts.value]
 				qaPosts.value = [...qaPosts.value]
+				qaAvatarUpdateTrigger.value++
 			} else {
 				avatarCache.set(normalized, '/static/user/user.png')
 				posts.value = [...posts.value]
 				qaPosts.value = [...qaPosts.value]
+				qaAvatarUpdateTrigger.value++
 			}
 		},
 		fail: () => {
 			avatarCache.set(normalized, '/static/user/user.png')
 			posts.value = [...posts.value]
 			qaPosts.value = [...qaPosts.value]
+			qaAvatarUpdateTrigger.value++
 		}
 	})
 
@@ -537,6 +726,57 @@ function getImageSrc(article) {
 	})
 	
 	// 返回默认图片，下载完成后会自动更新
+	return '/static/404.png'
+}
+
+// 获取动态图片的可显示 src
+function getPostImageSrc(url) {
+	if (!url) {
+		return '/static/404.png'
+	}
+	
+	// 统一规范化：
+	// 1) /uploads/ 相对路径 → 拼接静态域名
+	// 2) 强制 http → https，去掉 :80
+	let normalized = url
+	if (normalized.startsWith('/uploads/')) {
+		normalized = `https://pet-api.zbinli.cn${normalized}`
+	}
+	if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+	}
+	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+	// 本地或静态路径直接返回
+	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+		return normalized
+	}
+
+	// 命中缓存
+	if (postImageCache.has(normalized)) {
+		return postImageCache.get(normalized)
+	}
+
+	// 下载网络图片到本地临时文件
+	uni.downloadFile({
+		url: normalized,
+		success: (res) => {
+			if (res.statusCode === 200 && res.tempFilePath) {
+				postImageCache.set(normalized, res.tempFilePath)
+				// 触发视图更新
+				imageUpdateTrigger.value++
+			} else {
+				postImageCache.set(normalized, '/static/404.png')
+				imageUpdateTrigger.value++
+			}
+		},
+		fail: () => {
+			postImageCache.set(normalized, '/static/404.png')
+			imageUpdateTrigger.value++
+		}
+	})
+
+	// 下载中返回占位
 	return '/static/404.png'
 }
 
@@ -1046,6 +1286,8 @@ function clearSearch() {
 	display: flex;
 	flex-direction: column;
 	gap: 35rpx;
+	height: calc(100vh - 200rpx);
+	overflow-y: auto;
 }
 
 .card {
@@ -1187,6 +1429,8 @@ function clearSearch() {
 	flex-direction: column;
 	gap: 20rpx;
 	margin-top: 20rpx;
+	height: calc(100vh - 200rpx);
+	overflow-y: auto;
 }
 
 .qa-card {
@@ -1421,6 +1665,8 @@ function clearSearch() {
 	display: flex;
 	flex-direction: column;
 	gap: 18rpx;
+	height: calc(100vh - 200rpx);
+	overflow-y: auto;
 }
 
 .science-item {
@@ -1479,5 +1725,75 @@ function clearSearch() {
 .s-reads {
 	color: #7a7a7a;
 	font-size: 24rpx;
+}
+
+/* 加载更多样式 */
+.load-more {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 30rpx 0;
+	margin-top: 20rpx;
+}
+
+.loading-text,
+.load-more-text {
+	padding: 12rpx 24rpx;
+	border-radius: 20rpx;
+	background: #f5f5f5;
+	border: 2rpx solid #ddd;
+}
+
+.no-more-text {
+	background: transparent;
+	border: none;
+	position: relative;
+	padding: 0 40rpx;
+}
+
+.no-more-text::before,
+.no-more-text::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	width: 100rpx;
+	height: 2rpx;
+	background: #ddd;
+}
+
+.no-more-text::before {
+	left: -80rpx;
+}
+
+.no-more-text::after {
+	right: -80rpx;
+}
+
+.loading-text text {
+	color: #666;
+	font-size: 24rpx;
+}
+
+.no-more-text text {
+	color: #999;
+	font-size: 24rpx;
+}
+
+.load-more-text {
+	background: #fff;
+	border-color: #2c2c2c;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.load-more-text:active {
+	transform: scale(0.98);
+	background: #f0f0f0;
+}
+
+.load-more-text text {
+	color: #2c2c2c;
+	font-size: 24rpx;
+	font-weight: 500;
 }
 </style>
