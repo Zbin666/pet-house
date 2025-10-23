@@ -257,6 +257,15 @@ const _sfc_main = {
     }
     async function loadComments(feedId) {
       try {
+        if (!currentUserId.value) {
+          try {
+            const profile = await utils_api.api.getProfile();
+            if (profile && profile.id)
+              currentUserId.value = profile.id;
+          } catch (e) {
+            common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:461", "获取用户信息失败:", e);
+          }
+        }
         const commentsData = await utils_api.api.getComments(feedId);
         comments.splice(0, comments.length, ...commentsData.map((c) => {
           var _a, _b, _c, _d;
@@ -342,7 +351,7 @@ const _sfc_main = {
         } catch (_) {
         }
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:540", "加载评论失败:", e);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:550", "加载评论失败:", e);
       }
     }
     function startReply(comment) {
@@ -491,7 +500,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:726", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:736", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -511,7 +520,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:767", "点赞回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:777", "点赞回复失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -566,10 +575,10 @@ const _sfc_main = {
         current,
         urls: images,
         success: () => {
-          common_vendor.index.__f__("log", "at pages/communityDetail/communityDetail.vue:829", "图片预览成功");
+          common_vendor.index.__f__("log", "at pages/communityDetail/communityDetail.vue:839", "图片预览成功");
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:832", "图片预览失败:", err);
+          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:842", "图片预览失败:", err);
           common_vendor.index.showToast({
             title: "图片预览失败",
             icon: "none"
@@ -632,8 +641,8 @@ const _sfc_main = {
             l: common_vendor.t(comment.likes)
           } : {}, {
             m: common_vendor.o(($event) => likeComment(comment), comment.id),
-            n: comment.isSelf
-          }, comment.isSelf ? {
+            n: comment.userId === currentUserId.value
+          }, comment.userId === currentUserId.value ? {
             o: common_assets._imports_0$4,
             p: common_vendor.o(($event) => confirmDeleteComment(comment), comment.id)
           } : {}, {

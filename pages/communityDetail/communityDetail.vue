@@ -78,7 +78,7 @@
 											mode="widthFix" />
 										<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
 						</view>
-                                    <view v-if="comment.isSelf" class="c-delete-btn" @tap.stop="confirmDeleteComment(comment)">
+                                    <view v-if="comment.userId === currentUserId" class="c-delete-btn" @tap.stop="confirmDeleteComment(comment)">
                                         <image class="c-delete-icon" src="/static/user/delete.png" mode="widthFix" />
                                     </view>
 								</view>
@@ -452,6 +452,16 @@ async function likePost() {
 // 加载评论数据
 async function loadComments(feedId) {
 	try {
+		// 确保 currentUserId 已获取
+		if (!currentUserId.value) {
+			try {
+				const profile = await api.getProfile()
+				if (profile && profile.id) currentUserId.value = profile.id
+			} catch (e) { 
+				console.error('获取用户信息失败:', e)
+			}
+		}
+		
 		const commentsData = await api.getComments(feedId)
 		comments.splice(0, comments.length, ...commentsData.map((c) => {
 			// 处理评论时间显示
@@ -1154,7 +1164,7 @@ function previewImages(images, current) {
 .c-actions-right {
 	display: flex;
 	align-items: center;
-	gap: 16rpx;
+	gap: 31rpx;
 }
 
 .c-reply {
@@ -1167,9 +1177,6 @@ function previewImages(images, current) {
 	display: flex;
 	align-items: center;
 	gap: 6rpx;
-	padding: 8rpx 12rpx;
-	background: #f5f5f5;
-	border-radius: 20rpx;
 }
 
 .c-delete-btn {
@@ -1182,8 +1189,8 @@ function previewImages(images, current) {
 }
 
 .c-delete-icon {
-    width: 28rpx;
-    height: 28rpx;
+    width: 20rpx;
+    height: 20rpx;
 }
 
 .c-like-icon {
@@ -1367,7 +1374,8 @@ function previewImages(images, current) {
 .r-actions-right {
 	display: flex;
 	align-items: center;
-	gap: 12rpx;
+	gap: 38rpx;
+	transform: translateX(6rpx);
 }
 
 .r-reply {
@@ -1380,14 +1388,11 @@ function previewImages(images, current) {
 	display: flex;
 	align-items: center;
 	gap: 4rpx;
-	padding: 6rpx 10rpx;
-	background: #f5f5f5;
-	border-radius: 16rpx;
 }
 
 .r-like-icon {
-	width: 18rpx;
-	height: 18rpx;
+	width: 20rpx;
+	height: 20rpx;
 }
 
 .r-like-count {

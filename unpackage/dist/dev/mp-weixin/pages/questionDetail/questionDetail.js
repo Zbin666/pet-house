@@ -22,7 +22,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             currentUserPet.value = petsList[0];
           }
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:170", "获取宠物信息失败:", e);
+          common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:174", "获取宠物信息失败:", e);
         }
         try {
           const profile = await utils_api.api.getProfile();
@@ -158,7 +158,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           await loadAnswerComments(answer.id);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:397", "加载问答详情失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:401", "加载问答详情失败:", error);
         common_vendor.index.showToast({
           title: "加载失败",
           icon: "none"
@@ -193,7 +193,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         } catch (e) {
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:442", "提交回答失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:446", "提交回答失败:", error);
         common_vendor.index.showToast({
           title: "提交失败",
           icon: "none"
@@ -219,7 +219,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:473", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:477", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -243,7 +243,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           }
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:502", "关注操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:506", "关注操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -253,7 +253,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     async function loadAnswerComments(answerId) {
       try {
         const data = await utils_api.api.getAnswerComments(answerId);
-        common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:515", "加载评论数据:", data);
+        common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:519", "加载评论数据:", data);
         const answer = qa.answers.find((a) => a.id === answerId);
         if (answer) {
           answer.comments = data.map((comment, index) => ({
@@ -265,10 +265,10 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             showReplies: false,
             expandedReplies: 0
           }));
-          common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:526", "更新后的回答评论:", answer.comments);
+          common_vendor.index.__f__("log", "at pages/questionDetail/questionDetail.vue:530", "更新后的回答评论:", answer.comments);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:529", "加载评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:533", "加载评论失败:", error);
       }
     }
     function formatCommentTime(createdAt) {
@@ -354,7 +354,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:639", "提交回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:643", "提交回复失败:", error);
         common_vendor.index.showToast({
           title: "回复失败",
           icon: "none"
@@ -398,7 +398,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           icon: "success"
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:692", "提交回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:696", "提交回复失败:", error);
         common_vendor.index.showToast({
           title: "回复失败",
           icon: "none"
@@ -420,7 +420,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:718", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/questionDetail/questionDetail.vue:722", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -590,16 +590,19 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
             h: common_vendor.t(answer.time),
             i: common_vendor.o(($event) => startReplyToAnswer(answer), answer.id),
             j: answer.isLiked ? "/static/community/good-active.png" : "/static/community/good.png",
-            k: common_vendor.t(answer.likes),
-            l: common_vendor.o(($event) => likeAnswer(answer), answer.id),
-            m: ((_a2 = answer.user) == null ? void 0 : _a2.id) === currentUserId.value
-          }, ((_b2 = answer.user) == null ? void 0 : _b2.id) === currentUserId.value ? {
-            n: common_assets._imports_0$4,
-            o: common_vendor.o(($event) => confirmDeleteAnswer(answer), answer.id)
+            k: answer.likes > 0
+          }, answer.likes > 0 ? {
+            l: common_vendor.t(answer.likes)
           } : {}, {
-            p: answer.showComments && answer.comments && answer.comments.length
+            m: common_vendor.o(($event) => likeAnswer(answer), answer.id),
+            n: ((_a2 = answer.user) == null ? void 0 : _a2.id) === currentUserId.value
+          }, ((_b2 = answer.user) == null ? void 0 : _b2.id) === currentUserId.value ? {
+            o: common_assets._imports_0$4,
+            p: common_vendor.o(($event) => confirmDeleteAnswer(answer), answer.id)
+          } : {}, {
+            q: answer.showComments && answer.comments && answer.comments.length
           }, answer.showComments && answer.comments && answer.comments.length ? {
-            q: common_vendor.f(answer.comments.slice(0, answer.expandedComments), (comment, k1, i1) => {
+            r: common_vendor.f(answer.comments.slice(0, answer.expandedComments), (comment, k1, i1) => {
               var _a3, _b3;
               return common_vendor.e({
                 a: getUserAvatarSrc(comment.user.avatarUrl),
@@ -631,23 +634,23 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
                 s: comment.id
               });
             }),
-            r: common_vendor.o(() => {
+            s: common_vendor.o(() => {
             }, answer.id)
           } : {}, {
-            s: answer.comments && answer.comments.length > 0
+            t: answer.comments && answer.comments.length > 0
           }, answer.comments && answer.comments.length > 0 ? common_vendor.e({
-            t: !answer.showComments
+            v: !answer.showComments
           }, !answer.showComments ? {
-            v: common_vendor.t(answer.comments.length),
-            w: common_vendor.o(($event) => toggleAnswerComments(answer), answer.id)
+            w: common_vendor.t(answer.comments.length),
+            x: common_vendor.o(($event) => toggleAnswerComments(answer), answer.id)
           } : common_vendor.e({
-            x: answer.expandedComments < answer.comments.length
+            y: answer.expandedComments < answer.comments.length
           }, answer.expandedComments < answer.comments.length ? {
-            y: common_vendor.o(($event) => expandMoreComments(answer), answer.id)
+            z: common_vendor.o(($event) => expandMoreComments(answer), answer.id)
           } : {}, {
-            z: common_vendor.o(($event) => collapseComments(answer), answer.id)
+            A: common_vendor.o(($event) => collapseComments(answer), answer.id)
           })) : {}, {
-            A: answer.id
+            B: answer.id
           });
         }),
         o: qa.answers.length === 0

@@ -181,6 +181,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 16rpx;
+	margin-top: 10rpx;
 }
 .answer-card.data-v-f887a9d3 {
 	background: #fff;
@@ -327,12 +328,12 @@
 .like-btn.data-v-f887a9d3 {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: 6rpx;
-	padding: 8rpx 12rpx;
-	background: #f5f5f5;
-	border-radius: 20rpx;
 	flex-shrink: 0;
 	margin-left: auto;
+	width: 48rpx;
+	height: 48rpx;
 }
 .like-icon.data-v-f887a9d3 {
 	width: 20rpx;
@@ -451,28 +452,34 @@
 .c-actions.data-v-f887a9d3 {
 	display: flex;
 	align-items: center;
-	justify-content: flex-start;
+	justify-content: space-between;
 	margin-top: 8rpx;
-	gap: 16rpx;
 }
 .c-time.data-v-f887a9d3 {
 	font-size: 22rpx;
 	color: #999;
+}
+.c-actions-left.data-v-f887a9d3 {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
 }
 .c-reply.data-v-f887a9d3 {
 	font-size: 22rpx;
 	color: #999;
 	flex-shrink: 0;
 }
+.c-actions-right.data-v-f887a9d3 {
+	display: flex;
+	align-items: center;
+	gap: 38rpx;
+	transform: translateX(10rpx);
+}
 .c-like-btn.data-v-f887a9d3 {
 	display: flex;
 	align-items: center;
 	gap: 6rpx;
-	padding: 8rpx 12rpx;
-	background: #f5f5f5;
-	border-radius: 20rpx;
 	flex-shrink: 0;
-	margin-left: auto;
 }
 .c-like-icon.data-v-f887a9d3 {
 	width: 20rpx;
@@ -488,9 +495,6 @@
 	justify-content: center;
 	width: 48rpx;
 	height: 48rpx;
-	border-radius: 50%;
-	background: #f5f5f5;
-	margin-left: 8rpx;
 }
 .delete-icon.data-v-f887a9d3 {
 	width: 20rpx;
@@ -502,8 +506,6 @@
 	justify-content: center;
 	width: 48rpx;
 	height: 48rpx;
-	border-radius: 50%;
-	background: #f5f5f5;
 	margin-left: 8rpx;
 }
 
@@ -600,31 +602,36 @@
 .r-actions.data-v-f887a9d3 {
 	display: flex;
 	align-items: center;
-	justify-content: flex-start;
-	gap: 12rpx;
+	justify-content: space-between;
 }
 .r-time.data-v-f887a9d3 {
 	font-size: 20rpx;
 	color: #999;
+}
+.r-actions-left.data-v-f887a9d3 {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
 }
 .r-reply.data-v-f887a9d3 {
 	font-size: 20rpx;
 	color: #999;
 	flex-shrink: 0;
 }
+.r-actions-right.data-v-f887a9d3 {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
 .r-like-btn.data-v-f887a9d3 {
 	display: flex;
 	align-items: center;
 	gap: 4rpx;
-	padding: 6rpx 10rpx;
-	background: #f0f0f0;
-	border-radius: 16rpx;
 	flex-shrink: 0;
-	margin-left: auto;
 }
 .r-like-icon.data-v-f887a9d3 {
-	width: 16rpx;
-	height: 16rpx;
+	width: 20rpx;
+	height: 20rpx;
 }
 .r-like-count.data-v-f887a9d3 {
 	font-size: 20rpx;

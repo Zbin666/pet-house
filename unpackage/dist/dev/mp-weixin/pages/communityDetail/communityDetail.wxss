@@ -272,7 +272,7 @@
 .c-actions-right.data-v-6818b03b {
 	display: flex;
 	align-items: center;
-	gap: 16rpx;
+	gap: 31rpx;
 }
 .c-reply.data-v-6818b03b {
 	font-size: 22rpx;
@@ -283,9 +283,6 @@
 	display: flex;
 	align-items: center;
 	gap: 6rpx;
-	padding: 8rpx 12rpx;
-	background: #f5f5f5;
-	border-radius: 20rpx;
 }
 .c-delete-btn.data-v-6818b03b {
     display: flex;
@@ -296,8 +293,8 @@
     margin-left: 8rpx;
 }
 .c-delete-icon.data-v-6818b03b {
-    width: 28rpx;
-    height: 28rpx;
+    width: 20rpx;
+    height: 20rpx;
 }
 .c-like-icon.data-v-6818b03b {
 	width: 20rpx;
@@ -454,7 +451,8 @@
 .r-actions-right.data-v-6818b03b {
 	display: flex;
 	align-items: center;
-	gap: 12rpx;
+	gap: 38rpx;
+	transform: translateX(6rpx);
 }
 .r-reply.data-v-6818b03b {
 	font-size: 20rpx;
@@ -465,13 +463,10 @@
 	display: flex;
 	align-items: center;
 	gap: 4rpx;
-	padding: 6rpx 10rpx;
-	background: #f5f5f5;
-	border-radius: 16rpx;
 }
 .r-like-icon.data-v-6818b03b {
-	width: 18rpx;
-	height: 18rpx;
+	width: 20rpx;
+	height: 20rpx;
 }
 .r-like-count.data-v-6818b03b {
 	font-size: 20rpx;

@@ -52,7 +52,7 @@
 								<text class="answer-reply" @tap.stop="startReplyToAnswer(answer)">回复</text>
 								<view class="like-btn" @tap="likeAnswer(answer)">
 									<image class="like-icon" :src="answer.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
-									<text class="like-count">{{ answer.likes }}</text>
+									<text class="like-count" v-if="answer.likes > 0">{{ answer.likes }}</text>
 								</view>
 								<view v-if="answer.user?.id === currentUserId" class="answer-delete-btn" @tap.stop="confirmDeleteAnswer(answer)">
 									<image class="delete-icon" src="/static/user/delete.png" mode="widthFix" />
@@ -80,15 +80,19 @@
 									</view>
 									<text class="c-text">{{ comment.content }}</text>
 									<view class="c-actions">
-										<text class="c-time">{{ comment.time }}</text>
-										<text class="c-reply" @tap.stop="startReply(comment, answer)">回复</text>
-										<view class="c-like-btn" @tap.stop="likeComment(comment)">
-											<image class="c-like-icon" :src="comment.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
-											<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
+										<view class="c-actions-left">
+											<text class="c-time">{{ comment.time }}</text>
+											<text class="c-reply" @tap.stop="startReply(comment, answer)">回复</text>
 										</view>
-							<view v-if="comment.user?.id === currentUserId" class="c-delete-btn" @tap.stop="confirmDeleteAnswerComment(answer, comment)">
-								<image class="delete-icon" src="/static/user/delete.png" mode="widthFix" />
-							</view>
+										<view class="c-actions-right">
+											<view class="c-like-btn" @tap.stop="likeComment(comment)">
+												<image class="c-like-icon" :src="comment.isLiked ? '/static/community/good-active.png' : '/static/community/good.png'" mode="widthFix" />
+												<text class="c-like-count" v-if="comment.likes > 0">{{ comment.likes }}</text>
+											</view>
+											<view v-if="comment.user?.id === currentUserId" class="c-delete-btn" @tap.stop="confirmDeleteAnswerComment(answer, comment)">
+												<image class="delete-icon" src="/static/user/delete.png" mode="widthFix" />
+											</view>
+										</view>
 									</view>
 									
 									<!-- 此处不再显示评论内的回复展开/列表 -->
@@ -1087,6 +1091,7 @@ onLoad(() => {
 	display: flex;
 	flex-direction: column;
 	gap: 16rpx;
+	margin-top: 10rpx;
 }
 
 .answer-card {
@@ -1251,12 +1256,12 @@ onLoad(() => {
 .like-btn {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: 6rpx;
-	padding: 8rpx 12rpx;
-	background: #f5f5f5;
-	border-radius: 20rpx;
 	flex-shrink: 0;
 	margin-left: auto;
+	width: 48rpx;
+	height: 48rpx;
 }
 
 .like-icon {
@@ -1395,14 +1400,19 @@ onLoad(() => {
 .c-actions {
 	display: flex;
 	align-items: center;
-	justify-content: flex-start;
+	justify-content: space-between;
 	margin-top: 8rpx;
-	gap: 16rpx;
 }
 
 .c-time {
 	font-size: 22rpx;
 	color: #999;
+}
+
+.c-actions-left {
+	display: flex;
+	align-items: center;
+	gap: 16rpx;
 }
 
 .c-reply {
@@ -1411,16 +1421,18 @@ onLoad(() => {
 	flex-shrink: 0;
 }
 
+.c-actions-right {
+	display: flex;
+	align-items: center;
+	gap: 38rpx;
+	transform: translateX(10rpx);
+}
 
 .c-like-btn {
 	display: flex;
 	align-items: center;
 	gap: 6rpx;
-	padding: 8rpx 12rpx;
-	background: #f5f5f5;
-	border-radius: 20rpx;
 	flex-shrink: 0;
-	margin-left: auto;
 }
 
 .c-like-icon {
@@ -1439,9 +1451,6 @@ onLoad(() => {
 	justify-content: center;
 	width: 48rpx;
 	height: 48rpx;
-	border-radius: 50%;
-	background: #f5f5f5;
-	margin-left: 8rpx;
 }
 
 .delete-icon {
@@ -1455,8 +1464,6 @@ onLoad(() => {
 	justify-content: center;
 	width: 48rpx;
 	height: 48rpx;
-	border-radius: 50%;
-	background: #f5f5f5;
 	margin-left: 8rpx;
 }
 
@@ -1568,13 +1575,18 @@ onLoad(() => {
 .r-actions {
 	display: flex;
 	align-items: center;
-	justify-content: flex-start;
-	gap: 12rpx;
+	justify-content: space-between;
 }
 
 .r-time {
 	font-size: 20rpx;
 	color: #999;
+}
+
+.r-actions-left {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
 }
 
 .r-reply {
@@ -1583,20 +1595,22 @@ onLoad(() => {
 	flex-shrink: 0;
 }
 
+.r-actions-right {
+	display: flex;
+	align-items: center;
+	gap: 12rpx;
+}
+
 .r-like-btn {
 	display: flex;
 	align-items: center;
 	gap: 4rpx;
-	padding: 6rpx 10rpx;
-	background: #f0f0f0;
-	border-radius: 16rpx;
 	flex-shrink: 0;
-	margin-left: auto;
 }
 
 .r-like-icon {
-	width: 16rpx;
-	height: 16rpx;
+	width: 20rpx;
+	height: 20rpx;
 }
 
 .r-like-count {
