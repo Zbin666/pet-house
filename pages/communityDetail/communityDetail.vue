@@ -271,6 +271,47 @@ function getUserAvatarSrc(url) {
 	return '/static/user/user.png'
 }
 
+// 统一的时间格式化函数
+function formatRelativeTime(createdAt) {
+	const now = new Date()
+	
+	// 解析createdAt (格式: 2025-10-23T19:56:29.000Z)
+	const createdDate = createdAt.split('T')[0] // 2025-10-23
+	const createdTime = createdAt.split('T')[1].split('.')[0] // 19:56:29
+	const [createdYear, createdMonth, createdDateNum] = createdDate.split('-').map(Number)
+	const [createdHour, createdMinute] = createdTime.split(':').map(Number)
+	
+	// 获取当前时间的年月日时分秒
+	const nowYear = now.getFullYear()
+	const nowMonth = now.getMonth() + 1
+	const nowDate = now.getDate()
+	const nowHour = now.getHours()
+	const nowMinute = now.getMinutes()
+	
+	// 计算总分钟差（基于年月日时分）
+	const totalMinutesDiff = (nowYear - createdYear) * 365 * 24 * 60 + 
+		(nowMonth - createdMonth) * 30 * 24 * 60 + 
+		(nowDate - createdDateNum) * 24 * 60 + 
+		(nowHour - createdHour) * 60 + 
+		(nowMinute - createdMinute)
+	
+	// 判断是否超过24小时（1440分钟）
+	if (totalMinutesDiff < 1440) {
+		// 24小时内，显示相对时间
+		if (totalMinutesDiff < 1) {
+			return '刚刚'
+		} else if (totalMinutesDiff < 60) {
+			return `${totalMinutesDiff}分钟前`
+		} else {
+			const hours = Math.floor(totalMinutesDiff / 60)
+			return `${hours}小时前`
+		}
+	} else {
+		// 超过24小时，显示创建日期时间
+		return `${createdMonth}/${createdDateNum} ${createdHour.toString().padStart(2,'0')}:${createdMinute.toString().padStart(2,'0')}`
+	}
+}
+
 async function loadDetail(id) {
 	try {
 		const f = await api.getFeed(id)
@@ -305,21 +346,7 @@ async function loadDetail(id) {
 		post.title = title ? `#${title}` : ''
 		// 处理时间显示
 		if (f.createdAt) {
-			const created = new Date(f.createdAt)
-			const now = new Date()
-			const timeDiff = now.getTime() - created.getTime()
-			const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-			if (minutesDiff < 1) {
-				post.time = '刚刚'
-			} else if (minutesDiff < 60) {
-				post.time = `${minutesDiff}分钟前`
-			} else if (minutesDiff < 1440) { // 24小时
-				const hoursDiff = Math.floor(minutesDiff / 60)
-				post.time = `${hoursDiff}小时前`
-			} else {
-				// 超过24小时显示具体时间
-				post.time = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
-			}
+			post.time = formatRelativeTime(f.createdAt)
 		} else {
 			post.time = ''
 		}
@@ -467,39 +494,13 @@ async function loadComments(feedId) {
 			// 处理评论时间显示
 			let commentTime = ''
 			if (c.createdAt) {
-				const created = new Date(c.createdAt)
-				const now = new Date()
-				const timeDiff = now.getTime() - created.getTime()
-				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-				if (minutesDiff < 1) {
-					commentTime = '刚刚'
-				} else if (minutesDiff < 60) {
-					commentTime = `${minutesDiff}分钟前`
-				} else if (minutesDiff < 1440) { // 24小时
-					const hoursDiff = Math.floor(minutesDiff / 60)
-					commentTime = `${hoursDiff}小时前`
-				} else {
-					commentTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
-				}
+				commentTime = formatRelativeTime(c.createdAt)
 			}
 			// 处理回复数据
 			const replies = (c.replies || []).map((r) => {
 				let replyTime = ''
 				if (r.createdAt) {
-					const created = new Date(r.createdAt)
-					const now = new Date()
-					const timeDiff = now.getTime() - created.getTime()
-					const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-					if (minutesDiff < 1) {
-						replyTime = '刚刚'
-					} else if (minutesDiff < 60) {
-						replyTime = `${minutesDiff}分钟前`
-					} else if (minutesDiff < 1440) {
-						const hoursDiff = Math.floor(minutesDiff / 60)
-						replyTime = `${hoursDiff}小时前`
-					} else {
-						replyTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
-					}
+					replyTime = formatRelativeTime(r.createdAt)
 				}
 				return {
 					id: r.id,
@@ -618,21 +619,7 @@ async function submitComment() {
 			// 处理新回复的时间格式
 			let replyTime = '刚刚'
 			if (r.createdAt) {
-				const created = new Date(r.createdAt)
-				const now = new Date()
-				const timeDiff = now.getTime() - created.getTime()
-				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-
-				if (minutesDiff < 1) {
-					replyTime = '刚刚'
-				} else if (minutesDiff < 60) {
-					replyTime = `${minutesDiff}分钟前`
-				} else if (minutesDiff < 1440) {
-					const hoursDiff = Math.floor(minutesDiff / 60)
-					replyTime = `${hoursDiff}小时前`
-				} else {
-					replyTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
-				}
+				replyTime = formatRelativeTime(r.createdAt)
 			}
 
 			const newReply = {
@@ -676,21 +663,7 @@ async function submitComment() {
 			// 处理新评论的时间格式
 			let commentTime = '刚刚'
 			if (c.createdAt) {
-				const created = new Date(c.createdAt)
-				const now = new Date()
-				const timeDiff = now.getTime() - created.getTime()
-				const minutesDiff = Math.floor(timeDiff / (1000 * 60))
-
-				if (minutesDiff < 1) {
-					commentTime = '刚刚'
-				} else if (minutesDiff < 60) {
-					commentTime = `${minutesDiff}分钟前`
-				} else if (minutesDiff < 1440) { // 24小时
-					const hoursDiff = Math.floor(minutesDiff / 60)
-					commentTime = `${hoursDiff}小时前`
-				} else {
-					commentTime = `${created.getHours().toString().padStart(2, '0')}:${created.getMinutes().toString().padStart(2, '0')}`
-				}
+				commentTime = formatRelativeTime(c.createdAt)
 			}
 
 			const newComment = {

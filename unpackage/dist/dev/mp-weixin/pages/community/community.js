@@ -47,6 +47,31 @@ const _sfc_main = {
       } catch (e) {
       }
     });
+    function formatRelativeTime(createdAt) {
+      const now = /* @__PURE__ */ new Date();
+      const createdDate = createdAt.split("T")[0];
+      const createdTime = createdAt.split("T")[1].split(".")[0];
+      const [createdYear, createdMonth, createdDateNum] = createdDate.split("-").map(Number);
+      const [createdHour, createdMinute] = createdTime.split(":").map(Number);
+      const nowYear = now.getFullYear();
+      const nowMonth = now.getMonth() + 1;
+      const nowDate = now.getDate();
+      const nowHour = now.getHours();
+      const nowMinute = now.getMinutes();
+      const totalMinutesDiff = (nowYear - createdYear) * 365 * 24 * 60 + (nowMonth - createdMonth) * 30 * 24 * 60 + (nowDate - createdDateNum) * 24 * 60 + (nowHour - createdHour) * 60 + (nowMinute - createdMinute);
+      if (totalMinutesDiff < 1440) {
+        if (totalMinutesDiff < 1) {
+          return "刚刚";
+        } else if (totalMinutesDiff < 60) {
+          return `${totalMinutesDiff}分钟前`;
+        } else {
+          const hours = Math.floor(totalMinutesDiff / 60);
+          return `${hours}小时前`;
+        }
+      } else {
+        return `${createdMonth}/${createdDateNum} ${createdHour.toString().padStart(2, "0")}:${createdMinute.toString().padStart(2, "0")}`;
+      }
+    }
     common_vendor.onShow(() => {
       if (topTab.value === "qa") {
         loadQuestions();
@@ -85,20 +110,9 @@ const _sfc_main = {
           const user = f.User || {};
           const pet = f.Pet || {};
           const imgs = Array.isArray(f.images) ? f.images : [];
-          const created = f.createdAt ? new Date(f.createdAt) : null;
-          const now = /* @__PURE__ */ new Date();
-          const timeDiff = now.getTime() - created.getTime();
-          const minutesDiff = Math.floor(timeDiff / (1e3 * 60));
           let time = "刚刚";
-          if (minutesDiff < 1) {
-            time = "刚刚";
-          } else if (minutesDiff < 60) {
-            time = `${minutesDiff}分钟前`;
-          } else if (minutesDiff < 1440) {
-            const hoursDiff = Math.floor(minutesDiff / 60);
-            time = `${hoursDiff}小时前`;
-          } else {
-            time = `${created.getHours().toString().padStart(2, "0")}:${created.getMinutes().toString().padStart(2, "0")}`;
+          if (f.createdAt) {
+            time = formatRelativeTime(f.createdAt);
           }
           let title = "";
           if (f.tags && Array.isArray(f.tags) && f.tags.length > 0) {
@@ -249,7 +263,7 @@ const _sfc_main = {
         qaHasMore.value = newQaPosts.length >= qaLimit.value;
         qaPosts.value = qaPosts.value.slice();
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:528", "加载问答数据失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:557", "加载问答数据失败:", e);
         if (!isLoadMore) {
           qaPosts.value = [];
         }
@@ -277,18 +291,18 @@ const _sfc_main = {
         return;
       try {
         scienceLoading.value = true;
-        common_vendor.index.__f__("log", "at pages/community/community.vue:565", "开始加载科普文章，参数:", params, "是否加载更多:", isLoadMore);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:594", "开始加载科普文章，参数:", params, "是否加载更多:", isLoadMore);
         const currentPage = isLoadMore ? sciencePage.value : 1;
         const res = await utils_api.api.getArticles({
           page: currentPage,
           limit: scienceLimit.value,
           ...params
         });
-        common_vendor.index.__f__("log", "at pages/community/community.vue:573", "API返回数据:", res);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:602", "API返回数据:", res);
         const list = Array.isArray(res) ? res : res.articles || res.data || [];
-        common_vendor.index.__f__("log", "at pages/community/community.vue:576", "处理后的文章列表:", list);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:605", "处理后的文章列表:", list);
         const newArticles = list.map((article) => {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:579", "处理文章:", article.title, "图片URL:", article.cover);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:608", "处理文章:", article.title, "图片URL:", article.cover);
           return {
             id: article.id,
             title: article.title || "无标题",
@@ -306,10 +320,10 @@ const _sfc_main = {
           sciencePage.value = 2;
         }
         scienceHasMore.value = newArticles.length >= scienceLimit.value;
-        common_vendor.index.__f__("log", "at pages/community/community.vue:603", "最终科普文章数据:", sciencePosts.value);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:604", "当前页数:", sciencePage.value, "是否还有更多:", scienceHasMore.value);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:632", "最终科普文章数据:", sciencePosts.value);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:633", "当前页数:", sciencePage.value, "是否还有更多:", scienceHasMore.value);
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:606", "加载科普文章失败:", e);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:635", "加载科普文章失败:", e);
         if (!isLoadMore) {
           sciencePosts.value = [];
         }
@@ -387,13 +401,13 @@ const _sfc_main = {
             imageCache.set(originalUrl, res.tempFilePath);
             sciencePosts.value = [...sciencePosts.value];
           } else {
-            common_vendor.index.__f__("warn", "at pages/community/community.vue:716", "图片下载失败:", originalUrl, res.statusCode);
+            common_vendor.index.__f__("warn", "at pages/community/community.vue:745", "图片下载失败:", originalUrl, res.statusCode);
             imageCache.set(originalUrl, "/static/404.png");
             sciencePosts.value = [...sciencePosts.value];
           }
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/community/community.vue:722", "图片下载失败:", originalUrl, err);
+          common_vendor.index.__f__("error", "at pages/community/community.vue:751", "图片下载失败:", originalUrl, err);
           imageCache.set(originalUrl, "/static/404.png");
           sciencePosts.value = [...sciencePosts.value];
         }
@@ -437,14 +451,14 @@ const _sfc_main = {
       return "/static/404.png";
     }
     function handleImageError(e) {
-      common_vendor.index.__f__("error", "at pages/community/community.vue:785", "图片加载失败:", e);
-      common_vendor.index.__f__("error", "at pages/community/community.vue:786", "图片URL:", e.target.src);
-      common_vendor.index.__f__("error", "at pages/community/community.vue:787", "错误详情:", e.detail);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:814", "图片加载失败:", e);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:815", "图片URL:", e.target.src);
+      common_vendor.index.__f__("error", "at pages/community/community.vue:816", "错误详情:", e.detail);
       e.target.src = "/static/404.png";
-      common_vendor.index.__f__("log", "at pages/community/community.vue:791", "已设置默认图片:", e.target.src);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:820", "已设置默认图片:", e.target.src);
     }
     function handleImageLoad(e) {
-      common_vendor.index.__f__("log", "at pages/community/community.vue:796", "图片加载成功:", e.target.src);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:825", "图片加载成功:", e.target.src);
     }
     function selectCategory(key) {
       currentCategory.value = key;
@@ -487,42 +501,42 @@ const _sfc_main = {
     }
     async function goScienceDetail(article) {
       try {
-        common_vendor.index.__f__("log", "at pages/community/community.vue:841", "🔍 点击科普文章:", article);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:842", "🔍 当前阅读数:", article.reads);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:845", "📡 开始调用增加阅读数API...");
+        common_vendor.index.__f__("log", "at pages/community/community.vue:870", "🔍 点击科普文章:", article);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:871", "🔍 当前阅读数:", article.reads);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:874", "📡 开始调用增加阅读数API...");
         const result = await utils_api.api.incrementArticleReads(article.id);
-        common_vendor.index.__f__("log", "at pages/community/community.vue:847", "📡 API返回结果:", result);
+        common_vendor.index.__f__("log", "at pages/community/community.vue:876", "📡 API返回结果:", result);
         if (result && result.success) {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:850", "✅ 阅读数增加成功，新阅读数:", result.reads);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:879", "✅ 阅读数增加成功，新阅读数:", result.reads);
           const index = sciencePosts.value.findIndex((a) => a.id === article.id);
-          common_vendor.index.__f__("log", "at pages/community/community.vue:853", "🔍 找到文章索引:", index);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:882", "🔍 找到文章索引:", index);
           if (index > -1) {
-            common_vendor.index.__f__("log", "at pages/community/community.vue:856", "🔄 更新前本地阅读数:", sciencePosts.value[index].reads);
+            common_vendor.index.__f__("log", "at pages/community/community.vue:885", "🔄 更新前本地阅读数:", sciencePosts.value[index].reads);
             sciencePosts.value[index].reads = result.reads;
-            common_vendor.index.__f__("log", "at pages/community/community.vue:858", "🔄 更新后本地阅读数:", sciencePosts.value[index].reads);
+            common_vendor.index.__f__("log", "at pages/community/community.vue:887", "🔄 更新后本地阅读数:", sciencePosts.value[index].reads);
           }
           article.reads = result.reads;
-          common_vendor.index.__f__("log", "at pages/community/community.vue:862", "🔄 更新传入详情页的阅读数:", article.reads);
+          common_vendor.index.__f__("log", "at pages/community/community.vue:891", "🔄 更新传入详情页的阅读数:", article.reads);
         } else {
-          common_vendor.index.__f__("warn", "at pages/community/community.vue:864", "⚠️ API返回失败或格式不正确:", result);
+          common_vendor.index.__f__("warn", "at pages/community/community.vue:893", "⚠️ API返回失败或格式不正确:", result);
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:867", "❌ 增加阅读数失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:896", "❌ 增加阅读数失败:", error);
       }
-      common_vendor.index.__f__("log", "at pages/community/community.vue:871", "🚀 准备跳转到详情页，文章数据:", article);
+      common_vendor.index.__f__("log", "at pages/community/community.vue:900", "🚀 准备跳转到详情页，文章数据:", article);
       common_vendor.index.navigateTo({
         url: `/pages/scienceDetail/scienceDetail?id=${article.id}`,
         success: (res) => {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:875", "✅ 页面跳转成功");
+          common_vendor.index.__f__("log", "at pages/community/community.vue:904", "✅ 页面跳转成功");
           try {
             res.eventChannel.emit("science", article);
-            common_vendor.index.__f__("log", "at pages/community/community.vue:878", "📤 已发送文章数据到详情页:", article);
+            common_vendor.index.__f__("log", "at pages/community/community.vue:907", "📤 已发送文章数据到详情页:", article);
           } catch (e) {
-            common_vendor.index.__f__("error", "at pages/community/community.vue:880", "❌ 发送数据到详情页失败:", e);
+            common_vendor.index.__f__("error", "at pages/community/community.vue:909", "❌ 发送数据到详情页失败:", e);
           }
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/community/community.vue:884", "❌ 页面跳转失败:", err);
+          common_vendor.index.__f__("error", "at pages/community/community.vue:913", "❌ 页面跳转失败:", err);
         }
       });
     }
@@ -538,10 +552,10 @@ const _sfc_main = {
         current,
         urls: images,
         success: () => {
-          common_vendor.index.__f__("log", "at pages/community/community.vue:899", "图片预览成功");
+          common_vendor.index.__f__("log", "at pages/community/community.vue:928", "图片预览成功");
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/community/community.vue:902", "图片预览失败:", err);
+          common_vendor.index.__f__("error", "at pages/community/community.vue:931", "图片预览失败:", err);
           common_vendor.index.showToast({
             title: "图片预览失败",
             icon: "none"
@@ -569,7 +583,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:935", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:964", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -597,7 +611,7 @@ const _sfc_main = {
                   posts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:966", "删除动态失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:995", "删除动态失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -607,7 +621,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:976", "删除动态失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:1005", "删除动态失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"
@@ -635,7 +649,7 @@ const _sfc_main = {
                   qaPosts.value.splice(index, 1);
                 }
               } catch (error) {
-                common_vendor.index.__f__("error", "at pages/community/community.vue:1007", "删除问答失败:", error);
+                common_vendor.index.__f__("error", "at pages/community/community.vue:1036", "删除问答失败:", error);
                 common_vendor.index.showToast({
                   title: "删除失败",
                   icon: "none"
@@ -645,7 +659,7 @@ const _sfc_main = {
           }
         });
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/community/community.vue:1017", "删除问答失败:", error);
+        common_vendor.index.__f__("error", "at pages/community/community.vue:1046", "删除问答失败:", error);
         common_vendor.index.showToast({
           title: "删除失败",
           icon: "none"

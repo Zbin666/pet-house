@@ -284,6 +284,47 @@ onMounted(async () => {
 	try { uni.$on('qa:refresh', () => { if (topTab.value === 'qa') loadQuestions() }) } catch (e) {}
 })
 
+// 统一的时间格式化函数
+function formatRelativeTime(createdAt) {
+	const now = new Date()
+	
+	// 解析createdAt (格式: 2025-10-23T19:56:29.000Z)
+	const createdDate = createdAt.split('T')[0] // 2025-10-23
+	const createdTime = createdAt.split('T')[1].split('.')[0] // 19:56:29
+	const [createdYear, createdMonth, createdDateNum] = createdDate.split('-').map(Number)
+	const [createdHour, createdMinute] = createdTime.split(':').map(Number)
+	
+	// 获取当前时间的年月日时分秒
+	const nowYear = now.getFullYear()
+	const nowMonth = now.getMonth() + 1
+	const nowDate = now.getDate()
+	const nowHour = now.getHours()
+	const nowMinute = now.getMinutes()
+	
+	// 计算总分钟差（基于年月日时分）
+	const totalMinutesDiff = (nowYear - createdYear) * 365 * 24 * 60 + 
+		(nowMonth - createdMonth) * 30 * 24 * 60 + 
+		(nowDate - createdDateNum) * 24 * 60 + 
+		(nowHour - createdHour) * 60 + 
+		(nowMinute - createdMinute)
+	
+	// 判断是否超过24小时（1440分钟）
+	if (totalMinutesDiff < 1440) {
+		// 24小时内，显示相对时间
+		if (totalMinutesDiff < 1) {
+			return '刚刚'
+		} else if (totalMinutesDiff < 60) {
+			return `${totalMinutesDiff}分钟前`
+		} else {
+			const hours = Math.floor(totalMinutesDiff / 60)
+			return `${hours}小时前`
+		}
+	} else {
+		// 超过24小时，显示创建日期时间
+		return `${createdMonth}/${createdDateNum} ${createdHour.toString().padStart(2,'0')}:${createdMinute.toString().padStart(2,'0')}`
+	}
+}
+
 // 页面显示时刷新数据
 onShow(() => {
 	// 如果当前在问答标签页，刷新问答数据
@@ -332,23 +373,11 @@ async function loadFeeds(params = {}, isLoadMore = false) {
 			const user = f.User || {}
 			const pet = f.Pet || {}
 			const imgs = Array.isArray(f.images) ? f.images : []
-			const created = f.createdAt ? new Date(f.createdAt) : null
-			// 获取本地时间，确保时区正确
-			const now = new Date()
-			const timeDiff = now.getTime() - created.getTime()
-			const minutesDiff = Math.floor(timeDiff / (1000 * 60))
 			
+			// 时间格式化
 			let time = '刚刚'
-			if (minutesDiff < 1) {
-				time = '刚刚'
-			} else if (minutesDiff < 60) {
-				time = `${minutesDiff}分钟前`
-			} else if (minutesDiff < 1440) { // 24小时
-				const hoursDiff = Math.floor(minutesDiff / 60)
-				time = `${hoursDiff}小时前`
-			} else {
-				// 超过24小时显示具体时间
-				time = `${created.getHours().toString().padStart(2,'0')}:${created.getMinutes().toString().padStart(2,'0')}`
+			if (f.createdAt) {
+				time = formatRelativeTime(f.createdAt)
 			}
 			
 			// 提取标题（从tags字段中获取第一个标签作为标题）

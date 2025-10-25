@@ -334,46 +334,14 @@ async function loadQuestionDetail(questionId: string) {
 		// 时间格式化
 		let time = '刚刚'
 		if (data.createdAt) {
-			const created = new Date(data.createdAt)
-			const month = created.getUTCMonth() + 1
-			const date = created.getUTCDate()
-			const hours = created.getUTCHours().toString().padStart(2, '0')
-			const minutes = created.getUTCMinutes().toString().padStart(2, '0')
-			time = `${month}/${date} ${hours}:${minutes}`
+			time = formatRelativeTime(data.createdAt)
 		}
 		
 		// 处理回答数据
 		const processedAnswers = data.answers.map((answer: any) => {
 			let answerTime = '刚刚'
 			if (answer.createdAt) {
-				const created = new Date(answer.createdAt)
-				const now = new Date()
-				const timeDiff = now.getTime() - created.getTime()
-				const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-				
-				if (daysDiff === 0) {
-					// 今天
-					const hours = created.getHours().toString().padStart(2, '0')
-					const minutes = created.getMinutes().toString().padStart(2, '0')
-					answerTime = `今天 ${hours}:${minutes}`
-				} else if (daysDiff === 1) {
-					// 昨天
-					const hours = created.getHours().toString().padStart(2, '0')
-					const minutes = created.getMinutes().toString().padStart(2, '0')
-					answerTime = `昨天 ${hours}:${minutes}`
-				} else if (daysDiff < 7) {
-					// 一周内
-					const hours = created.getHours().toString().padStart(2, '0')
-					const minutes = created.getMinutes().toString().padStart(2, '0')
-					answerTime = `${daysDiff}天前 ${hours}:${minutes}`
-				} else {
-					// 超过一周
-					const month = created.getMonth() + 1
-					const date = created.getDate()
-					const hours = created.getHours().toString().padStart(2, '0')
-					const minutes = created.getMinutes().toString().padStart(2, '0')
-					answerTime = `${month}/${date} ${hours}:${minutes}`
-				}
+				answerTime = formatRelativeTime(answer.createdAt)
 			}
 			
 			return {
@@ -534,36 +502,55 @@ async function loadAnswerComments(answerId: string) {
 	}
 }
 
+// 统一的时间格式化函数
+function formatRelativeTime(createdAt: string) {
+	const now = new Date()
+	
+	// 解析createdAt (格式: 2025-10-23T19:56:29.000Z)
+	const createdDate = createdAt.split('T')[0] // 2025-10-23
+	const createdTime = createdAt.split('T')[1].split('.')[0] // 19:56:29
+	const [createdYear, createdMonth, createdDateNum] = createdDate.split('-').map(Number)
+	const [createdHour, createdMinute] = createdTime.split(':').map(Number)
+	
+	// 获取当前时间的年月日时分秒
+	const nowYear = now.getFullYear()
+	const nowMonth = now.getMonth() + 1
+	const nowDate = now.getDate()
+	const nowHour = now.getHours()
+	const nowMinute = now.getMinutes()
+	
+	// 调试信息
+	//console.log('=== 时间差计算 ===')
+	//console.log('创建时间:', `${createdYear}-${createdMonth.toString().padStart(2,'0')}-${createdDateNum.toString().padStart(2,'0')} ${createdHour.toString().padStart(2,'0')}:${createdMinute.toString().padStart(2,'0')}`)
+	//console.log('当前时间:', `${nowYear}-${nowMonth.toString().padStart(2,'0')}-${nowDate.toString().padStart(2,'0')} ${nowHour.toString().padStart(2,'0')}:${nowMinute.toString().padStart(2,'0')}`)
+	
+	// 计算总分钟差（基于年月日时分）
+	const totalMinutesDiff = (nowYear - createdYear) * 365 * 24 * 60 + 
+		(nowMonth - createdMonth) * 30 * 24 * 60 + 
+		(nowDate - createdDateNum) * 24 * 60 + 
+		(nowHour - createdHour) * 60 + 
+		(nowMinute - createdMinute)
+	
+	// 判断是否超过24小时（1440分钟）
+	if (totalMinutesDiff < 1440) {
+		// 24小时内，显示相对时间
+		if (totalMinutesDiff < 1) {
+			return '刚刚'
+		} else if (totalMinutesDiff < 60) {
+			return `${totalMinutesDiff}分钟前`
+		} else {
+			const hours = Math.floor(totalMinutesDiff / 60)
+			return `${hours}小时前`
+		}
+	} else {
+		// 超过24小时，显示创建日期时间
+		return `${createdMonth}/${createdDateNum} ${createdHour.toString().padStart(2,'0')}:${createdMinute.toString().padStart(2,'0')}`
+	}
+}
+
 // 格式化评论时间
 function formatCommentTime(createdAt: string) {
-	const created = new Date(createdAt)
-	const now = new Date()
-	const timeDiff = now.getTime() - created.getTime()
-	const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-	
-	if (daysDiff === 0) {
-		// 今天
-		const hours = created.getHours().toString().padStart(2, '0')
-		const minutes = created.getMinutes().toString().padStart(2, '0')
-		return `今天 ${hours}:${minutes}`
-	} else if (daysDiff === 1) {
-		// 昨天
-		const hours = created.getHours().toString().padStart(2, '0')
-		const minutes = created.getMinutes().toString().padStart(2, '0')
-		return `昨天 ${hours}:${minutes}`
-	} else if (daysDiff < 7) {
-		// 一周内
-		const hours = created.getHours().toString().padStart(2, '0')
-		const minutes = created.getMinutes().toString().padStart(2, '0')
-		return `${daysDiff}天前 ${hours}:${minutes}`
-	} else {
-		// 超过一周
-		const month = created.getMonth() + 1
-		const date = created.getDate()
-		const hours = created.getHours().toString().padStart(2, '0')
-		const minutes = created.getMinutes().toString().padStart(2, '0')
-		return `${month}/${date} ${hours}:${minutes}`
-	}
+	return formatRelativeTime(createdAt)
 }
 
 // 开始回复评论

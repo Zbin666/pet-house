@@ -83,6 +83,31 @@ const _sfc_main = {
       });
       return "/static/user/user.png";
     }
+    function formatRelativeTime(createdAt) {
+      const now = /* @__PURE__ */ new Date();
+      const createdDate = createdAt.split("T")[0];
+      const createdTime = createdAt.split("T")[1].split(".")[0];
+      const [createdYear, createdMonth, createdDateNum] = createdDate.split("-").map(Number);
+      const [createdHour, createdMinute] = createdTime.split(":").map(Number);
+      const nowYear = now.getFullYear();
+      const nowMonth = now.getMonth() + 1;
+      const nowDate = now.getDate();
+      const nowHour = now.getHours();
+      const nowMinute = now.getMinutes();
+      const totalMinutesDiff = (nowYear - createdYear) * 365 * 24 * 60 + (nowMonth - createdMonth) * 30 * 24 * 60 + (nowDate - createdDateNum) * 24 * 60 + (nowHour - createdHour) * 60 + (nowMinute - createdMinute);
+      if (totalMinutesDiff < 1440) {
+        if (totalMinutesDiff < 1) {
+          return "刚刚";
+        } else if (totalMinutesDiff < 60) {
+          return `${totalMinutesDiff}分钟前`;
+        } else {
+          const hours = Math.floor(totalMinutesDiff / 60);
+          return `${hours}小时前`;
+        }
+      } else {
+        return `${createdMonth}/${createdDateNum} ${createdHour.toString().padStart(2, "0")}:${createdMinute.toString().padStart(2, "0")}`;
+      }
+    }
     async function loadDetail(id) {
       var _a;
       try {
@@ -115,20 +140,7 @@ const _sfc_main = {
         }
         post.title = title ? `#${title}` : "";
         if (f.createdAt) {
-          const created = new Date(f.createdAt);
-          const now = /* @__PURE__ */ new Date();
-          const timeDiff = now.getTime() - created.getTime();
-          const minutesDiff = Math.floor(timeDiff / (1e3 * 60));
-          if (minutesDiff < 1) {
-            post.time = "刚刚";
-          } else if (minutesDiff < 60) {
-            post.time = `${minutesDiff}分钟前`;
-          } else if (minutesDiff < 1440) {
-            const hoursDiff = Math.floor(minutesDiff / 60);
-            post.time = `${hoursDiff}小时前`;
-          } else {
-            post.time = `${created.getHours().toString().padStart(2, "0")}:${created.getMinutes().toString().padStart(2, "0")}`;
-          }
+          post.time = formatRelativeTime(f.createdAt);
         } else {
           post.time = "";
         }
@@ -248,7 +260,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:444", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:471", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -263,7 +275,7 @@ const _sfc_main = {
             if (profile && profile.id)
               currentUserId.value = profile.id;
           } catch (e) {
-            common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:461", "获取用户信息失败:", e);
+            common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:488", "获取用户信息失败:", e);
           }
         }
         const commentsData = await utils_api.api.getComments(feedId);
@@ -271,39 +283,13 @@ const _sfc_main = {
           var _a, _b, _c, _d;
           let commentTime = "";
           if (c.createdAt) {
-            const created = new Date(c.createdAt);
-            const now = /* @__PURE__ */ new Date();
-            const timeDiff = now.getTime() - created.getTime();
-            const minutesDiff = Math.floor(timeDiff / (1e3 * 60));
-            if (minutesDiff < 1) {
-              commentTime = "刚刚";
-            } else if (minutesDiff < 60) {
-              commentTime = `${minutesDiff}分钟前`;
-            } else if (minutesDiff < 1440) {
-              const hoursDiff = Math.floor(minutesDiff / 60);
-              commentTime = `${hoursDiff}小时前`;
-            } else {
-              commentTime = `${created.getHours().toString().padStart(2, "0")}:${created.getMinutes().toString().padStart(2, "0")}`;
-            }
+            commentTime = formatRelativeTime(c.createdAt);
           }
           const replies = (c.replies || []).map((r) => {
             var _a2, _b2, _c2, _d2;
             let replyTime = "";
             if (r.createdAt) {
-              const created = new Date(r.createdAt);
-              const now = /* @__PURE__ */ new Date();
-              const timeDiff = now.getTime() - created.getTime();
-              const minutesDiff = Math.floor(timeDiff / (1e3 * 60));
-              if (minutesDiff < 1) {
-                replyTime = "刚刚";
-              } else if (minutesDiff < 60) {
-                replyTime = `${minutesDiff}分钟前`;
-              } else if (minutesDiff < 1440) {
-                const hoursDiff = Math.floor(minutesDiff / 60);
-                replyTime = `${hoursDiff}小时前`;
-              } else {
-                replyTime = `${created.getHours().toString().padStart(2, "0")}:${created.getMinutes().toString().padStart(2, "0")}`;
-              }
+              replyTime = formatRelativeTime(r.createdAt);
             }
             return {
               id: r.id,
@@ -351,7 +337,7 @@ const _sfc_main = {
         } catch (_) {
         }
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:550", "加载评论失败:", e);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:551", "加载评论失败:", e);
       }
     }
     function startReply(comment) {
@@ -399,20 +385,7 @@ const _sfc_main = {
           const r = await utils_api.api.createCommentReply(replyingToComment.value.id, replyData);
           let replyTime = "刚刚";
           if (r.createdAt) {
-            const created = new Date(r.createdAt);
-            const now = /* @__PURE__ */ new Date();
-            const timeDiff = now.getTime() - created.getTime();
-            const minutesDiff = Math.floor(timeDiff / (1e3 * 60));
-            if (minutesDiff < 1) {
-              replyTime = "刚刚";
-            } else if (minutesDiff < 60) {
-              replyTime = `${minutesDiff}分钟前`;
-            } else if (minutesDiff < 1440) {
-              const hoursDiff = Math.floor(minutesDiff / 60);
-              replyTime = `${hoursDiff}小时前`;
-            } else {
-              replyTime = `${created.getHours().toString().padStart(2, "0")}:${created.getMinutes().toString().padStart(2, "0")}`;
-            }
+            replyTime = formatRelativeTime(r.createdAt);
           }
           const newReply = {
             id: r.id,
@@ -450,20 +423,7 @@ const _sfc_main = {
           const c = await utils_api.api.createComment(post.id, commentData);
           let commentTime = "刚刚";
           if (c.createdAt) {
-            const created = new Date(c.createdAt);
-            const now = /* @__PURE__ */ new Date();
-            const timeDiff = now.getTime() - created.getTime();
-            const minutesDiff = Math.floor(timeDiff / (1e3 * 60));
-            if (minutesDiff < 1) {
-              commentTime = "刚刚";
-            } else if (minutesDiff < 60) {
-              commentTime = `${minutesDiff}分钟前`;
-            } else if (minutesDiff < 1440) {
-              const hoursDiff = Math.floor(minutesDiff / 60);
-              commentTime = `${hoursDiff}小时前`;
-            } else {
-              commentTime = `${created.getHours().toString().padStart(2, "0")}:${created.getMinutes().toString().padStart(2, "0")}`;
-            }
+            commentTime = formatRelativeTime(c.createdAt);
           }
           const newComment = {
             id: c.id,
@@ -500,7 +460,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:736", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:709", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -520,7 +480,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:777", "点赞回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:750", "点赞回复失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -575,10 +535,10 @@ const _sfc_main = {
         current,
         urls: images,
         success: () => {
-          common_vendor.index.__f__("log", "at pages/communityDetail/communityDetail.vue:839", "图片预览成功");
+          common_vendor.index.__f__("log", "at pages/communityDetail/communityDetail.vue:812", "图片预览成功");
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:842", "图片预览失败:", err);
+          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:815", "图片预览失败:", err);
           common_vendor.index.showToast({
             title: "图片预览失败",
             icon: "none"

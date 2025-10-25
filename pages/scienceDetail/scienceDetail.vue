@@ -187,13 +187,19 @@ onLoad((options) => {
 .title-tag {
 	background: #2c2c2c;
 	border-radius: 999rpx;
-	padding: 12rpx 24rpx;
+	padding: 12rpx 28rpx;
+	justify-content: center;
+	align-items: center;
+	max-width: 486rpx;
+	flex-shrink: 1;
 }
 
 .title-text {
 	color: #fff;
-	font-size: 32rpx;
+	font-size: 30rpx;
 	font-weight: 700;
+	word-wrap: break-word;
+	line-height: 1.4;
 }
 
 .read-count {
