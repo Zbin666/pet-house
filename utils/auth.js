@@ -167,9 +167,22 @@ export const getUserInfo = () => {
 
 // 退出登录
 export const logout = () => {
+  // 保存用户基本信息（头像和昵称）用于下次静默登录
+  const userInfo = uni.getStorageSync('userInfo')
+  const basicUserInfo = userInfo ? {
+    nickname: userInfo.nickname,
+    avatarUrl: userInfo.avatarUrl
+  } : null
+  
+  // 清除登录状态
   uni.removeStorageSync('token')
   uni.removeStorageSync('userInfo')
   uni.removeStorageSync('agreed')
+  
+  // 保存基本信息用于下次登录
+  if (basicUserInfo && basicUserInfo.nickname && basicUserInfo.avatarUrl) {
+    uni.setStorageSync('basicUserInfo', basicUserInfo)
+  }
   
   // 跳转到登录页
   uni.reLaunch({

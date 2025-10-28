@@ -49,9 +49,17 @@ const loginWithPhone = () => {
   });
 };
 const logout = () => {
+  const userInfo = common_vendor.index.getStorageSync("userInfo");
+  const basicUserInfo = userInfo ? {
+    nickname: userInfo.nickname,
+    avatarUrl: userInfo.avatarUrl
+  } : null;
   common_vendor.index.removeStorageSync("token");
   common_vendor.index.removeStorageSync("userInfo");
   common_vendor.index.removeStorageSync("agreed");
+  if (basicUserInfo && basicUserInfo.nickname && basicUserInfo.avatarUrl) {
+    common_vendor.index.setStorageSync("basicUserInfo", basicUserInfo);
+  }
   common_vendor.index.reLaunch({
     url: "/pages/login/login"
   });

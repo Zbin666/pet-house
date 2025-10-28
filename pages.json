@@ -1,49 +1,100 @@
 {
-	"pages": [ 
-		{ "path": "pages/login/login", "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" } },
-		{ "path": "pages/index/index", "style": { "navigationBarTitleText": "宠物屋", "navigationStyle": "custom" } },
-		{ "path": "pages/record/record", "style": { "navigationBarTitleText": "萌宠小筑" , "navigationBarBackgroundColor" : "#fff1a8"} },
-		{ "path": "pages/createRecord/createRecord", "style": { "navigationBarTitleText": "新增记录" } },
-		{ "path": "pages/community/community", "style": { "navigationBarTitleText": "宠物圈",  "navigationBarBackgroundColor" : "#fff1a8"} },
-		{ "path": "pages/communityDetail/communityDetail", "style": { "navigationBarTitleText": "圈子详情", "navigationBarBackgroundColor": "#fff1a8" } },
-		{ "path": "pages/user/user", "style": { "navigationBarTitleText": "宠物档案"  ,"navigationStyle": "custom" }},
-        { "path": "pages/petDetail/petDetail", "style": { "navigationBarTitleText": "我的宠物"} },
-		{ "path": "pages/settings/setting", "style": { "navigationBarTitleText": "设置" } },
+	"pages": [
 		{
-			"path" : "pages/recordDetail/recordDetail",
-			"style" : 
-			{
-				"navigationBarTitleText" : ""
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "登录",
+				"navigationStyle": "custom",
+				"mp-weixin": {
+					"usingComponents": {
+						"login": "plugin://loginplugin/login"
+					}
+				}
 			}
 		},
 		{
-			"path" : "pages/createCommunity/createCommunity",
-			"style" : 
-			{
-				"navigationBarTitleText" : "发布动态",
-				"navigationBarBackgroundColor" : "#fff1a8"
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "宠物屋",
+				"navigationStyle": "custom"
 			}
 		},
 		{
-			"path" : "pages/questionDetail/questionDetail",
-			"style" : 
-			{
-				"navigationBarTitleText" : ""
+			"path": "pages/record/record",
+			"style": {
+				"navigationBarTitleText": "萌宠小筑",
+				"navigationBarBackgroundColor": "#fff1a8"
 			}
 		},
 		{
-			"path" : "pages/scienceDetail/scienceDetail",
-			"style" : 
-			{
-				"navigationBarTitleText" : ""
+			"path": "pages/createRecord/createRecord",
+			"style": {
+				"navigationBarTitleText": "新增记录"
 			}
 		},
 		{
-			"path" : "pages/createPet/createPet",
-			"style" : 
-			{
-				"navigationBarTitleText" : "创建宠物",
-				"navigationBarBackgroundColor" : "#fff1a8"
+			"path": "pages/community/community",
+			"style": {
+				"navigationBarTitleText": "宠物圈",
+				"navigationBarBackgroundColor": "#fff1a8"
+			}
+		},
+		{
+			"path": "pages/communityDetail/communityDetail",
+			"style": {
+				"navigationBarTitleText": "圈子详情",
+				"navigationBarBackgroundColor": "#fff1a8"
+			}
+		},
+		{
+			"path": "pages/user/user",
+			"style": {
+				"navigationBarTitleText": "宠物档案",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/petDetail/petDetail",
+			"style": {
+				"navigationBarTitleText": "我的宠物"
+			}
+		},
+		{
+			"path": "pages/settings/setting",
+			"style": {
+				"navigationBarTitleText": "设置"
+			}
+		},
+		{
+			"path": "pages/recordDetail/recordDetail",
+			"style": {
+				"navigationBarTitleText": ""
+			}
+		},
+		{
+			"path": "pages/createCommunity/createCommunity",
+			"style": {
+				"navigationBarTitleText": "发布动态",
+				"navigationBarBackgroundColor": "#fff1a8"
+			}
+		},
+		{
+			"path": "pages/questionDetail/questionDetail",
+			"style": {
+				"navigationBarTitleText": ""
+			}
+		},
+		{
+			"path": "pages/scienceDetail/scienceDetail",
+			"style": {
+				"navigationBarTitleText": ""
+			}
+		},
+		{
+			"path": "pages/createPet/createPet",
+			"style": {
+				"navigationBarTitleText": "创建宠物",
+				"navigationBarBackgroundColor": "#fff1a8"
 			}
 		}
 	],
@@ -51,11 +102,30 @@
 		"color": "#666",
 		"selectedColor": "#333",
 		"backgroundColor": "#FFFFFF",
-		"list": [
-			{ "pagePath": "pages/index/index", "text": "首页", "iconPath": "static/tarBar/index.png", "selectedIconPath": "static/tarBar/index-active.png" },
-			{ "pagePath": "pages/record/record", "text": "记录", "iconPath": "static/tarBar/record.png", "selectedIconPath": "static/tarBar/record-active.png" },
-			{ "pagePath": "pages/community/community", "text": "宠物圈", "iconPath": "static/tarBar/petCircle.png", "selectedIconPath": "static/tarBar/petCircle-active.png" },
-			{ "pagePath": "pages/user/user", "text": "铲屎官", "iconPath": "static/tarBar/user.png", "selectedIconPath": "static/tarBar/user-active.png" }
+		"list": [{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/tarBar/index.png",
+				"selectedIconPath": "static/tarBar/index-active.png"
+			},
+			{
+				"pagePath": "pages/record/record",
+				"text": "记录",
+				"iconPath": "static/tarBar/record.png",
+				"selectedIconPath": "static/tarBar/record-active.png"
+			},
+			{
+				"pagePath": "pages/community/community",
+				"text": "宠物圈",
+				"iconPath": "static/tarBar/petCircle.png",
+				"selectedIconPath": "static/tarBar/petCircle-active.png"
+			},
+			{
+				"pagePath": "pages/user/user",
+				"text": "铲屎官",
+				"iconPath": "static/tarBar/user.png",
+				"selectedIconPath": "static/tarBar/user-active.png"
+			}
 		]
 	},
 	"globalStyle": {

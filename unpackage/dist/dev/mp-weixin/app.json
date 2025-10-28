@@ -52,5 +52,11 @@
       }
     ]
   },
+  "plugins": {
+    "loginplugin": {
+      "version": "latest",
+      "provider": "wxc7b7f914565de923"
+    }
+  },
   "usingComponents": {}
 }

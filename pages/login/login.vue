@@ -1,6 +1,12 @@
 <template>
     <view class="login-page">
         
+		<!-- 安全注册插件 -->
+		<!-- #ifdef MP-WEIXIN -->
+		<!-- 注意：login 组件必须有 class="login-modal"，使用 v-show 而不是 v-if -->
+		<login class="login-modal" :modal="modal" @success="loginSuccess" @fail="loginFail" @cancel="loginCancel" v-show="login_show"></login>
+		<!-- #endif -->
+        
 		<!-- Logo -->
 		<image class="logo" src="/static/login/logo.png" mode="widthFix" />
 
@@ -65,6 +71,13 @@ const showTestInfo = ref(false)
 const isLoggedIn = ref(false)
 const userInfo = ref(null)
 const token = ref(null)
+
+// 安全注册插件相关
+const modal = ref({
+  title: '完善用户信息',
+  content: '授权登录后，开始使用完整功能'
+})
+const login_show = ref(false)
 
 // 初始化页面
 onMounted(async () => {
@@ -172,12 +185,116 @@ async function handleWeChatLogin() {
     return
   }
   
+  // #ifdef MP-WEIXIN
+  // 检查用户是否已有完整的用户信息（优先使用 basicUserInfo）
+  const basicUserInfo = uni.getStorageSync('basicUserInfo')
+  const existingUserInfo = uni.getStorageSync('userInfo')
+  
+  // 优先使用 basicUserInfo，如果没有则使用 userInfo
+  const userInfoToCheck = basicUserInfo || existingUserInfo
+  const hasCompleteInfo = userInfoToCheck && userInfoToCheck.nickname && userInfoToCheck.avatarUrl
+  
+  if (hasCompleteInfo) {
+    // 直接使用现有信息进行静默登录
+    loading.value = true
+    try {
+      const result = await api.login({
+        code: `silent_login_${Date.now()}`,
+        nickname: userInfoToCheck.nickname,
+        avatarUrl: userInfoToCheck.avatarUrl
+      })
+      
+      if (result.token) {
+        uni.setStorageSync('token', result.token)
+        uni.setStorageSync('userInfo', result.user)
+        // 清除 basicUserInfo，因为已经重新保存了完整的 userInfo
+        uni.removeStorageSync('basicUserInfo')
+      }
+      
+      uni.showToast({
+        title: '登录成功',
+        icon: 'success'
+      })
+      
+      setTimeout(() => {
+        uni.switchTab({ url: '/pages/index/index' })
+      }, 1500)
+    } catch (error) {
+      // 静默登录失败，显示插件让用户重新选择
+      login_show.value = true
+      
+      uni.showToast({
+        title: '登录失败，请重新选择',
+        icon: 'none'
+      })
+    } finally {
+      loading.value = false
+    }
+  } else {
+    // 用户信息不完整，显示安全注册插件
+    login_show.value = true
+  }
+  // #endif
+  
+  // #ifndef MP-WEIXIN
+  // 非微信环境，使用备用方案
+  await useBackupLogin()
+  // #endif
+}
+
+// 备用登录方案（插件未加载或失败时使用）
+async function useBackupLogin() {
+  try {
+    await wechatLogin()
+    uni.showToast({
+      title: '登录成功',
+      icon: 'success'
+    })
+    
+    setTimeout(() => {
+      uni.switchTab({ url: '/pages/index/index' })
+    }, 1500)
+  } catch (error) {
+    uni.showToast({
+      title: error.message || '登录失败',
+      icon: 'none'
+    })
+  }
+}
+
+// 安全注册插件成功回调
+async function loginSuccess(e) {
+  login_show.value = false
   loading.value = true
   
   try {
-    // 使用微信授权登录，会弹出微信账号选择页面
-    // 注意：这个函数必须在用户直接点击事件中调用
-    await wechatLogin()
+    // 插件只返回头像和昵称，需要调用后端登录接口获取 token
+    let nickname = ''
+    let avatarUrl = ''
+    
+    if (e.target && e.target.res) {
+      nickname = e.target.res.nickName || ''
+      avatarUrl = e.target.res.avatarUrl || ''
+    }
+    
+    // 调用后端登录接口
+    const result = await api.login({
+      code: `plugin_login_${Date.now()}`, // 插件登录用特殊的 code
+      nickname: nickname,
+      avatarUrl: avatarUrl
+    })
+    
+    // 保存用户信息
+    if (result.token) {
+      uni.setStorageSync('token', result.token)
+    }
+    
+    if (result.user) {
+      uni.setStorageSync('userInfo', result.user)
+      // 清除 basicUserInfo，因为已经重新保存了完整的 userInfo
+      uni.removeStorageSync('basicUserInfo')
+    }
+    
     uni.showToast({
       title: '登录成功',
       icon: 'success'
@@ -188,14 +305,28 @@ async function handleWeChatLogin() {
       uni.switchTab({ url: '/pages/index/index' })
     }, 1500)
   } catch (error) {
-    console.error('微信登录失败:', error)
     uni.showToast({
-      title: error.message || '登录失败',
-      icon: 'none'
+      title: '登录失败',
+      icon: 'error'
     })
   } finally {
     loading.value = false
   }
+}
+
+// 安全注册插件失败回调
+function loginFail(e) {
+  login_show.value = false
+  
+  uni.showToast({
+    title: '登录失败',
+    icon: 'error'
+  })
+}
+
+// 安全注册插件取消回调
+function loginCancel(e) {
+  login_show.value = false
 }
 
 async function handlePhoneLogin() {
@@ -402,6 +533,16 @@ function openPrivacy() {
 		text-align: center;
 		font-size: 28rpx;
 		color: #666;
+	}
+
+	/* 安全注册插件样式 */
+	.login-modal {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 9999;
 	}
 </style>
 

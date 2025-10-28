@@ -1,5 +1,7 @@
 {
   "navigationBarTitleText": "登录",
   "navigationStyle": "custom",
-  "usingComponents": {}
+  "usingComponents": {
+    "login": "plugin://loginplugin/login"
+  }
 }

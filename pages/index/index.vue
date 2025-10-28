@@ -328,10 +328,17 @@ async function loadDailyScience() {
       return String(a.id).localeCompare(String(b.id))
     })
     
-    // 以天为周期的循环索引（第一天取第一篇，依次类推，超出后取模回到第一篇）
-    const dayIndex = Math.floor(Date.now() / 86400000)
+    // 以天为周期的循环索引（基于本地日期，确保在用户时区的0点更新）
+    const now = new Date()
+    // 获取本地日期的年月日，确保基于本地时区计算
+    const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const dayIndex = Math.floor(localDate.getTime() / 86400000)
     const idx = dayIndex % stable.length
-    console.log('📅 今日索引:', idx, '总文章数:', stable.length)
+    console.log('📅 时间调试信息:')
+    console.log('  - 当前时间:', now.toLocaleString())
+    console.log('  - 本地日期:', localDate.toLocaleString())
+    console.log('  - 天数索引:', dayIndex)
+    console.log('  - 今日索引:', idx, '总文章数:', stable.length)
     
     const selectedArticle = stable[idx]
     console.log('✅ 选中的科普文章:', selectedArticle)

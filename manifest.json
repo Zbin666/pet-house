@@ -51,6 +51,12 @@
     /* 小程序特有相关 */
     "mp-weixin" : {
         "appid" : "wxd31efebb21f95756",
+		"plugins" : {
+		    "loginplugin" : {
+		        "version" : "latest",
+				"provider" : "wxc7b7f914565de923"//插件：安全注册
+		    }
+		},
         "setting" : {
             "urlCheck" : false
         },
