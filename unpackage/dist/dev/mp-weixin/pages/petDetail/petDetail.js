@@ -10,6 +10,22 @@ const _sfc_main = {
     const photoCache = /* @__PURE__ */ new Map();
     const photoUpdateTrigger = common_vendor.ref(0);
     const pet = common_vendor.ref({});
+    function normalizeVaccines(val) {
+      if (Array.isArray(val)) {
+        return val;
+      }
+      if (typeof val === "string") {
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        } catch (e) {
+        }
+        return val.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+      return [];
+    }
     function getPetAvatarSrc(url) {
       if (!url)
         return "/static/logo.png";
@@ -32,15 +48,21 @@ const _sfc_main = {
         success: (res) => {
           if (res.statusCode === 200 && res.tempFilePath) {
             avatarCache.set(normalized, res.tempFilePath);
-            pet.value = { ...pet.value || {} };
+            pet.value = {
+              ...pet.value || {}
+            };
           } else {
             avatarCache.set(normalized, "/static/logo.png");
-            pet.value = { ...pet.value || {} };
+            pet.value = {
+              ...pet.value || {}
+            };
           }
         },
         fail: () => {
           avatarCache.set(normalized, "/static/logo.png");
-          pet.value = { ...pet.value || {} };
+          pet.value = {
+            ...pet.value || {}
+          };
         }
       });
       return "/static/logo.png";
@@ -69,13 +91,13 @@ const _sfc_main = {
             photoCache.set(normalized, res.tempFilePath);
             photoUpdateTrigger.value++;
           } else {
-            common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:217", "照片下载失败:", normalized, res.statusCode);
+            common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:261", "照片下载失败:", normalized, res.statusCode);
             photoCache.set(normalized, "/static/index/add.png");
             photoUpdateTrigger.value++;
           }
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:223", "照片下载失败:", normalized, err);
+          common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:267", "照片下载失败:", normalized, err);
           photoCache.set(normalized, "/static/index/add.png");
           photoUpdateTrigger.value++;
         }
@@ -84,49 +106,35 @@ const _sfc_main = {
     }
     common_vendor.onLoad(async (query) => {
       var _a;
-      common_vendor.index.setNavigationBarColor({ frontColor: "#000000", backgroundColor: "#fff1a8" });
-      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:235", "=== 宠物详情页加载调试信息 ===");
-      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:236", "URL参数:", query);
+      common_vendor.index.setNavigationBarColor({
+        frontColor: "#000000",
+        backgroundColor: "#fff1a8"
+      });
       if (query == null ? void 0 : query.pet) {
         try {
           const data = JSON.parse(decodeURIComponent(query.pet));
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:241", "解析后的宠物数据:", data);
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:242", "宠物头像URL:", data.avatarUrl);
           Object.assign(pet.value, data);
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:244", "赋值后的pet.value:", pet.value);
-          if (data.avatarUrl) {
-            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:248", "🔍 测试图片URL可访问性...");
-            common_vendor.index.request({
-              url: data.avatarUrl,
-              method: "HEAD",
-              success: (testRes) => {
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:255", "✅ 原始图片URL测试成功:", testRes.statusCode);
-              },
-              fail: (testErr) => {
-                common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:258", "❌ 原始图片URL测试失败:", testErr);
-              }
-            });
-            const filename = data.avatarUrl.split("/").pop();
-            const testUrl = `http://pet-api.zbinli.cn/api/test-image/${filename}`;
-            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:265", "🧪 测试API路由:", testUrl);
-            common_vendor.index.request({
-              url: testUrl,
-              method: "GET",
-              success: (apiRes) => {
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:271", "✅ API路由测试成功:", apiRes.statusCode);
-              },
-              fail: (apiErr) => {
-                common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:274", "❌ API路由测试失败:", apiErr);
-              }
-            });
+          vaccines.value = normalizeVaccines(data.vaccines);
+          temperament.value = data.temperament || "";
+          if (!data.vaccines || Array.isArray(data.vaccines) && data.vaccines.length === 0) {
+            try {
+              const fresh = await utils_api.api.getPet(pet.value.id);
+              vaccines.value = normalizeVaccines(fresh && fresh.vaccines);
+              temperament.value = fresh && fresh.temperament || temperament.value;
+            } catch (refreshErr) {
+            }
           }
+          common_vendor.nextTick$1(() => {
+          });
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:301", "赋值后的pet.value:", pet.value);
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:279", "解析宠物数据失败:", e);
         }
       }
       if ((_a = pet.value) == null ? void 0 : _a.id) {
         try {
-          const res = await utils_api.api.getMedia({ petId: pet.value.id });
+          const res = await utils_api.api.getMedia({
+            petId: pet.value.id
+          });
           const mediaList = Array.isArray(res) ? res : res.media || res.data || [];
           const sortedMediaList = mediaList.sort((a, b) => {
             const timeA = new Date(a.createdAt || a.created_at || 0).getTime();
@@ -134,15 +142,23 @@ const _sfc_main = {
             return timeA - timeB;
           });
           gallery.value = sortedMediaList.map((m) => m.url).filter(Boolean);
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:296", "照片按时间排序:", sortedMediaList.map((m) => ({ url: m.url, createdAt: m.createdAt || m.created_at })));
         } catch (err) {
-          common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:298", "加载宠物相册失败", err);
         }
       }
     });
     common_vendor.ref([
-      { id: "r1", time: "今天 08:00", type: "喂食", desc: "猫粮 60g" },
-      { id: "r2", time: "昨天 21:10", type: "清洁", desc: "铲砂" }
+      {
+        id: "r1",
+        time: "今天 08:00",
+        type: "喂食",
+        desc: "猫粮 60g"
+      },
+      {
+        id: "r2",
+        time: "昨天 21:10",
+        type: "清洁",
+        desc: "铲砂"
+      }
     ]);
     const vaccines = common_vendor.ref([]);
     const temperament = common_vendor.ref("");
@@ -150,12 +166,48 @@ const _sfc_main = {
     const editMode = common_vendor.ref(false);
     const genders = common_vendor.ref(["女生", "男生"]);
     const genderIndex = common_vendor.ref(1);
-    const vaccineOptions = common_vendor.ref(["已接种猫三联疫苗", "已接种狂犬疫苗"]);
-    const form = common_vendor.reactive({ name: "", months: "", weight: "", gender: "male", breed: "", color: "", neutered: false, birthday: "", startTogether: "", avatar: "", vaccines: [], temperament: "", gallery: [] });
+    const vaccineOptions = common_vendor.ref([
+      // 猫类常见疫苗
+      "已接种猫三联疫苗",
+      "已接种猫三联第二针/加强",
+      "已接种猫白血病疫苗(FeLV)",
+      "已接种狂犬疫苗",
+      // 犬类常见疫苗
+      "已接种犬五联疫苗",
+      "已接种犬六联疫苗",
+      "已接种犬七联疫苗",
+      "已接种小犬细小疫苗",
+      "已接种犬瘟热疫苗",
+      "已接种博德特氏支气管炎疫苗",
+      "已接种钩端螺旋体疫苗",
+      // 其他
+      "已接种其他疫苗"
+    ]);
+    const form = common_vendor.reactive({
+      name: "",
+      months: "",
+      weight: "",
+      gender: "male",
+      breed: "",
+      color: "",
+      neutered: false,
+      birthday: "",
+      startTogether: "",
+      avatar: "",
+      vaccines: [],
+      temperament: "",
+      gallery: []
+    });
     const originalGallery = common_vendor.ref([]);
     function startEdit() {
       editMode.value = true;
-      Object.assign(form, { ...pet.value, vaccines: [...vaccines.value], temperament: temperament.value, avatarUrl: pet.value.avatarUrl, gallery: [...gallery.value] });
+      Object.assign(form, {
+        ...pet.value,
+        vaccines: [...vaccines.value],
+        temperament: temperament.value,
+        avatarUrl: pet.value.avatarUrl,
+        gallery: [...gallery.value]
+      });
       originalGallery.value = [...gallery.value];
       genderIndex.value = form.gender === "male" ? 1 : 0;
     }
@@ -165,7 +217,9 @@ const _sfc_main = {
     }
     async function saveEdit() {
       try {
-        common_vendor.index.showLoading({ title: "保存中..." });
+        common_vendor.index.showLoading({
+          title: "保存中..."
+        });
         const updateData = {
           name: form.name,
           months: form.months,
@@ -181,51 +235,59 @@ const _sfc_main = {
         };
         if (form.avatar && form.avatar.startsWith("wxfile://")) {
           try {
-            const { uploadImage, compressImage } = await "../../utils/upload.js";
+            const {
+              uploadImage,
+              compressImage
+            } = await "../../utils/upload.js";
             const compressedPath = await compressImage(form.avatar, 0.8);
             const avatarUrl = await uploadImage(compressedPath, "avatar");
             updateData.avatarUrl = avatarUrl;
           } catch (error) {
-            common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:357", "头像上传失败:", error);
-            common_vendor.index.showToast({ title: "头像上传失败，其他信息已保存", icon: "none" });
+            common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:435", "头像上传失败:", error);
+            common_vendor.index.showToast({
+              title: "头像上传失败，其他信息已保存",
+              icon: "none"
+            });
           }
         } else if (form.avatarUrl) {
           updateData.avatarUrl = form.avatarUrl;
         }
         await utils_api.api.updatePet(pet.value.id, updateData);
-        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:368", "🔍 检查照片更新...");
-        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:369", "form.gallery:", form.gallery);
-        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:370", "gallery.value:", gallery.value);
+        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:449", "🔍 检查照片更新...");
+        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:450", "form.gallery:", form.gallery);
+        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:451", "gallery.value:", gallery.value);
         if (form.gallery && form.gallery.length > 0) {
           const newPhotos = form.gallery.filter((photo) => photo.startsWith("wxfile://"));
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:375", "新照片数量:", newPhotos.length);
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:376", "新照片路径:", newPhotos);
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:456", "新照片数量:", newPhotos.length);
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:457", "新照片路径:", newPhotos);
           if (newPhotos.length > 0) {
             try {
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:380", "开始上传照片...");
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:461", "开始上传照片...");
               const uploadPromises = newPhotos.map(async (photoPath) => {
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:384", "压缩照片:", photoPath);
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:465", "压缩照片:", photoPath);
                 const compressedPath = await utils_upload.compressImage(photoPath, 0.7);
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:386", "压缩后路径:", compressedPath);
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:467", "压缩后路径:", compressedPath);
                 const uploadedUrl = await utils_upload.uploadImage(compressedPath, "gallery");
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:388", "上传成功，URL:", uploadedUrl);
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:469", "上传成功，URL:", uploadedUrl);
                 return uploadedUrl;
               });
               const uploadedUrls = await Promise.all(uploadPromises);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:393", "所有照片上传完成:", uploadedUrls);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:396", "创建媒体记录...");
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:397", "petId:", pet.value.id);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:398", "urls:", uploadedUrls);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:474", "所有照片上传完成:", uploadedUrls);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:477", "创建媒体记录...");
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:478", "petId:", pet.value.id);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:479", "urls:", uploadedUrls);
               const mediaResult = await utils_api.api.createMedia({
                 petId: pet.value.id,
                 type: "image",
                 urls: uploadedUrls,
                 description: "宠物照片"
               });
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:407", "媒体记录创建结果:", mediaResult);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:408", "成功上传照片:", uploadedUrls.length, "张");
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:488", "媒体记录创建结果:", mediaResult);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:489", "成功上传照片:", uploadedUrls.length, "张");
               try {
-                const res = await utils_api.api.getMedia({ petId: pet.value.id });
+                const res = await utils_api.api.getMedia({
+                  petId: pet.value.id
+                });
                 const mediaList = Array.isArray(res) ? res : res.media || res.data || [];
                 const sortedMediaList = mediaList.sort((a, b) => {
                   const timeA = new Date(a.createdAt || a.created_at || 0).getTime();
@@ -233,33 +295,48 @@ const _sfc_main = {
                   return timeA - timeB;
                 });
                 gallery.value = sortedMediaList.map((m) => m.url).filter(Boolean);
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:423", "保存后重新加载照片，按时间排序:", sortedMediaList.map((m) => ({ url: m.url, createdAt: m.createdAt || m.created_at })));
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:506", "保存后重新加载照片，按时间排序:", sortedMediaList.map((m) => ({
+                  url: m.url,
+                  createdAt: m.createdAt || m.created_at
+                })));
               } catch (err) {
-                common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:425", "重新加载照片失败，使用本地更新:", err);
+                common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:511", "重新加载照片失败，使用本地更新:", err);
                 const existingPhotos = form.gallery.filter((photo) => !photo.startsWith("wxfile://"));
                 gallery.value = [...existingPhotos, ...uploadedUrls];
               }
             } catch (error) {
-              common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:432", "照片上传失败:", error);
-              common_vendor.index.showToast({ title: "照片上传失败，其他信息已保存", icon: "none" });
+              common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:518", "照片上传失败:", error);
+              common_vendor.index.showToast({
+                title: "照片上传失败，其他信息已保存",
+                icon: "none"
+              });
             }
           } else {
-            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:436", "没有新照片需要上传");
+            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:525", "没有新照片需要上传");
           }
         } else {
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:439", "没有照片需要处理");
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:528", "没有照片需要处理");
         }
-        pet.value = { ...pet.value, ...updateData };
+        pet.value = {
+          ...pet.value,
+          ...updateData
+        };
         vaccines.value = [...form.vaccines];
         temperament.value = form.temperament;
         gallery.value = [...form.gallery];
         editMode.value = false;
         common_vendor.index.hideLoading();
-        common_vendor.index.showToast({ title: "保存成功", icon: "success" });
+        common_vendor.index.showToast({
+          title: "保存成功",
+          icon: "success"
+        });
       } catch (error) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:454", "保存失败:", error);
-        common_vendor.index.showToast({ title: "保存失败", icon: "none" });
+        common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:549", "保存失败:", error);
+        common_vendor.index.showToast({
+          title: "保存失败",
+          icon: "none"
+        });
       }
     }
     function onGenderChange(e) {
@@ -270,14 +347,22 @@ const _sfc_main = {
       form.vaccines = e.detail.value || [];
     }
     function pickAvatar() {
-      common_vendor.index.chooseImage({ count: 1, sizeType: ["compressed"], success: (res) => {
-        form.avatar = res.tempFilePaths[0];
-      } });
+      common_vendor.index.chooseImage({
+        count: 1,
+        sizeType: ["compressed"],
+        success: (res) => {
+          form.avatar = res.tempFilePaths[0];
+        }
+      });
     }
     function pickGallery() {
-      common_vendor.index.chooseImage({ count: 9, sizeType: ["compressed"], success: (res) => {
-        form.gallery = form.gallery.concat(res.tempFilePaths);
-      } });
+      common_vendor.index.chooseImage({
+        count: 9,
+        sizeType: ["compressed"],
+        success: (res) => {
+          form.gallery = form.gallery.concat(res.tempFilePaths);
+        }
+      });
     }
     function deletePhoto(index) {
       if (editMode.value) {
@@ -316,13 +401,19 @@ const _sfc_main = {
             return;
           try {
             await utils_api.api.deletePet(pet.value.id);
-            common_vendor.index.showToast({ title: "宠物已删除", icon: "success" });
+            common_vendor.index.showToast({
+              title: "宠物已删除",
+              icon: "success"
+            });
             common_vendor.index.$emit && common_vendor.index.$emit("pets:changed");
             setTimeout(() => {
               common_vendor.index.navigateBack();
             }, 600);
           } catch (e) {
-            common_vendor.index.showToast({ title: "删除失败", icon: "none" });
+            common_vendor.index.showToast({
+              title: "删除失败",
+              icon: "none"
+            });
           }
         }
       });
@@ -333,11 +424,8 @@ const _sfc_main = {
       return Math.max(1, Math.floor((today - start) / 864e5) + 1);
     });
     function onAvatarLoad(e) {
-      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:521", "✅ 头像图片加载成功:", e);
     }
     function onAvatarError(e) {
-      common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:525", "❌ 头像图片加载失败:", e);
-      common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:526", "当前图片URL:", pet.value.avatarUrl);
       try {
         e && e.target && (e.target.src = "/static/logo.png");
       } catch {

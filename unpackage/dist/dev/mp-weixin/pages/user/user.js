@@ -199,7 +199,7 @@ const _sfc_main = {
             f: common_vendor.o(($event) => goPetDetail(p), p.id)
           };
         }),
-        n: common_assets._imports_2$2,
+        n: common_assets._imports_2$1,
         o: common_vendor.o(goEdit),
         p: common_assets._imports_3$3,
         q: common_vendor.o(openSetting),

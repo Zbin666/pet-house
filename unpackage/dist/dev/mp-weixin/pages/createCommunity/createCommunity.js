@@ -1,6 +1,7 @@
 "use strict";
 const common_vendor = require("../../common/vendor.js");
 const utils_api = require("../../utils/api.js");
+const utils_upload = require("../../utils/upload.js");
 const _sfc_main = {
   __name: "createCommunity",
   setup(__props) {
@@ -75,7 +76,7 @@ const _sfc_main = {
             }
           }, 800);
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:216", "发布问答失败:", e);
+          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:217", "发布问答失败:", e);
           common_vendor.index.showToast({
             title: e.message || "发布失败，请检查网络连接",
             icon: "none",
@@ -88,6 +89,24 @@ const _sfc_main = {
           return;
         }
         try {
+          const localImages = images.value.filter((img) => typeof img === "string" && img.startsWith("wxfile://"));
+          let uploadedUrls = [];
+          if (localImages.length > 0) {
+            common_vendor.index.showLoading({ title: `上传${localImages.length}张图片中...` });
+            uploadedUrls = await utils_upload.uploadImages(localImages, "gallery", currentPet.value.id);
+          }
+          const urlSet = [];
+          let uploadIdx = 0;
+          for (const img of images.value) {
+            if (typeof img === "string" && img.startsWith("wxfile://")) {
+              urlSet.push(uploadedUrls[uploadIdx]);
+              uploadIdx++;
+            } else {
+              urlSet.push(img);
+            }
+          }
+          images.value = urlSet;
+          common_vendor.index.hideLoading();
           const payload = {
             text: content.value.trim(),
             images: images.value,
@@ -104,7 +123,8 @@ const _sfc_main = {
             }
           }, 800);
         } catch (e) {
-          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:244", "发布动态失败:", e);
+          common_vendor.index.hideLoading();
+          common_vendor.index.__f__("error", "at pages/createCommunity/createCommunity.vue:268", "发布动态失败:", e);
           common_vendor.index.showToast({
             title: e.message || "发布失败，请检查网络连接",
             icon: "none",
@@ -145,7 +165,7 @@ const _sfc_main = {
           currentPet.value = pets[0];
         }
       } catch (e) {
-        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:293", "Failed to load user/pet info:", e);
+        common_vendor.index.__f__("warn", "at pages/createCommunity/createCommunity.vue:317", "Failed to load user/pet info:", e);
       }
     }
     common_vendor.onMounted(() => {

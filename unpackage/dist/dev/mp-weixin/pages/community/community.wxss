@@ -585,9 +585,8 @@
 	padding: 30rpx 0;
 	margin-top: 20rpx;
 }
-.loading-text.data-v-a6ef5318,
-.load-more-text.data-v-a6ef5318 {
-}
+
+/* 删除空规则，避免 linter 警告 */
 .no-more-text.data-v-a6ef5318 {
 	background: transparent;
 	border: none;

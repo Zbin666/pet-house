@@ -309,7 +309,7 @@ const _sfc_main = /* @__PURE__ */ Object.assign({ name: "HomeIndex" }, {
           };
         })
       }, {
-        s: common_assets._imports_2$1,
+        s: common_assets._imports_2,
         t: common_vendor.o(($event) => goToRecord("calendar")),
         v: common_assets._imports_3,
         w: common_vendor.o(($event) => goToRecord("stats")),

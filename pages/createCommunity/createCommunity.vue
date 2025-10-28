@@ -121,6 +121,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { api } from '@/utils/api.js'
+import { uploadImages } from '@/utils/upload.js'
 
 // 用户头像缓存
 const avatarCache = new Map()
@@ -227,6 +228,28 @@ async function publish() {
 			return
 		}
 		try {
+			// 1. 提取所有本地临时图片（wxfile://）
+			const localImages = images.value.filter(img => typeof img === 'string' && img.startsWith('wxfile://'))
+			let uploadedUrls = []
+        if (localImages.length > 0) {
+            uni.showLoading({title: `上传${localImages.length}张图片中...`})
+            // 2. 上传所有本地图片
+            uploadedUrls = await uploadImages(localImages, 'gallery', currentPet.value.id)
+        }
+			// 3. 使用 https 地址替换 wxfile://，其余非本地图片直接保留
+			const urlSet = []
+			let uploadIdx = 0
+			for (const img of images.value) {
+				if (typeof img === 'string' && img.startsWith('wxfile://')) {
+					urlSet.push(uploadedUrls[uploadIdx])
+					uploadIdx++
+				} else {
+					urlSet.push(img)
+				}
+			}
+			images.value = urlSet
+			uni.hideLoading()
+			// 4. 调用创建动态接口
 			const payload = {
 				text: content.value.trim(),
 				images: images.value,
@@ -241,6 +264,7 @@ async function publish() {
 				try { uni.$emit('feeds:refresh') } catch (e) {}
 			}, 800)
 		} catch (e) {
+			uni.hideLoading()
 			console.error('发布动态失败:', e)
 			uni.showToast({ 
 				title: e.message || '发布失败，请检查网络连接', 

@@ -67,7 +67,7 @@
 					<text v-if="post.title" class="post-title">{{ post.title }}</text>
 					<text class="content">{{ post.text }}</text>
 					<view class="pics" v-if="post.images && post.images.length">
-						<image class="pic" v-for="(img, i) in post.images" :key="`${imageUpdateTrigger}-${i}`" :src="getPostImageSrc(img)" mode="aspectFill" @tap.stop="previewImages(post.images, i)" />
+						<image class="pic" v-for="(img, i) in post.images" :key="`${imageUpdateTrigger}-${i}`" :src="getPostImageSrc(img)" mode="aspectFill" @tap.stop="previewImages(post.images, i)" @error="handlePostImageError(img, i, post.id)" />
 					</view>
 				</view>
 				<view class="card-ft" @tap.stop="noop">
@@ -763,11 +763,18 @@ function getPostImageSrc(url) {
 	if (!url) {
 		return '/static/404.png'
 	}
-	
+
+	console.log('[广场图片] 原始URL:', url)
+
 	// 统一规范化：
 	// 1) /uploads/ 相对路径 → 拼接静态域名
 	// 2) 强制 http → https，去掉 :80
 	let normalized = url
+	// 小程序本地临时路径（仅当前会话有效），如果存到数据库，后续可能失效
+	if (normalized.startsWith('wxfile://')) {
+		console.warn('[广场图片] 发现 wxfile:// 本地临时路径，该路径可能已过期:', normalized)
+		return normalized
+	}
 	if (normalized.startsWith('/uploads/')) {
 		normalized = `https://pet-api.zbinli.cn${normalized}`
 	}
@@ -775,6 +782,7 @@ function getPostImageSrc(url) {
 		normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
 	}
 	normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+	console.log('[广场图片] 规范化后URL:', normalized)
 
 	// 本地或静态路径直接返回
 	if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
@@ -783,10 +791,11 @@ function getPostImageSrc(url) {
 
 	// 命中缓存
 	if (postImageCache.has(normalized)) {
+		console.log('[广场图片] 命中缓存:', normalized)
 		return postImageCache.get(normalized)
 	}
 
-	// 下载网络图片到本地临时文件
+	// 下载网络图片到本地临时文件（与头像逻辑保持一致）
 	uni.downloadFile({
 		url: normalized,
 		success: (res) => {
@@ -794,14 +803,17 @@ function getPostImageSrc(url) {
 				postImageCache.set(normalized, res.tempFilePath)
 				// 触发视图更新
 				imageUpdateTrigger.value++
+				console.log('[广场图片] 下载成功，已缓存:', normalized, '->', res.tempFilePath)
 			} else {
 				postImageCache.set(normalized, '/static/404.png')
 				imageUpdateTrigger.value++
+				console.warn('[广场图片] 下载返回异常，使用占位图:', normalized, 'status:', res.statusCode)
 			}
 		},
 		fail: () => {
 			postImageCache.set(normalized, '/static/404.png')
 			imageUpdateTrigger.value++
+			console.error('[广场图片] 下载失败，使用占位图:', normalized)
 		}
 	})
 
@@ -823,6 +835,16 @@ function handleImageError(e) {
 // 图片加载成功处理
 function handleImageLoad(e) {
 	console.log('图片加载成功:', e.target.src)
+}
+
+// 广场帖子图片错误调试
+function handlePostImageError(url, index, postId) {
+    try {
+        console.error('[广场图片] 加载失败:', { postId, index, url })
+        if (typeof url === 'string' && url.startsWith('wxfile://')) {
+            console.warn('[广场图片] 失败可能原因：wxfile:// 本地临时路径已过期')
+        }
+    } catch (e) { }
 }
 
 function selectCategory(key) { 
@@ -920,7 +942,16 @@ function noop() { }
 // 预览图片
 function previewImages(images, current) {
 	if (!images || images.length === 0) return
-	
+    try {
+        console.log('[图片预览] 当前索引:', current)
+        console.log('[图片预览] 原始列表:', images)
+        const hasWxfile = images.some(u => typeof u === 'string' && u.startsWith('wxfile://'))
+        if (hasWxfile) {
+            console.warn('[图片预览] 列表包含 wxfile:// 路径，这类路径可能已过期，无法在新会话中访问')
+            uni.showToast({ title: '有本地临时图片可能已过期', icon: 'none' })
+        }
+    } catch (e) { }
+
 	uni.previewImage({
 		current: current,
 		urls: images,
@@ -928,7 +959,7 @@ function previewImages(images, current) {
 			console.log('图片预览成功')
 		},
 		fail: (err) => {
-			console.error('图片预览失败:', err)
+            console.error('图片预览失败:', err, 'urls:', images)
 			uni.showToast({
 				title: '图片预览失败',
 				icon: 'none'
@@ -1769,10 +1800,7 @@ function clearSearch() {
 	margin-top: 20rpx;
 }
 
-.loading-text,
-.load-more-text {
-
-}
+/* 删除空规则，避免 linter 警告 */
 
 .no-more-text {
 	background: transparent;

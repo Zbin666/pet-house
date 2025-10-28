@@ -101,7 +101,23 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
     });
     const genders = common_vendor.ref(["女生", "男生"]);
     const genderIndex = common_vendor.ref(0);
-    const vaccineOptions = common_vendor.ref(["已接种猫三联疫苗", "已接种狂犬疫苗", "已接种其他疫苗"]);
+    const vaccineOptions = common_vendor.ref([
+      // 猫类常见疫苗
+      "已接种猫三联疫苗",
+      "已接种猫三联第二针/加强",
+      "已接种猫白血病疫苗(FeLV)",
+      "已接种狂犬疫苗",
+      // 犬类常见疫苗
+      "已接种犬五联疫苗",
+      "已接种犬六联疫苗",
+      "已接种犬七联疫苗",
+      "已接种小犬细小疫苗",
+      "已接种犬瘟热疫苗",
+      "已接种博德特氏支气管炎疫苗",
+      "已接种钩端螺旋体疫苗",
+      // 其他
+      "已接种其他疫苗"
+    ]);
     common_vendor.onLoad(() => {
       common_vendor.index.setNavigationBarColor({
         frontColor: "#000000",
@@ -136,7 +152,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         common_vendor.index.showToast({ title: "头像上传成功", icon: "success" });
       } catch (error) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:321", "选择头像失败:", error);
+        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:337", "选择头像失败:", error);
         common_vendor.index.showToast({ title: "头像上传失败", icon: "none" });
       }
     }
@@ -166,7 +182,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         common_vendor.index.showToast({ title: `成功上传${uploadedUrls.length}张照片`, icon: "success" });
       } catch (error) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:360", "选择照片失败:", error);
+        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:376", "选择照片失败:", error);
         common_vendor.index.showToast({ title: "照片上传失败", icon: "none" });
       }
     }
@@ -222,9 +238,9 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         if (form.avatar) {
           payload.avatarUrl = form.avatar;
         }
-        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:423", "提交宠物数据:", payload);
+        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:439", "提交宠物数据:", payload);
         const pet = await utils_api.api.createPet(payload);
-        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:425", "宠物创建成功:", pet);
+        common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:441", "宠物创建成功:", pet);
         if (form.gallery && form.gallery.length > 0) {
           const uploadedUrls = form.gallery.filter((url) => url && url.trim());
           if (uploadedUrls.length > 0) {
@@ -235,12 +251,12 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
                 urls: uploadedUrls,
                 description: "宠物照片"
               });
-              common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:440", "成功创建媒体记录:", uploadedUrls.length, "张照片");
+              common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:456", "成功创建媒体记录:", uploadedUrls.length, "张照片");
             } catch (error) {
-              common_vendor.index.__f__("warn", "at pages/createPet/createPet.vue:442", "照片上传失败，但宠物已创建:", error);
+              common_vendor.index.__f__("warn", "at pages/createPet/createPet.vue:458", "照片上传失败，但宠物已创建:", error);
             }
           } else {
-            common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:445", "没有照片，跳过媒体记录创建");
+            common_vendor.index.__f__("log", "at pages/createPet/createPet.vue:461", "没有照片，跳过媒体记录创建");
           }
         }
         common_vendor.index.hideLoading();
@@ -250,7 +266,7 @@ const _sfc_main = /* @__PURE__ */ common_vendor.defineComponent({
         }, 800);
       } catch (e) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:458", "创建宠物失败:", e);
+        common_vendor.index.__f__("error", "at pages/createPet/createPet.vue:474", "创建宠物失败:", e);
         let errorMessage = "创建失败";
         if (e.message) {
           if (e.message.includes("Unauthorized")) {

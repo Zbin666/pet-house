@@ -45,9 +45,6 @@
 .btn.wx.data-v-e4e4508d {
 		background-color: #ffd54f;
 }
-.btn.phone.data-v-e4e4508d {
-		background-color: #ffe082;
-}
 .btn.data-v-e4e4508d:disabled {
 		opacity: 0.6;
 }
@@ -82,59 +79,28 @@
 		background-color: #ffd54f;
 		border-color: #f1c40f;
 }
+
+	/* 勾选可视化 */
+.checkbox.data-v-e4e4508d::after {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: 12rpx;
+		height: 20rpx;
+		border-right: 4rpx solid #f8f7f7;
+		border-bottom: 4rpx solid #f8f7f7;
+		transform: translate(-50%, -60%) rotate(45deg);
+		display: none;
+}
+.checkbox.checked.data-v-e4e4508d::after {
+		display: block;
+}
 .link.data-v-e4e4508d {
 		color: #f1a400;
 }
 
 	/* 测试相关样式 */
-.test-info.data-v-e4e4508d {
-		margin-top: 40rpx;
-		padding: 20rpx;
-		background-color: rgba(255, 255, 255, 0.8);
-		border-radius: 10rpx;
-		border: 2rpx solid #ddd;
-}
-.test-title.data-v-e4e4508d {
-		display: block;
-		font-size: 28rpx;
-		font-weight: bold;
-		margin-bottom: 20rpx;
-		color: #333;
-}
-.test-item.data-v-e4e4508d {
-		display: block;
-		font-size: 24rpx;
-		margin-bottom: 10rpx;
-		color: #666;
-		word-break: break-all;
-}
-.test-buttons.data-v-e4e4508d {
-		margin-top: 20rpx;
-		display: flex;
-		flex-direction: column;
-		gap: 10rpx;
-}
-.test-btn.data-v-e4e4508d {
-		padding: 20rpx;
-		background-color: #007aff;
-		color: white;
-		border: none;
-		border-radius: 10rpx;
-		font-size: 28rpx;
-}
-.test-btn.data-v-e4e4508d:disabled {
-		background-color: #ccc;
-}
-.test-toggle.data-v-e4e4508d {
-		margin-top: 20rpx;
-		padding: 20rpx;
-		background-color: #f0f0f0;
-		border-radius: 10rpx;
-		text-align: center;
-		font-size: 28rpx;
-		color: #666;
-}
-
 	/* 安全注册插件样式 */
 .login-modal.data-v-e4e4508d {
 		position: fixed;
