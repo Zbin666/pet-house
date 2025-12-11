@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const common_vendor = require("../common/vendor.js");
 const utils_api = require("./api.js");
 function compressImage(filePath, quality = 0.8) {

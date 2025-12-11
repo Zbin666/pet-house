@@ -235,15 +235,11 @@ const _sfc_main = {
         };
         if (form.avatar && form.avatar.startsWith("wxfile://")) {
           try {
-            const {
-              uploadImage,
-              compressImage
-            } = await "../../utils/upload.js";
-            const compressedPath = await compressImage(form.avatar, 0.8);
-            const avatarUrl = await uploadImage(compressedPath, "avatar");
+            const compressedPath = await utils_upload.compressImage(form.avatar, 0.8);
+            const avatarUrl = await utils_upload.uploadImage(compressedPath, "avatar");
             updateData.avatarUrl = avatarUrl;
           } catch (error) {
-            common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:435", "头像上传失败:", error);
+            common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:431", "头像上传失败:", error);
             common_vendor.index.showToast({
               title: "头像上传失败，其他信息已保存",
               icon: "none"
@@ -253,37 +249,37 @@ const _sfc_main = {
           updateData.avatarUrl = form.avatarUrl;
         }
         await utils_api.api.updatePet(pet.value.id, updateData);
-        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:449", "🔍 检查照片更新...");
-        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:450", "form.gallery:", form.gallery);
-        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:451", "gallery.value:", gallery.value);
+        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:445", "🔍 检查照片更新...");
+        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:446", "form.gallery:", form.gallery);
+        common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:447", "gallery.value:", gallery.value);
         if (form.gallery && form.gallery.length > 0) {
           const newPhotos = form.gallery.filter((photo) => photo.startsWith("wxfile://"));
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:456", "新照片数量:", newPhotos.length);
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:457", "新照片路径:", newPhotos);
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:452", "新照片数量:", newPhotos.length);
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:453", "新照片路径:", newPhotos);
           if (newPhotos.length > 0) {
             try {
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:461", "开始上传照片...");
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:457", "开始上传照片...");
               const uploadPromises = newPhotos.map(async (photoPath) => {
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:465", "压缩照片:", photoPath);
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:461", "压缩照片:", photoPath);
                 const compressedPath = await utils_upload.compressImage(photoPath, 0.7);
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:467", "压缩后路径:", compressedPath);
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:463", "压缩后路径:", compressedPath);
                 const uploadedUrl = await utils_upload.uploadImage(compressedPath, "gallery");
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:469", "上传成功，URL:", uploadedUrl);
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:465", "上传成功，URL:", uploadedUrl);
                 return uploadedUrl;
               });
               const uploadedUrls = await Promise.all(uploadPromises);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:474", "所有照片上传完成:", uploadedUrls);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:477", "创建媒体记录...");
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:478", "petId:", pet.value.id);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:479", "urls:", uploadedUrls);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:470", "所有照片上传完成:", uploadedUrls);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:473", "创建媒体记录...");
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:474", "petId:", pet.value.id);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:475", "urls:", uploadedUrls);
               const mediaResult = await utils_api.api.createMedia({
                 petId: pet.value.id,
                 type: "image",
                 urls: uploadedUrls,
                 description: "宠物照片"
               });
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:488", "媒体记录创建结果:", mediaResult);
-              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:489", "成功上传照片:", uploadedUrls.length, "张");
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:484", "媒体记录创建结果:", mediaResult);
+              common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:485", "成功上传照片:", uploadedUrls.length, "张");
               try {
                 const res = await utils_api.api.getMedia({
                   petId: pet.value.id
@@ -295,27 +291,27 @@ const _sfc_main = {
                   return timeA - timeB;
                 });
                 gallery.value = sortedMediaList.map((m) => m.url).filter(Boolean);
-                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:506", "保存后重新加载照片，按时间排序:", sortedMediaList.map((m) => ({
+                common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:502", "保存后重新加载照片，按时间排序:", sortedMediaList.map((m) => ({
                   url: m.url,
                   createdAt: m.createdAt || m.created_at
                 })));
               } catch (err) {
-                common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:511", "重新加载照片失败，使用本地更新:", err);
+                common_vendor.index.__f__("warn", "at pages/petDetail/petDetail.vue:507", "重新加载照片失败，使用本地更新:", err);
                 const existingPhotos = form.gallery.filter((photo) => !photo.startsWith("wxfile://"));
                 gallery.value = [...existingPhotos, ...uploadedUrls];
               }
             } catch (error) {
-              common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:518", "照片上传失败:", error);
+              common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:514", "照片上传失败:", error);
               common_vendor.index.showToast({
                 title: "照片上传失败，其他信息已保存",
                 icon: "none"
               });
             }
           } else {
-            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:525", "没有新照片需要上传");
+            common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:521", "没有新照片需要上传");
           }
         } else {
-          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:528", "没有照片需要处理");
+          common_vendor.index.__f__("log", "at pages/petDetail/petDetail.vue:524", "没有照片需要处理");
         }
         pet.value = {
           ...pet.value,
@@ -332,7 +328,7 @@ const _sfc_main = {
         });
       } catch (error) {
         common_vendor.index.hideLoading();
-        common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:549", "保存失败:", error);
+        common_vendor.index.__f__("error", "at pages/petDetail/petDetail.vue:545", "保存失败:", error);
         common_vendor.index.showToast({
           title: "保存失败",
           icon: "none"
@@ -433,7 +429,7 @@ const _sfc_main = {
     }
     return (_ctx, _cache) => {
       return common_vendor.e({
-        a: getPetAvatarSrc(editMode.value && form.avatarUrl ? form.avatarUrl : pet.value.avatarUrl),
+        a: getPetAvatarSrc(editMode.value ? form.avatar || form.avatarUrl || pet.value.avatarUrl : pet.value.avatarUrl),
         b: common_vendor.o(onAvatarLoad),
         c: common_vendor.o(onAvatarError),
         d: common_vendor.o(($event) => editMode.value ? pickAvatar() : null),

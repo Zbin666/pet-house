@@ -8,9 +8,9 @@
 				<!-- 头部：头像 + 基本信息列表 -->
 				<view class="header">
 					<view class="avatar-wrap" @tap="editMode ? pickAvatar() : null">
-						<image class="avatar"
-							:src="getPetAvatarSrc(editMode && form.avatarUrl ? form.avatarUrl : pet.avatarUrl)"
-							mode="aspectFill" @load="onAvatarLoad" @error="onAvatarError" />
+					<image class="avatar"
+						:src="getPetAvatarSrc(editMode ? (form.avatar || form.avatarUrl || pet.avatarUrl) : pet.avatarUrl)"
+						mode="aspectFill" @load="onAvatarLoad" @error="onAvatarError" />
 					</view>
 					<view class="kv">
 						<view class="kv-row"><text class="k">姓名：</text>
@@ -421,13 +421,9 @@
 				vaccines: form.vaccines
 			}
 
-			// 如果有新头像，需要先上传
+			// 如果有新头像，需要先上传（使用静态导入的工具函数）
 			if (form.avatar && form.avatar.startsWith('wxfile://')) {
 				try {
-					const {
-						uploadImage,
-						compressImage
-					} = await import('@/utils/upload.js')
 					const compressedPath = await compressImage(form.avatar, 0.8)
 					const avatarUrl = await uploadImage(compressedPath, 'avatar')
 					updateData.avatarUrl = avatarUrl

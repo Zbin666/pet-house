@@ -13,7 +13,7 @@
 				<text v-if="post.title" class="post-title">{{ post.title }}</text>
 				<text class="content">{{ post.text }}</text>
 				<view class="pics" v-if="post.images && post.images.length">
-					<image class="pic" v-for="(img, i) in post.images" :key="i" :src="img" mode="aspectFill" @tap.stop="previewImages(post.images, i)" />
+					<image class="pic" v-for="(img, i) in post.images" :key="`pic-${i}-${imageUpdateTrigger}`" :src="getPostImageSrc(img)" mode="aspectFill" @tap.stop="previewImages(post.images, i)" />
 				</view>
 			</view>
 			<view class="card-ft">
@@ -238,6 +238,9 @@ const inputRef = ref(null) // 输入框引用
 // 用户头像缓存与下载（与社区页一致）
 const avatarCache = new Map()
 const avatarUpdateTrigger = ref(0) // 用于触发响应式更新
+// 帖子图片缓存
+const postImageCache = new Map()
+const imageUpdateTrigger = ref(0)
 
 function getUserAvatarSrc(url) {
 	if (!url) return '/static/user/user.png'
@@ -269,6 +272,43 @@ function getUserAvatarSrc(url) {
 		}
 	})
 	return '/static/user/user.png'
+}
+
+// 与社区页一致的图片获取逻辑
+function getPostImageSrc(url) {
+    if (!url) return '/static/404.png'
+    let normalized = url
+    if (normalized.startsWith('/uploads/')) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`
+    }
+    if (normalized.startsWith('http://pet-api.zbinli.cn')) {
+        normalized = normalized.replace('http://pet-api.zbinli.cn', 'https://pet-api.zbinli.cn')
+    }
+    normalized = normalized.replace('://pet-api.zbinli.cn:80', '://pet-api.zbinli.cn')
+
+    if (normalized.startsWith('wxfile://') || normalized.startsWith('/static/')) {
+        return normalized
+    }
+    if (postImageCache.has(normalized)) {
+        return postImageCache.get(normalized)
+    }
+    uni.downloadFile({
+        url: normalized,
+        success: (res) => {
+            if (res.statusCode === 200 && res.tempFilePath) {
+                postImageCache.set(normalized, res.tempFilePath)
+                imageUpdateTrigger.value++
+            } else {
+                postImageCache.set(normalized, '/static/404.png')
+                imageUpdateTrigger.value++
+            }
+        },
+        fail: () => {
+            postImageCache.set(normalized, '/static/404.png')
+            imageUpdateTrigger.value++
+        }
+    })
+    return '/static/404.png'
 }
 
 // 统一的时间格式化函数

@@ -1,0 +1,62 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/index/index",
+    "pages/record/record",
+    "pages/createRecord/createRecord",
+    "pages/community/community",
+    "pages/communityDetail/communityDetail",
+    "pages/user/user",
+    "pages/petDetail/petDetail",
+    "pages/settings/setting",
+    "pages/recordDetail/recordDetail",
+    "pages/createCommunity/createCommunity",
+    "pages/questionDetail/questionDetail",
+    "pages/scienceDetail/scienceDetail",
+    "pages/createPet/createPet"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "宠物屋",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#666",
+    "selectedColor": "#333",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/tarBar/index.png",
+        "selectedIconPath": "static/tarBar/index-active.png"
+      },
+      {
+        "pagePath": "pages/record/record",
+        "text": "记录",
+        "iconPath": "static/tarBar/record.png",
+        "selectedIconPath": "static/tarBar/record-active.png"
+      },
+      {
+        "pagePath": "pages/community/community",
+        "text": "宠物圈",
+        "iconPath": "static/tarBar/petCircle.png",
+        "selectedIconPath": "static/tarBar/petCircle-active.png"
+      },
+      {
+        "pagePath": "pages/user/user",
+        "text": "铲屎官",
+        "iconPath": "static/tarBar/user.png",
+        "selectedIconPath": "static/tarBar/user-active.png"
+      }
+    ]
+  },
+  "plugins": {
+    "loginplugin": {
+      "version": "latest",
+      "provider": "wxc7b7f914565de923"
+    }
+  },
+  "usingComponents": {}
+}

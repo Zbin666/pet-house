@@ -11,7 +11,7 @@
 		<image class="logo" src="/static/login/logo.png" mode="widthFix" />
 
 		<!-- Title -->
-		<view class="title">欢迎来到宠物屋</view>
+		<view class="title">欢迎来到萌宠小筑</view>
 
 		<!-- Buttons -->
 		<view class="btn-group">

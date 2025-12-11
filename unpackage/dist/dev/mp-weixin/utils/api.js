@@ -234,7 +234,7 @@ const api = {
     method: "GET"
   }),
   incrementArticleReads: (id) => {
-    common_vendor.index.__f__("log", "at utils/api.js:288", "🌐 调用API增加阅读数，文章ID:", id);
+    common_vendor.index.__f__("log", "at utils/api.js:290", "🌐 调用API增加阅读数，文章ID:", id);
     return request({
       url: `/articles/${id}/read`,
       method: "POST"

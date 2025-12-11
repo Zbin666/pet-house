@@ -50,6 +50,8 @@ const _sfc_main = {
     const inputRef = common_vendor.ref(null);
     const avatarCache = /* @__PURE__ */ new Map();
     const avatarUpdateTrigger = common_vendor.ref(0);
+    const postImageCache = /* @__PURE__ */ new Map();
+    const imageUpdateTrigger = common_vendor.ref(0);
     function getUserAvatarSrc(url) {
       if (!url)
         return "/static/user/user.png";
@@ -82,6 +84,41 @@ const _sfc_main = {
         }
       });
       return "/static/user/user.png";
+    }
+    function getPostImageSrc(url) {
+      if (!url)
+        return "/static/404.png";
+      let normalized = url;
+      if (normalized.startsWith("/uploads/")) {
+        normalized = `https://pet-api.zbinli.cn${normalized}`;
+      }
+      if (normalized.startsWith("http://pet-api.zbinli.cn")) {
+        normalized = normalized.replace("http://pet-api.zbinli.cn", "https://pet-api.zbinli.cn");
+      }
+      normalized = normalized.replace("://pet-api.zbinli.cn:80", "://pet-api.zbinli.cn");
+      if (normalized.startsWith("wxfile://") || normalized.startsWith("/static/")) {
+        return normalized;
+      }
+      if (postImageCache.has(normalized)) {
+        return postImageCache.get(normalized);
+      }
+      common_vendor.index.downloadFile({
+        url: normalized,
+        success: (res) => {
+          if (res.statusCode === 200 && res.tempFilePath) {
+            postImageCache.set(normalized, res.tempFilePath);
+            imageUpdateTrigger.value++;
+          } else {
+            postImageCache.set(normalized, "/static/404.png");
+            imageUpdateTrigger.value++;
+          }
+        },
+        fail: () => {
+          postImageCache.set(normalized, "/static/404.png");
+          imageUpdateTrigger.value++;
+        }
+      });
+      return "/static/404.png";
     }
     function formatRelativeTime(createdAt) {
       const now = /* @__PURE__ */ new Date();
@@ -260,7 +297,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:471", "点赞操作失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:511", "点赞操作失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -275,7 +312,7 @@ const _sfc_main = {
             if (profile && profile.id)
               currentUserId.value = profile.id;
           } catch (e) {
-            common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:488", "获取用户信息失败:", e);
+            common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:528", "获取用户信息失败:", e);
           }
         }
         const commentsData = await utils_api.api.getComments(feedId);
@@ -337,7 +374,7 @@ const _sfc_main = {
         } catch (_) {
         }
       } catch (e) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:551", "加载评论失败:", e);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:591", "加载评论失败:", e);
       }
     }
     function startReply(comment) {
@@ -460,7 +497,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:709", "点赞评论失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:749", "点赞评论失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -480,7 +517,7 @@ const _sfc_main = {
           });
         }
       } catch (error) {
-        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:750", "点赞回复失败:", error);
+        common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:790", "点赞回复失败:", error);
         common_vendor.index.showToast({
           title: "操作失败",
           icon: "none"
@@ -535,10 +572,10 @@ const _sfc_main = {
         current,
         urls: images,
         success: () => {
-          common_vendor.index.__f__("log", "at pages/communityDetail/communityDetail.vue:812", "图片预览成功");
+          common_vendor.index.__f__("log", "at pages/communityDetail/communityDetail.vue:852", "图片预览成功");
         },
         fail: (err) => {
-          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:815", "图片预览失败:", err);
+          common_vendor.index.__f__("error", "at pages/communityDetail/communityDetail.vue:855", "图片预览失败:", err);
           common_vendor.index.showToast({
             title: "图片预览失败",
             icon: "none"
@@ -563,9 +600,9 @@ const _sfc_main = {
       }, post.images && post.images.length ? {
         k: common_vendor.f(post.images, (img, i, i0) => {
           return {
-            a: i,
-            b: img,
-            c: common_vendor.o(($event) => previewImages(post.images, i), i)
+            a: `pic-${i}-${imageUpdateTrigger.value}`,
+            b: getPostImageSrc(img),
+            c: common_vendor.o(($event) => previewImages(post.images, i), `pic-${i}-${imageUpdateTrigger.value}`)
           };
         })
       } : {}, {
